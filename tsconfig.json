@@ -1,0 +1,33 @@
+{
+  "extends": "@react-native/typescript-config",
+  "compilerOptions": {
+    "alwaysStrict": true,
+    "baseUrl": "./src",
+    "checkJs": true,
+    "jsx": "react-native",
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "paths": {
+      "app": ["./app/*", "./app/"],
+      "components": ["./components/*", "./components/"],
+      "config": ["./config/*", "./config"],
+      "firestore": ["./firestore/*", "./firestore/"],
+      "images": ["./images/*", "./images"],
+      "lib": ["./lib/*", "./lib"],
+      "store": ["./store/*", "./store"],
+      "theme": ["./theme/*", "./theme"],
+      "types": ["./types/*", "./types/"]
+    },
+    "types": ["react-native", "react"]
+  },
+  "exclude": ["node_modules"],
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    "**/*.js",
+    "**/*.jsx",
+    "**/*.svg",
+    "**/*.png"
+  ]
+}
