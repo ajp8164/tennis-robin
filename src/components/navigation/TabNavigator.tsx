@@ -4,10 +4,7 @@ import SystemNavigationBar from 'react-native-system-navigation-bar';
 
 import { ThemeManager, useTheme } from '@react-native-hello/ui';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import {
-  FileText,
-  Settings,
-} from 'lucide-react-native';
+import { Home, Settings } from 'lucide-react-native';
 import { TabNavigatorParamList } from 'types/navigation';
 
 import HomeNavigator from './HomeNavigator';
@@ -54,7 +51,7 @@ const TabNavigator = () => {
         component={HomeNavigator}
         options={{
           tabBarShowLabel: false,
-          tabBarIcon: ({ color }) => <FileText color={color} size={33} />,
+          tabBarIcon: ({ color }) => <Home color={color} size={33} />,
         }}
       />
       <Tab.Screen

@@ -1,8 +1,10 @@
-import { ThemeManager, useTheme } from '@react-native-hello/ui';
+import React from 'react';
+import { Text, View } from 'react-native';
+import { SvgXml } from 'react-native-svg';
+
+import { ThemeManager, getSvg, useTheme } from '@react-native-hello/ui';
 import { CompositeScreenProps } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import React from 'react';
-import {  Text, View } from 'react-native';
 import {
   HomeNavigatorParamList,
   MainNavigatorParamList,
@@ -19,12 +21,27 @@ const HomeScreen = () => {
 
   return (
     <View style={theme.styles.view}>
-      <Text style={theme.text.normal}>{"Hello World!"}</Text>
+      <SvgXml
+        xml={getSvg('brandIcon')}
+        width={s.icon.width}
+        height={s.icon.width}
+        style={s.icon}
+      />
+      <Text style={s.text}>{'Hello.'}</Text>
     </View>
   );
 };
 
-const useStyles = ThemeManager.createStyleSheet(() => ({
+const useStyles = ThemeManager.createStyleSheet(({ device, theme }) => ({
+  icon: {
+    width: device.screen.width * 0.5,
+    alignSelf: 'center',
+    marginTop: '60%',
+  },
+  text: {
+    ...theme.text.xl,
+    textAlign: 'center',
+  },
 }));
 
 export default HomeScreen;

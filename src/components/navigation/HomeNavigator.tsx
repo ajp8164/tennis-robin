@@ -1,5 +1,6 @@
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
+
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import HomeScreen from 'components/HomeScreen';
 import { HomeNavigatorParamList } from 'types/navigation';
 
@@ -11,13 +12,13 @@ const HomeNavigator = () => {
       initialRouteName={'Home'}
       screenOptions={{
         title: undefined,
-      }}
-    >
+      }}>
       <HomeStack.Screen
         name="Home"
         component={HomeScreen}
         options={{
           headerBackVisible: false,
+          headerShown: false,
         }}
       />
     </HomeStack.Navigator>
