@@ -1,4 +1,5 @@
 import { Platform } from 'react-native';
+import { DeepPartial } from 'react-native-theme-mk';
 
 import {
   IBaseThemeSchema,
@@ -7,7 +8,6 @@ import {
   ThemeManager,
 } from '@react-native-hello/ui';
 import lodash from 'lodash';
-import { DeepPartial } from 'types/custom';
 
 import { baseTheme } from './base-theme';
 import { palette } from './palette';
@@ -34,6 +34,7 @@ export const themeBase: DeepPartial<IBaseThemeSchema> = {
       ],
       brandPrimary: palette.secondary,
       brandSecondary: palette.primary,
+      button: palette.primary,
       disabled: '#787878',
       listItemBackgroundAlt: '#101010',
       listItemIcon: palette.primary,

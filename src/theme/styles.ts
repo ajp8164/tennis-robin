@@ -1,3 +1,5 @@
+import { Platform } from 'react-native';
+
 import { IStyles, type IBaseThemeSchema } from '@react-native-hello/ui';
 
 export const createElementsStyles = ({
@@ -60,6 +62,42 @@ export const createElementsStyles = ({
    * Button
    */
 
+  buttonContainer: {
+    marginHorizontal: 15,
+  },
+  button: {
+    backgroundColor: theme.colors.button,
+    borderRadius: 10,
+    height: 48,
+    paddingHorizontal: 15,
+    width: '100%',
+    alignSelf: 'center',
+  },
+  buttonTitle: {
+    fontSize: theme.fontSize.normal,
+    fontFamily: theme.fonts.regular,
+    color: theme.colors.buttonText,
+    fontWeight: '600',
+    ...Platform.select({
+      ios: {
+        marginTop: 0,
+      },
+      android: {
+        marginTop: -2,
+      },
+    }),
+  },
+  buttonOutline: {
+    backgroundColor: theme.colors.transparent,
+    borderColor: theme.colors.button,
+    borderWidth: 2,
+  },
+  buttonOutlineTitle: {
+    fontSize: theme.fontSize.normal,
+    fontWeight: '400',
+    fontFamily: theme.fonts.regular,
+    color: theme.colors.button,
+  },
   buttonOutlineAssertive: {
     backgroundColor: theme.colors.transparent,
     borderColor: theme.colors.assertive,
@@ -82,8 +120,18 @@ export const createElementsStyles = ({
     fontFamily: theme.fonts.regular,
     color: theme.colors.lightGray,
   },
-  buttonContainer: {
-    marginHorizontal: 15,
+  buttonScreenHeaderTitle: {
+    color: theme.colors.screenHeaderButtonText,
+    fontSize: theme.fontSize.normal,
+    fontFamily: theme.fonts.regular,
+    ...Platform.select({
+      ios: {
+        marginTop: 0,
+      },
+      android: {
+        marginTop: -2,
+      },
+    }),
   },
 
   /**

@@ -1,5 +1,6 @@
+import { DeepPartial } from 'react-native-theme-mk';
+
 import { IBaseThemeSchema } from '@react-native-hello/ui';
-import { DeepPartial } from 'types/custom';
 
 import { fonts } from './fonts';
 
