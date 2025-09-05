@@ -51,7 +51,13 @@ const ForgotPasswordScreen = () => {
     sendPasswordResetEmail(values.email)
       .then(() => {
         setEditorState({ isSubmitting: false });
-        resetForm({ values });
+        resetForm();
+        Alert.alert(
+          'Email Sent',
+          `We have sent a password reset email to ${values.email}. Please check your email to reset your password.`,
+          [{ text: 'OK' }],
+          { cancelable: false },
+        );
       })
       .catch(() => {
         setEditorState({ isSubmitting: false });
