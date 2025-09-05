@@ -19,7 +19,7 @@ import {
 } from 'components/atoms/FormikStateWatcher';
 import { ListItemInput } from 'components/atoms/List';
 import { Formik, FormikHelpers, FormikProps } from 'formik';
-import { createUserWithEmailAndPassword } from 'lib/auth';
+import { useCreateUserWithEmailAndPassword } from 'lib/auth';
 import * as Yup from 'yup';
 
 import { SignInNavigatorParamList } from './types';
@@ -72,6 +72,8 @@ const CreateAccountScreen = () => {
     focusedField: undefined,
     isSubmitting: false,
   });
+
+  const createUserWithEmailAndPassword = useCreateUserWithEmailAndPassword();
 
   // Supports keyboard accessory view.
   // Ensures all refs are set.
@@ -176,7 +178,6 @@ const CreateAccountScreen = () => {
                         ),
                       label: 'First Name',
                       placeholder: 'First Name',
-                      autoCapitalize: 'none',
                       autoCorrect: false,
                     }}
                   />
@@ -193,7 +194,6 @@ const CreateAccountScreen = () => {
                         ),
                       label: 'Last Name',
                       placeholder: 'Last Name',
-                      autoCapitalize: 'none',
                       autoCorrect: false,
                     }}
                   />

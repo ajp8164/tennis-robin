@@ -1,3 +1,4 @@
+import { useContext } from 'react';
 import { AccessToken, LoginManager } from 'react-native-fbsdk-next';
 
 import { appleAuth } from '@invertase/react-native-apple-authentication';
@@ -17,7 +18,7 @@ import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { log } from '@react-native-hello/core';
 // import { NativeModules } from 'react-native';
 import { appConfig } from 'config';
-import { preSignOutActions } from 'lib/auth';
+import { AuthContext, preSignOutActions } from 'lib/auth';
 
 // const { RNTwitterSignIn } = NativeModules;
 
@@ -208,32 +209,44 @@ export const sendPasswordResetEmail = async (email: string) => {
   }
 };
 
-export const createUserWithEmailAndPassword = async (
-  firstName: string,
-  lastName: string,
-  email: string,
-  password: string,
-) => {
+export const useCreateUserWithEmailAndPassword = () => {
   const app = getApp();
   const auth = getAuth(app);
-  try {
-    return await FBCreateUserWithEmailAndPassword(auth, email, password).then(
-      async user => {
-        await user.user.updateProfile({
-          displayName: `${firstName} ${lastName}`,
-        });
-      },
-    );
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (e: any) {
-    if (e.message.includes('auth/email-already-exists')) {
+  const authContext = useContext(AuthContext);
+
+  return async (
+    firstName: string,
+    lastName: string,
+    email: string,
+    password: string,
+  ) => {
+    try {
+      // Save email/password (firebase) provider UI auth data for later profile creation.
+      authContext.emailPasswordAuthData = { firstName, lastName };
+
+      // Create the account at firebase.
+      const user = await FBCreateUserWithEmailAndPassword(
+        auth,
+        email,
+        password,
+      );
+
+      // Need to update since firebase won't accept this data on create.
+      await user.user.updateProfile({
+        displayName: `${firstName} ${lastName}`,
+      });
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (e: any) {
+      if (e.message.includes('auth/email-already-exists')) {
+        throw new Error(
+          'The provided email is already in use by an existing user.',
+        );
+      }
+      log.error(`Create account error: ${e.message}`);
       throw new Error(
-        'The provided email is already in use by an existing user.',
+        'An internal error occurred while creating your account. Please try again.',
       );
     }
-    log.error(`Create account error: ${e.message}`);
-    throw new Error(
-      'An internal error occurred while creating your account. Please try again.',
-    );
-  }
+  };
 };

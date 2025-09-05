@@ -157,7 +157,6 @@ const EmailSignInScreen = ({ navigation }: Props) => {
                   placeholder: 'Email',
                   insideModal: true,
                   keyboardType: 'email-address',
-                  autoCapitalize: 'none',
                   autoCorrect: false,
                 }}
               />

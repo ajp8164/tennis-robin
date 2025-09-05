@@ -81,8 +81,10 @@ const UserAccountScreen = ({ navigation }: Props) => {
           size={'giant'}
           avatarStyle={s.avatar}
         />
-        <Text style={s.title}>{userProfile.name}</Text>
-        <Text style={s.subtitle}>{userProfile.email}</Text>
+        <Text style={s.title}>{userProfile.name || userProfile.email}</Text>
+        {userProfile.name.length ? (
+          <Text style={s.subtitle}>{userProfile.email}</Text>
+        ) : null}
         <Text style={s.subtitle}>
           {`Since ${DateTime.fromISO(userProfile.createdOn).toFormat('MMMM yyyy')}`}
         </Text>

@@ -1,3 +1,4 @@
+import { useCallback, useContext } from 'react';
 import { useDispatch } from 'react-redux';
 
 import { FirebaseAuthTypes } from '@react-native-firebase/auth';
@@ -8,7 +9,7 @@ import {
   getUser,
   updateUser,
 } from 'firebase/firestore';
-import { signOut } from 'lib/auth';
+import { AuthContext, signOut } from 'lib/auth';
 import { listenForChangesToMyUserProfile } from 'lib/listeners';
 import {
   removePushNotificationsFromUser,
@@ -24,6 +25,50 @@ import { User, UserProfile, UserRole, UserStatus } from 'types/user';
 
 export const useAuthorizeUser = () => {
   const setUser = useSetUser();
+  const authContext = useContext(AuthContext);
+
+  const createProfile = useCallback(
+    (credentials: FirebaseAuthTypes.User): UserProfile => {
+      let firstName = credentials.displayName?.split(' ')[0] || '';
+      let lastName = credentials.displayName?.split(' ')[1] || '';
+      let displayName = credentials.displayName;
+
+      // When auth provide is email/password (firebase) we check for auth data provided
+      // during account setup and include it in the users profile.
+      if (credentials.providerId === 'firebase') {
+        firstName = authContext.emailPasswordAuthData.firstName;
+        lastName = authContext.emailPasswordAuthData.lastName;
+        displayName = `${firstName} ${lastName}`;
+      }
+
+      return {
+        id: credentials.uid,
+        createdOn: DateTime.now().toISO(),
+        name: displayName,
+        firstName,
+        lastName,
+        email: credentials.email,
+        photoUrl: credentials.photoURL !== null ? credentials.photoURL : '',
+        photoUrlDefault:
+          credentials.photoURL !== null ? credentials.photoURL : '',
+        avatar: {
+          color: getUserAvatarColor(`${firstName}${lastName}`),
+          title: getUserInitials(
+            firstName || credentials.email || '',
+            lastName,
+          ),
+        },
+        role: UserRole.User,
+        status: UserStatus.Active,
+        groups: [],
+        notifications: {
+          badgeCount: 0,
+          pushTokens: [],
+        },
+      } as UserProfile;
+    },
+    [authContext.emailPasswordAuthData],
+  );
 
   return (
     credentials: FirebaseAuthTypes.User | null,
@@ -118,33 +163,6 @@ export const useAuthorizeUser = () => {
       });
     }
   };
-};
-
-const createProfile = (credentials: FirebaseAuthTypes.User): UserProfile => {
-  const firstName = credentials.displayName?.split(' ')[0] || '';
-  const lastName = credentials.displayName?.split(' ')[1] || '';
-
-  return {
-    id: credentials.uid,
-    createdOn: DateTime.now().toISO(),
-    name: credentials.displayName || '',
-    firstName,
-    lastName,
-    email: credentials.email,
-    photoUrl: credentials.photoURL !== null ? credentials.photoURL : '',
-    photoUrlDefault: credentials.photoURL !== null ? credentials.photoURL : '',
-    avatar: {
-      color: getUserAvatarColor(`${firstName}${lastName}`),
-      title: getUserInitials(firstName || credentials.email || '', lastName),
-    },
-    role: UserRole.User,
-    status: UserStatus.Active,
-    groups: [],
-    notifications: {
-      badgeCount: 0,
-      pushTokens: [],
-    },
-  } as UserProfile;
 };
 
 const safeCredentials = (user: FirebaseAuthTypes.User) => {

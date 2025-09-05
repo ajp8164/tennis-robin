@@ -16,17 +16,17 @@ import {
 } from '@react-native-hello/ui';
 import { CompositeScreenProps } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { Avatar } from 'components/atoms/Avatar';
 import { Button } from 'components/atoms/Button';
 import {
   FormikStateWatcher,
   FormikWatcherState,
 } from 'components/atoms/FormikStateWatcher';
 import { ListItemInput } from 'components/atoms/List';
-import { Avatar } from 'components/atoms/Avatar';
 import { updateUser as remoteUpdateUser } from 'firebase/firestore';
 import { Formik, FormikProps } from 'formik';
 import { Camera } from 'lucide-react-native';
-import { selectUserProfile } from 'store/selectors/userSelectors';
+import { selectUser } from 'store/selectors/userSelectors';
 import {
   MainNavigatorParamList,
   SetupNavigatorParamList,
@@ -56,7 +56,7 @@ const UserProfileEditorScreen = ({ navigation }: Props) => {
   const theme = useTheme();
   const s = useStyles();
 
-  const userProfile = useSelector(selectUserProfile);
+  const { profile: userProfile } = useSelector(selectUser);
 
   const [photoUrl, setPhotoUrl] = useState(userProfile?.photoUrl || '');
 

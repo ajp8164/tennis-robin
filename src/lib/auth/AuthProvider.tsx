@@ -13,11 +13,12 @@ import { appConfig } from 'config';
 import lodash from 'lodash';
 import { DateTime } from 'luxon';
 import { selectUser } from 'store/selectors/userSelectors';
-import { UserProfile } from 'types/user';
+import { EmailPasswordAuthData, UserProfile } from 'types/user';
 
 import { useAuthorizeUser } from './userAuthorization';
 
 type AuthContext = {
+  emailPasswordAuthData: EmailPasswordAuthData;
   dismissSignInModal: () => void;
   presentSignInModal: (msg?: string) => void;
   userIsAuthenticated: boolean;
@@ -27,6 +28,7 @@ export const AuthContext = createContext<AuthContext>({
   dismissSignInModal: () => {
     return;
   },
+  emailPasswordAuthData: { firstName: '', lastName: '' },
   presentSignInModal: () => {
     return;
   },
@@ -46,6 +48,11 @@ export const AuthProvider = ({
 
   const authorizeUser = useAuthorizeUser();
   const user = useSelector(selectUser);
+
+  const emailPasswordAuthData = useRef<EmailPasswordAuthData>({
+    firstName: '',
+    lastName: '',
+  });
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, credentials => {
@@ -131,6 +138,7 @@ export const AuthProvider = ({
   return (
     <AuthContext.Provider
       value={{
+        emailPasswordAuthData: emailPasswordAuthData.current,
         userIsAuthenticated,
         dismissSignInModal: dismiss,
         presentSignInModal: present,
