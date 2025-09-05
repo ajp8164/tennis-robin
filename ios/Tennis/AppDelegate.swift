@@ -20,7 +20,11 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
   ) -> Bool {
 
     // Google Maps
-    GMSServices.provideAPIKey("AIzaSyCzFAQMTJeY2LjTmF5AuGyczMc6mh9Zs6U")
+    if let path = Bundle.main.path(forResource: "Secrets", ofType: "plist"),
+      let dict = NSDictionary(contentsOfFile: path) as? [String: Any],
+      let apiKey = dict["GMSSERVICES_API_KEY"] as? String {
+      GMSServices.provideAPIKey(apiKey);
+    }
 
     // Firebase
     FirebaseApp.configure()

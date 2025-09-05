@@ -113,6 +113,8 @@ android {
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 9
         versionName "1.0.0"
+
+        manifestPlaceholders = [ gmsServicesApiKey: GMSSERVICES_API_KEY ]
     }
 
     signingConfigs {

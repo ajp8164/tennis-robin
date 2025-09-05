@@ -37,7 +37,7 @@ xmlns:tools="http://schemas.android.com/tools">
     
       <meta-data
         android:name="com.google.android.geo.API_KEY"
-        android:value="AIzaSyCzFAQMTJeY2LjTmF5AuGyczMc6mh9Zs6U"/>
+        android:value="${gmsServicesApiKey}"/>
 
       <activity
         android:name=".MainActivity"
