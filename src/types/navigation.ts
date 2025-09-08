@@ -22,6 +22,14 @@ export type SetupNavigatorParamList = {
   Content: {
     content: ContentView;
   };
+  NewPlayer: {
+    playerId?: string;
+  };
+  Players: undefined;
+  PlayerEditor: {
+    playerId: string;
+    screenTitle: string;
+  };
   Setup: {
     subNav?: string;
   };
@@ -35,8 +43,13 @@ export type StartupNavigatorParamList = {
 
 export type TabNavigatorParamList = {
   HomeTab: undefined;
+  TournamentsTab: undefined;
   SetupTab: {
     screen: string;
     params: object;
   };
+};
+
+export type TournamentsNavigatorParamList = {
+  Tournaments: undefined;
 };

@@ -4,7 +4,8 @@ import SystemNavigationBar from 'react-native-system-navigation-bar';
 
 import { ThemeManager, useTheme } from '@react-native-hello/ui';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Home, Settings } from 'lucide-react-native';
+import TournamentsNavigator from 'components/navigation/TournamentsNavigator';
+import { Home, Settings, Trophy } from 'lucide-react-native';
 import { TabNavigatorParamList } from 'types/navigation';
 
 import HomeNavigator from './HomeNavigator';
@@ -52,6 +53,14 @@ const TabNavigator = () => {
         options={{
           tabBarShowLabel: false,
           tabBarIcon: ({ color }) => <Home color={color} size={33} />,
+        }}
+      />
+      <Tab.Screen
+        name="TournamentsTab"
+        component={TournamentsNavigator}
+        options={{
+          tabBarShowLabel: false,
+          tabBarIcon: ({ color }) => <Trophy color={color} size={33} />,
         }}
       />
       <Tab.Screen

@@ -2,7 +2,6 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Alert, Keyboard, ScrollView, Text, View } from 'react-native';
 import { AvoidSoftInputView } from 'react-native-avoid-softinput';
 import RNFS from 'react-native-fs';
-import { useSelector } from 'react-redux';
 
 import {
   Divider,
@@ -23,10 +22,10 @@ import {
   FormikWatcherState,
 } from 'components/atoms/FormikStateWatcher';
 import { ListItemInput } from 'components/atoms/List';
-import { updateUser as remoteUpdateUser } from 'firebase/firestore';
+import { updateDocument } from 'firebase/firestore';
 import { Formik, FormikProps } from 'formik';
+import { useUserProfile } from 'lib/auth';
 import { Camera } from 'lucide-react-native';
-import { selectUser } from 'store/selectors/userSelectors';
 import {
   MainNavigatorParamList,
   SetupNavigatorParamList,
@@ -56,20 +55,23 @@ const UserProfileEditorScreen = ({ navigation }: Props) => {
   const theme = useTheme();
   const s = useStyles();
 
-  const { profile: userProfile } = useSelector(selectUser);
+  const userProfile = useUserProfile();
 
   const [photoUrl, setPhotoUrl] = useState(userProfile?.photoUrl || '');
 
-  const initialValues = {
-    firstName: userProfile?.firstName,
-    lastName: userProfile?.lastName,
-    email: userProfile?.email,
-  } as FormValues;
+  const [initialValues, setInitialValues] = useState<FormValues>({
+    firstName: '',
+    lastName: '',
+    email: '',
+  });
 
   const schema = Yup.object().shape({
     firstName: Yup.string().required(),
     lastName: Yup.string().required(),
-    email: Yup.string().required(),
+    email: Yup.string()
+      .email('Enter a valid email address')
+      .matches(/\..{2,}$/, 'Email domain needs min 2 characters')
+      .required('Required field'),
   });
 
   const formikRef = useRef<FormikProps<FormValues>>(null);
@@ -87,6 +89,16 @@ const UserProfileEditorScreen = ({ navigation }: Props) => {
       [firstNameFieldRef.current, lastNameFieldRef.current].filter(Boolean),
     );
   }, []);
+
+  useEffect(() => {
+    if (userProfile) {
+      setInitialValues({
+        firstName: userProfile.firstName,
+        lastName: userProfile.lastName,
+        email: userProfile.email,
+      });
+    }
+  }, [userProfile]);
 
   const cancel = () => {
     Keyboard.dismiss();
@@ -111,7 +123,7 @@ const UserProfileEditorScreen = ({ navigation }: Props) => {
     };
 
     try {
-      await remoteUpdateUser(u);
+      await updateDocument<UserProfile>('Users', u);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (e: any) {
       Alert.alert('Profile Not Saved', 'Please try again.', [{ text: 'OK' }], {
@@ -244,6 +256,7 @@ const UserProfileEditorScreen = ({ navigation }: Props) => {
               }
             }}
             initialValues={initialValues}
+            enableReinitialize
             validationSchema={schema}
             validateOnMount
             onSubmit={onSubmit}>

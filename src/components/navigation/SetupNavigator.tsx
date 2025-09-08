@@ -5,6 +5,8 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import AboutScreen from 'components/AboutScreen';
 import AppSettingsScreen from 'components/AppSettingsScreen';
 import ContentScreen from 'components/ContentScreen';
+import PlayerEditorScreen from 'components/PlayerEditorScreen';
+import PlayersScreen from 'components/PlayersScreen';
 import SetupScreen from 'components/SetupScreen';
 import UserAccountScreen from 'components/UserAccountScreen';
 import UserProfileEditorScreen from 'components/UserProfileEditorScreen';
@@ -37,6 +39,30 @@ const SetupNavigator = () => {
           headerLargeStyle: {
             backgroundColor: theme.colors.viewBackground,
           },
+        }}
+      />
+      <SetupStack.Screen
+        name="Players"
+        component={PlayersScreen}
+        options={{
+          title: 'Players',
+        }}
+      />
+      <SetupStack.Screen
+        name="PlayerEditor"
+        component={PlayerEditorScreen}
+        options={({ route }) => {
+          return {
+            title: route.params.screenTitle,
+          };
+        }}
+      />
+      <SetupStack.Screen
+        name="NewPlayer"
+        component={PlayerEditorScreen}
+        options={{
+          title: 'New Player',
+          presentation: 'modal',
         }}
       />
       <SetupStack.Screen

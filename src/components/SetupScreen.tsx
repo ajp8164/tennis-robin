@@ -1,27 +1,17 @@
 import React, { useContext, useEffect } from 'react';
 import { ScrollView } from 'react-native';
-import {  useSelector } from 'react-redux';
 
-import {
-  Divider,
-  ListItem,
-  useTheme,
-} from '@react-native-hello/ui';
+import { Divider, ListItem, useTheme } from '@react-native-hello/ui';
 import { CompositeScreenProps } from '@react-navigation/core';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { Avatar } from 'components/atoms/Avatar';
 import { appConfig } from 'config';
-import { AuthContext } from 'lib/auth';
-import {
-  CircleUserRound,
-  Info,
-  Settings,
-} from 'lucide-react-native';
-import { selectUserProfile } from 'store/selectors/userSelectors';
+import { AuthContext, useUserProfile } from 'lib/auth';
+import { CircleUserRound, Info, Settings, Users } from 'lucide-react-native';
 import {
   SetupNavigatorParamList,
   TabNavigatorParamList,
 } from 'types/navigation';
-import { Avatar } from 'components/atoms/Avatar';
 
 export type Props = CompositeScreenProps<
   NativeStackScreenProps<SetupNavigatorParamList, 'Setup'>,
@@ -32,7 +22,7 @@ const SetupScreen = ({ navigation, route }: Props) => {
   const theme = useTheme();
 
   const auth = useContext(AuthContext);
-  const userProfile = useSelector(selectUserProfile);
+  const userProfile = useUserProfile();
 
   useEffect(() => {
     if (route.params?.subNav) {
@@ -48,6 +38,13 @@ const SetupScreen = ({ navigation, route }: Props) => {
       style={theme.styles.view}
       showsVerticalScrollIndicator={false}
       contentInsetAdjustmentBehavior={'automatic'}>
+      <ListItem
+        title={'Players'}
+        leftContent={<Users color={theme.colors.listItemIcon} />}
+        position={['first', 'last']}
+        rightContent={'chevron-right'}
+        onPress={() => navigation.navigate('Players')}
+      />
       <Divider text={'ACCOUNT'} />
       {userProfile ? (
         <ListItem

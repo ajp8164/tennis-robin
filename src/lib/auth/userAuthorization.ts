@@ -1,16 +1,15 @@
-import { useCallback, useContext } from 'react';
+import { useContext } from 'react';
 import { useDispatch } from 'react-redux';
 
 import { FirebaseAuthTypes } from '@react-native-firebase/auth';
 import { log } from '@react-native-hello/core';
 import {
-  addUser,
+  addDocument,
   cancelAllFirestoreSubscriptions,
-  getUser,
-  updateUser,
+  getDocument,
+  updateDocument,
 } from 'firebase/firestore';
 import { AuthContext, signOut } from 'lib/auth';
-import { listenForChangesToMyUserProfile } from 'lib/listeners';
 import {
   removePushNotificationsFromUser,
   setupPushNotificationsForUser,
@@ -24,74 +23,72 @@ import { saveUser } from 'store/slices/user';
 import { User, UserProfile, UserRole, UserStatus } from 'types/user';
 
 export const useAuthorizeUser = () => {
-  const setUser = useSetUser();
+  const setUser = useSetUserCredentials();
   const authContext = useContext(AuthContext);
 
-  const createProfile = useCallback(
-    (credentials: FirebaseAuthTypes.User): UserProfile => {
-      let firstName = credentials.displayName?.split(' ')[0] || '';
-      let lastName = credentials.displayName?.split(' ')[1] || '';
-      let displayName = credentials.displayName;
+  // useListenForChangesToMyUserProfile();
 
-      // When auth provide is email/password (firebase) we check for auth data provided
-      // during account setup and include it in the users profile.
-      if (credentials.providerId === 'firebase') {
-        firstName = authContext.emailPasswordAuthData.firstName;
-        lastName = authContext.emailPasswordAuthData.lastName;
-        displayName = `${firstName} ${lastName}`;
-      }
+  const createProfile = (credentials: FirebaseAuthTypes.User): UserProfile => {
+    let firstName = credentials.displayName?.split(' ')[0] || '';
+    let lastName = credentials.displayName?.split(' ')[1] || '';
+    let displayName = credentials.displayName;
 
-      return {
-        id: credentials.uid,
-        createdOn: DateTime.now().toISO(),
-        name: displayName,
-        firstName,
-        lastName,
-        email: credentials.email,
-        photoUrl: credentials.photoURL !== null ? credentials.photoURL : '',
-        photoUrlDefault:
-          credentials.photoURL !== null ? credentials.photoURL : '',
-        avatar: {
-          color: getUserAvatarColor(`${firstName}${lastName}`),
-          title: getUserInitials(
-            firstName || credentials.email || '',
-            lastName,
-          ),
-        },
-        role: UserRole.User,
-        status: UserStatus.Active,
-        groups: [],
-        notifications: {
-          badgeCount: 0,
-          pushTokens: [],
-        },
-      } as UserProfile;
-    },
-    [authContext.emailPasswordAuthData],
-  );
+    // When auth provide is email/password (firebase) we check for auth data provided
+    // during account setup and include it in the users profile.
+    if (credentials.providerId === 'firebase') {
+      firstName = authContext.emailPasswordAuthData.firstName;
+      lastName = authContext.emailPasswordAuthData.lastName;
+      displayName = `${firstName} ${lastName}`;
+    }
+
+    return {
+      id: credentials.uid,
+      createdOn: DateTime.now().toISO(),
+      name: displayName,
+      firstName,
+      lastName,
+      email: credentials.email,
+      photoUrl: credentials.photoURL !== null ? credentials.photoURL : '',
+      photoUrlDefault:
+        credentials.photoURL !== null ? credentials.photoURL : '',
+      avatar: {
+        color: getUserAvatarColor(`${firstName}${lastName}`),
+        title: getUserInitials(firstName || credentials.email || '', lastName),
+      },
+      role: UserRole.User,
+      status: UserStatus.Active,
+      groups: [],
+      notifications: {
+        badgeCount: 0,
+        pushTokens: [],
+      },
+    } as UserProfile;
+  };
 
   return (
     credentials: FirebaseAuthTypes.User | null,
     result?: {
-      onAuthorized?: (userProfile: UserProfile) => void;
+      onAuthorized?: (userId: string) => void;
       onUnauthorized?: (alertUser?: boolean) => void;
       onError?: (msg: string) => void;
     },
   ) => {
     if (credentials) {
       // Check if user already exists in firstore. If not then add the user to firestore.
-      getUser(credentials.uid)
+      getDocument<UserProfile>('Users', credentials.uid)
         .then(userProfile => {
           if (!userProfile) {
             // Add user to firestore and set user.
-            const profile = createProfile(credentials);
+            const userProfile = createProfile(credentials);
 
-            addUser(profile)
+            addDocument<UserProfile>('Users', userProfile)
               .then(() => {
-                log.debug(`User profile created: ${JSON.stringify(profile)}`);
-                const user = setUser(credentials, profile);
-                postSignInActions(user.profile).then(userProfile => {
-                  result?.onAuthorized?.(userProfile);
+                log.debug(
+                  `User profile created: ${JSON.stringify(userProfile)}`,
+                );
+                setUser({ credentials });
+                postSignInActions(userProfile).then(() => {
+                  result?.onAuthorized?.(userProfile.id);
                   log.debug(
                     `User sign in complete: ${JSON.stringify(userProfile)}`,
                   );
@@ -116,16 +113,16 @@ export const useAuthorizeUser = () => {
               }) as UserProfile;
 
               if (!lodash.isEqual(updatedProfile, userProfile)) {
-                updateUser(updatedProfile)
+                updateDocument('Users', updatedProfile)
                   .then(() => {
                     log.debug(
                       `User profile updated: ${JSON.stringify(updatedProfile)}`,
                     );
-                    const user = setUser(credentials, updatedProfile);
-                    postSignInActions(user.profile).then(userProfile => {
-                      result?.onAuthorized?.(userProfile);
+                    setUser({ credentials });
+                    postSignInActions(updatedProfile).then(() => {
+                      result?.onAuthorized?.(updatedProfile.id);
                       log.debug(
-                        `User sign in complete: ${JSON.stringify(userProfile)}`,
+                        `User sign in complete: ${JSON.stringify(updatedProfile)}`,
                       );
                     });
                   })
@@ -135,9 +132,9 @@ export const useAuthorizeUser = () => {
                     result?.onError?.(e.message);
                   });
               } else {
-                const user = setUser(credentials, userProfile);
-                postSignInActions(user.profile).then(userProfile => {
-                  result?.onAuthorized?.(userProfile);
+                setUser({ credentials });
+                postSignInActions(userProfile).then(() => {
+                  result?.onAuthorized?.(userProfile.id);
                   log.debug(
                     `User sign in complete: ${JSON.stringify(userProfile)}`,
                   );
@@ -181,15 +178,11 @@ const safeCredentials = (user: FirebaseAuthTypes.User) => {
   };
 };
 
-const useSetUser = () => {
+const useSetUserCredentials = () => {
   const dispatch = useDispatch();
-  return (credentials: FirebaseAuthTypes.User, profile: UserProfile) => {
+  return (args: { credentials: FirebaseAuthTypes.User }) => {
     const user = {
-      credentials: safeCredentials(credentials), // Remove non-serializable properties (functions).
-      profile: {
-        ...profile,
-        id: credentials.uid, // Store the user id locally.
-      },
+      credentials: safeCredentials(args.credentials), // Remove non-serializable properties (functions).
     } as User;
 
     dispatch(saveUser({ user }));
@@ -197,15 +190,26 @@ const useSetUser = () => {
   };
 };
 
-const postSignInActions = async (
-  userProfile: UserProfile,
-): Promise<UserProfile> => {
-  listenForChangesToMyUserProfile();
-  return await setupPushNotificationsForUser(userProfile);
+// const useListenForChangesToMyUserProfile = () => {
+//   const dispatch = useDispatch();
+//   const me = store.getState().user.profile;
+
+//   const { doc } = useDocument<UserProfile>('Users', me?.id || '');
+
+//   useEffect(() => {
+//     if (me && doc && !lodash.isEqual(me, doc)) {
+//       dispatch(updateUserProfile({ userProfile: doc }));
+//     }
+//     // eslint-disable-next-line react-hooks/exhaustive-deps
+//   }, [doc, me]);
+// };
+
+const postSignInActions = async (userProfile: UserProfile) => {
+  await setupPushNotificationsForUser(userProfile);
 };
 
-export const preSignOutActions = async (): Promise<UserProfile | undefined> => {
-  const userProfile = store.getState().user.profile;
+export const preSignOutActions = async () => {
+  const userId = store.getState().user.credentials?.uid;
 
   // Cancel firestore data listener subscriptions before sign out.
   cancelAllFirestoreSubscriptions();
@@ -213,10 +217,8 @@ export const preSignOutActions = async (): Promise<UserProfile | undefined> => {
   // When a user is unauthorized (e.g. on sign out) remove the users push tokens.
   // This avoids sending notifications to a device that used to have the user signed
   // in but is no longer. Could get here with no previously authorized user.
-  userProfile && (await removePushNotificationsFromUser(userProfile));
+  userId && (await removePushNotificationsFromUser(userId));
 
   // Clear our redux store.
   store.dispatch(revertCredentials());
-
-  return userProfile;
 };

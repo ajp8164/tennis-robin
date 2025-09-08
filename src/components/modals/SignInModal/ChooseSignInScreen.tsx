@@ -45,7 +45,7 @@ const ChooseSignInScreen = ({ navigation, route }: Props) => {
       <Button
         title={'Continue with Google'}
         titleStyle={theme.styles.buttonOutlineTitle}
-        buttonStyle={theme.styles.buttonOutline}
+        buttonStyle={{ ...theme.styles.buttonOutline, ...s.button }}
         containerStyle={s.signInButtonContainer}
         iconContainerStyle={s.signInIconContainer}
         icon={
@@ -68,7 +68,7 @@ const ChooseSignInScreen = ({ navigation, route }: Props) => {
       <Button
         title={'Continue with Facebook'}
         titleStyle={theme.styles.buttonOutlineTitle}
-        buttonStyle={theme.styles.buttonOutline}
+        buttonStyle={{ ...theme.styles.buttonOutline, ...s.button }}
         containerStyle={s.signInButtonContainer}
         iconContainerStyle={s.signInIconContainer}
         icon={
@@ -91,7 +91,7 @@ const ChooseSignInScreen = ({ navigation, route }: Props) => {
       {/* <Button
         title={'Continue with Twitter'}
         titleStyle={theme.styles.buttonOutlineTitle}
-        buttonStyle={theme.styles.buttonOutline}
+        buttonStyle={{ ...theme.styles.buttonOutline, ...s.button }}
         containerStyle={s.signInButtonContainer}
         icon={
           <SvgXml
@@ -114,7 +114,7 @@ const ChooseSignInScreen = ({ navigation, route }: Props) => {
         <Button
           title={'Continue with Apple'}
           titleStyle={theme.styles.buttonOutlineTitle}
-          buttonStyle={theme.styles.buttonOutline}
+          buttonStyle={{ ...theme.styles.buttonOutline, ...s.button }}
           containerStyle={s.signInButtonContainer}
           iconContainerStyle={s.signInIconContainer}
           icon={
@@ -139,7 +139,7 @@ const ChooseSignInScreen = ({ navigation, route }: Props) => {
       <Button
         title={'Continue with Email'}
         titleStyle={theme.styles.buttonOutlineTitle}
-        buttonStyle={theme.styles.buttonOutline}
+        buttonStyle={{ ...theme.styles.buttonOutline, ...s.button }}
         containerStyle={s.signInButtonContainer}
         onPress={() =>
           signInAction
@@ -162,6 +162,9 @@ const useStyles = ThemeManager.createStyleSheet(({ theme }) => ({
   appleIcon: {
     top: -4,
     left: -7,
+  },
+  button: {
+    width: '100%',
   },
   description: {
     ...theme.text.normal,

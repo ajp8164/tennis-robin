@@ -4,12 +4,14 @@ import { SvgXml } from 'react-native-svg';
 
 import { ThemeManager, getSvg, useTheme } from '@react-native-hello/ui';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { Button } from 'components/atoms/Button';
-import { HomeNavigatorParamList } from 'types/navigation';
+import { TournamentsNavigatorParamList } from 'types/navigation';
 
-export type Props = NativeStackScreenProps<HomeNavigatorParamList, 'Home'>;
+export type Props = NativeStackScreenProps<
+  TournamentsNavigatorParamList,
+  'Tournaments'
+>;
 
-const HomeScreen = () => {
+const TournamentsScreen = () => {
   const theme = useTheme();
   const s = useStyles();
 
@@ -21,27 +23,16 @@ const HomeScreen = () => {
         height={s.icon.width}
         style={s.icon}
       />
-      <Button
-        title={'New Tournament'}
-        titleStyle={theme.styles.buttonTitle}
-        buttonStyle={theme.styles.button}
-        // containerStyle={s.continueButtonContainer}
-        onPress={() => null}
-      />
     </View>
   );
 };
 
-const useStyles = ThemeManager.createStyleSheet(({ device, theme }) => ({
+const useStyles = ThemeManager.createStyleSheet(({ device }) => ({
   icon: {
     width: device.screen.width * 0.5,
     alignSelf: 'center',
     marginTop: '60%',
   },
-  text: {
-    ...theme.text.xl,
-    textAlign: 'center',
-  },
 }));
 
-export default HomeScreen;
+export default TournamentsScreen;

@@ -16,7 +16,7 @@ import {
   setAPNSToken,
 } from '@react-native-firebase/messaging';
 import { log } from '@react-native-hello/core';
-import { updateUser } from 'firebase/firestore';
+import { getDocument, updateDocument } from 'firebase/firestore';
 import lodash from 'lodash';
 import { NotificationInterface } from 'types/notification';
 import { UserProfile } from 'types/user';
@@ -81,7 +81,7 @@ export const hasPushNotificationsPermission = async () => {
 
 export const setupPushNotificationsForUser = async (
   userProfile: UserProfile,
-): Promise<UserProfile> => {
+) => {
   // Add push token to the authorized user profile.
   const token = await getDeviceToken();
 
@@ -90,7 +90,7 @@ export const setupPushNotificationsForUser = async (
     updatedProfile.notifications.pushTokens = lodash.uniq(
       updatedProfile.notifications.pushTokens.concat(token?.fcm),
     );
-    updateUser(updatedProfile);
+    updateDocument('Users', updatedProfile);
   }
   subscribeToTopic('all-users');
 
@@ -102,9 +102,9 @@ export const setupPushNotificationsForUser = async (
   return updatedProfile;
 };
 
-export const removePushNotificationsFromUser = async (
-  userProfile?: UserProfile,
-): Promise<void> => {
+export const removePushNotificationsFromUser = async (userId: string) => {
+  const userProfile = await getDocument<UserProfile>('Users', userId);
+
   // Remove push token from the authorized user profile.
   // Remove only the token for this device.
   if (userProfile) {
@@ -116,7 +116,7 @@ export const removePushNotificationsFromUser = async (
         return t !== fcm;
       },
     );
-    await updateUser(updatedProfile);
+    await updateDocument('Users', updatedProfile);
   }
   unsubscribeFromTopic('all-users');
 

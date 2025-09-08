@@ -13,7 +13,7 @@ import { appConfig } from 'config';
 import lodash from 'lodash';
 import { DateTime } from 'luxon';
 import { selectUser } from 'store/selectors/userSelectors';
-import { EmailPasswordAuthData, UserProfile } from 'types/user';
+import { EmailPasswordAuthData } from 'types/user';
 
 import { useAuthorizeUser } from './userAuthorization';
 
@@ -100,7 +100,7 @@ export const AuthProvider = ({
     }
   };
 
-  const onAuthorized = (_userProfile: UserProfile) => {
+  const onAuthorized = (_userId: string) => {
     dismiss();
   };
 

@@ -1,6 +1,5 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Alert, ScrollView, Text, View } from 'react-native';
-import { useSelector } from 'react-redux';
 
 import {
   Divider,
@@ -14,11 +13,10 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Avatar } from 'components/atoms/Avatar';
 import { Button } from 'components/atoms/Button';
 import { EmptyView } from 'components/molecules/EmptyView';
-import { signOut } from 'lib/auth';
+import { signOut, useUserProfile } from 'lib/auth';
 import { biometricAuthentication } from 'lib/biometricAuthentication';
 import { UserRoundPen } from 'lucide-react-native';
 import { DateTime } from 'luxon';
-import { selectUserProfile } from 'store/selectors/userSelectors';
 import {
   MainNavigatorParamList,
   SetupNavigatorParamList,
@@ -33,15 +31,7 @@ const UserAccountScreen = ({ navigation }: Props) => {
   const theme = useTheme();
   const s = useStyles();
 
-  const userProfile = useSelector(selectUserProfile);
-
-  useEffect(() => {
-    // Wait for sign out to complete before navigating away.
-    if (!userProfile) {
-      navigation.dispatch(StackActions.popToTop());
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userProfile]);
+  const userProfile = useUserProfile();
 
   const confirmSignOut = async () => {
     await biometricAuthentication()
@@ -53,7 +43,11 @@ const UserAccountScreen = ({ navigation }: Props) => {
             {
               text: 'Yes, sign out',
               style: 'destructive',
-              onPress: signOut,
+
+              onPress: () => {
+                navigation.dispatch(StackActions.popToTop());
+                signOut();
+              },
             },
             {
               text: 'No',

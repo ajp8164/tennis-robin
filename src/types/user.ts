@@ -13,7 +13,7 @@ export enum UserStatus {
 }
 
 export type UserProfile = {
-  id?: string;
+  id: string;
   createdOn: ISODateString;
   name: string;
   firstName: string;
@@ -36,7 +36,6 @@ export type UserProfile = {
 
 export type User = {
   credentials: FirebaseAuthTypes.User;
-  profile: UserProfile;
 };
 
 // Used to pass data collected during use of the email/password signin provider.

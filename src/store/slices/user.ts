@@ -1,16 +1,14 @@
 import { FirebaseAuthTypes } from '@react-native-firebase/auth';
 import { CaseReducer, PayloadAction, createSlice } from '@reduxjs/toolkit';
 import { revertCredentials } from 'store/actions';
-import { User, UserProfile } from 'types/user';
+import { User } from 'types/user';
 
 export interface UserState {
   credentials: FirebaseAuthTypes.User | null | undefined;
-  profile: UserProfile | undefined;
 }
 
 export const initialUserState = Object.freeze<UserState>({
   credentials: undefined,
-  profile: undefined,
 });
 
 const handleSaveUser: CaseReducer<UserState, PayloadAction<{ user: User }>> = (
@@ -20,20 +18,6 @@ const handleSaveUser: CaseReducer<UserState, PayloadAction<{ user: User }>> = (
   return {
     ...state,
     credentials: payload.user.credentials,
-    profile: payload.user.profile,
-  };
-};
-
-const handleUpdateUserProfile: CaseReducer<
-  UserState,
-  PayloadAction<{ userProfile: UserProfile }>
-> = (state, { payload }) => {
-  return {
-    ...state,
-    profile: {
-      ...state.profile,
-      ...payload.userProfile,
-    },
   };
 };
 
@@ -44,10 +28,8 @@ const userSlice = createSlice({
     builder.addCase(revertCredentials, () => initialUserState),
   reducers: {
     saveUser: handleSaveUser,
-    updateUserProfile: handleUpdateUserProfile,
   },
 });
 
 export const userReducer = userSlice.reducer;
 export const saveUser = userSlice.actions.saveUser;
-export const updateUserProfile = userSlice.actions.updateUserProfile;
