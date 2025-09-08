@@ -46,6 +46,7 @@ const PlayerEditorScreen = ({ navigation, route }: Props) => {
   const { playerId } = route.params || {};
 
   const theme = useTheme();
+
   const [initialValues, setInitialValues] = useState<FormValues>({
     firstName: '',
     lastName: '',
@@ -132,7 +133,6 @@ const PlayerEditorScreen = ({ navigation, route }: Props) => {
     }
   };
 
-  // Update the header and button states.
   const onFormikWatcherStateChange = (
     state: FormikWatcherState<FormValues>,
   ) => {

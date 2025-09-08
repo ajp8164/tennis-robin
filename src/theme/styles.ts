@@ -67,10 +67,10 @@ export const createElementsStyles = ({
   },
   button: {
     backgroundColor: theme.colors.button,
-    borderRadius: theme.radius.L,
+    borderRadius: 10,
     height: 48,
     paddingHorizontal: 15,
-    width: '70%',
+    width: '100%',
     alignSelf: 'center',
   },
   buttonTitle: {
@@ -119,23 +119,6 @@ export const createElementsStyles = ({
     fontWeight: '400',
     fontFamily: theme.fonts.regular,
     color: theme.colors.lightGray,
-  },
-  buttonScreenHeader: {
-    backgroundColor: theme.colors.transparent,
-    width: '100%',
-    height: 40,
-    paddingHorizontal: 0,
-    minWidth: 0,
-    justifyContent: 'flex-start',
-  },
-  buttonScreenHeaderDisabled: {
-    backgroundColor: theme.colors.transparent,
-    width: '100%',
-    height: 40,
-    paddingHorizontal: 0,
-    minWidth: 0,
-    justifyContent: 'flex-start',
-    opacity: 0.4,
   },
   buttonScreenHeaderTitle: {
     color: theme.colors.screenHeaderButtonText,

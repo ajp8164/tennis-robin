@@ -15,22 +15,26 @@ import { Button } from 'components/atoms/Button';
 import { EmptyView } from 'components/molecules/EmptyView';
 import { deleteDocument, useCollection } from 'firebase/firestore';
 import { useConfirmAction } from 'lib/useConfirmAction';
-import { Circle, CircleMinus, Plus, Trash2 } from 'lucide-react-native';
-import { SetupNavigatorParamList } from 'types/navigation';
-import { Player, PlayerStatus } from 'types/player';
+import { CircleMinus, Plus, Trash2 } from 'lucide-react-native';
+import { Group } from 'types/group';
+import { GroupsNavigatorParamList } from 'types/navigation';
 
-export type Props = NativeStackScreenProps<SetupNavigatorParamList, 'Players'>;
+export type Props = NativeStackScreenProps<GroupsNavigatorParamList, 'Groups'>;
 
-const PlayersScreen = ({ navigation }: Props) => {
+const GroupsScreen = ({ navigation }: Props) => {
   const theme = useTheme();
+  // const s = useStyles();
   const confirmAction = useConfirmAction();
 
-  const { docs: allPlayers } = useCollection<Player>('Players', {
-    orderBy: [
-      { fieldPath: 'lastName', directionStr: 'asc' },
-      { fieldPath: 'firstName', directionStr: 'asc' },
-    ],
-  });
+  const { docs: allGroups } = useCollection<Group>(
+    'Groups',
+    // {
+    // orderBy: [
+    //   { fieldPath: 'lastName', directionStr: 'asc' },
+    //   { fieldPath: 'firstName', directionStr: 'asc' },
+    // ],
+    // }
+  );
 
   const listEditorRef = useRef<ListEditorMethods>(null);
   const [listEditorState, setListEditorState] = useState<ListEditorState>();
@@ -45,7 +49,7 @@ const PlayersScreen = ({ navigation }: Props) => {
             icon={
               <Plus color={theme.colors.screenHeaderButtonText} size={28} />
             }
-            onPress={() => navigation.navigate('NewPlayer', {})}
+            onPress={() => navigation.navigate('NewGroup', {})}
           />
         );
       },
@@ -53,13 +57,13 @@ const PlayersScreen = ({ navigation }: Props) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const deletePlayer = async (playerId: string) => {
+  const deleteGroup = async (groupId: string) => {
     try {
-      await deleteDocument('Players', playerId);
+      await deleteDocument('Groups', groupId);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (e: any) {
       Alert.alert(
-        'Player Not Deleted',
+        'Group Not Deleted',
         'Something went wrong. Please try again.',
         [{ text: 'OK' }],
         {
@@ -69,34 +73,19 @@ const PlayersScreen = ({ navigation }: Props) => {
     }
   };
 
-  const renderPlayer: ListRenderItem<Player> = ({ item: player, index }) => {
+  const renderGroup: ListRenderItem<Group> = ({ item: group, index }) => {
     return (
       <ListItemSwipeable
-        key={player.id}
-        title={`${player.lastName}, ${player.firstName}`}
-        value={
-          player.status === PlayerStatus.Active ? (
-            <Circle
-              fill={theme.colors.success}
-              stroke={theme.colors.transparent}
-              size={15}
-            />
-          ) : (
-            <Circle
-              fill={theme.colors.assertive}
-              stroke={theme.colors.transparent}
-              size={15}
-            />
-          )
-        }
+        key={group.id}
+        title={group.name}
         valueStyle={theme.text.medium}
-        position={listItemPosition(index, allPlayers.length)}
+        position={listItemPosition(index, allGroups.length)}
         rightContent={'chevron-right'}
         listEditor={listEditorRef.current}
         onPress={() =>
-          navigation.navigate('PlayerEditor', {
-            playerId: player.id || '',
-            screenTitle: `${player.firstName} ${player.lastName}`,
+          navigation.navigate('GroupEditor', {
+            groupId: group.id || '',
+            screenTitle: group.name,
           })
         }
         showEditor={listEditorState?.show}
@@ -114,26 +103,26 @@ const PlayersScreen = ({ navigation }: Props) => {
             confirmation: () => {
               listEditorRef.current?.reset();
               return confirmAction({
-                label: `Delete Player`,
+                label: `Delete Group`,
                 title:
-                  'This action cannot be undone.\nAre you sure you want to delete this player?',
+                  'This action cannot be undone.\nAre you sure you want to delete this group?',
               });
             },
-            onPress: () => player.id && deletePlayer(player.id),
+            onPress: () => group.id && deleteGroup(group.id),
           },
         ]}
       />
     );
   };
 
-  if (!allPlayers.length) {
+  if (!allGroups.length) {
     return (
       <EmptyView
         info
-        message={'No Players'}
-        details={'Tap the + button to add a Player.'}
-        buttonTitle={'Add Player'}
-        onButtonPress={() => navigation.navigate('NewPlayer', {})}
+        message={'No Groups'}
+        details={'Tap the + button to add a Group.'}
+        buttonTitle={'Add Group'}
+        onButtonPress={() => navigation.navigate('NewGroup', {})}
       />
     );
   }
@@ -142,14 +131,16 @@ const PlayersScreen = ({ navigation }: Props) => {
     <ListEditor ref={listEditorRef} onChangeState={setListEditorState}>
       <FlatList
         style={theme.styles.view}
-        data={allPlayers}
-        renderItem={renderPlayer}
+        data={allGroups}
+        renderItem={renderGroup}
         keyExtractor={item => `${item.id}`}
         showsVerticalScrollIndicator={false}
-        ListHeaderComponent={allPlayers.length ? <Divider /> : null}
+        ListHeaderComponent={allGroups.length ? <Divider /> : null}
       />
     </ListEditor>
   );
 };
 
-export default PlayersScreen;
+// const useStyles = ThemeManager.createStyleSheet(() => ({}));
+
+export default GroupsScreen;
