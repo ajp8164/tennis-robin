@@ -25,10 +25,9 @@ const Version = () => {
 
 const useStyles = ThemeManager.createStyleSheet(({ theme }) => ({
   version: {
-    position: 'absolute',
     ...theme.text.small,
     alignSelf: 'center',
-    marginTop: 25,
+    color: theme.colors.brandSecondary,
   },
 }));
 

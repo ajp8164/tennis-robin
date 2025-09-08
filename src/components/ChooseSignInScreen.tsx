@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Alert, Platform, Text, View } from 'react-native';
 import { SvgXml } from 'react-native-svg';
 
 import {
+  Divider,
   ThemeManager,
   getColoredSvg,
   getSvg,
@@ -10,40 +11,40 @@ import {
 } from '@react-native-hello/ui';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Button } from 'components/atoms/Button';
-import { appConfig } from 'config';
 import {
   signInWithApple,
   signInWithFacebook,
   signInWithGoogle,
 } from 'lib/auth';
-
-import { SignInNavigatorParamList } from './types';
+import { AuthenticationNavigatorParamList } from 'types/navigation';
 
 export type Props = NativeStackScreenProps<
-  SignInNavigatorParamList,
-  'ChooseSignInScreen'
+  AuthenticationNavigatorParamList,
+  'ChooseSignIn'
 >;
 
 const ChooseSignInScreen = ({ navigation, route }: Props) => {
+  const { returning } = route.params;
+
   const theme = useTheme();
   const s = useStyles();
 
-  const [signInAction, setSignInAction] = useState(true);
-
   return (
     <View style={theme.styles.view}>
-      <Text style={s.title}>{appConfig.appName}</Text>
-      {route.params?.msg && (
-        <Text style={s.description}>{route.params?.msg}</Text>
-      )}
-      <Text style={s.subtitle}>
-        {signInAction ? 'Sign In' : 'Create Account'}
-      </Text>
-      <Text style={s.footer}>
-        {'By signing up you agree to our Terms and Privacy Policy'}
-      </Text>
+      <SvgXml
+        xml={getSvg('brandIcon')}
+        width={s.icon.width}
+        height={s.icon.width}
+        style={s.icon}
+      />
+      <Divider />
+      {!returning ? (
+        <Text style={s.footer}>
+          {'By signing up you agree to our Terms and Privacy Policy'}
+        </Text>
+      ) : null}
       <Button
-        title={'Continue with Google'}
+        title={returning ? 'Sign In with Google' : 'Connect with Google'}
         titleStyle={theme.styles.buttonOutlineTitle}
         buttonStyle={{ ...theme.styles.buttonOutline, ...s.button }}
         containerStyle={s.signInButtonContainer}
@@ -66,7 +67,7 @@ const ChooseSignInScreen = ({ navigation, route }: Props) => {
         }}
       />
       <Button
-        title={'Continue with Facebook'}
+        title={returning ? 'Sign In with Facebook' : 'Connect with Facebook'}
         titleStyle={theme.styles.buttonOutlineTitle}
         buttonStyle={{ ...theme.styles.buttonOutline, ...s.button }}
         containerStyle={s.signInButtonContainer}
@@ -89,7 +90,7 @@ const ChooseSignInScreen = ({ navigation, route }: Props) => {
         }}
       />
       {/* <Button
-        title={'Continue with Twitter'}
+        title={returning ? 'Sign In with Twitter' : 'Connect with Twitter'}
         titleStyle={theme.styles.buttonOutlineTitle}
         buttonStyle={{ ...theme.styles.buttonOutline, ...s.button }}
         containerStyle={s.signInButtonContainer}
@@ -112,7 +113,7 @@ const ChooseSignInScreen = ({ navigation, route }: Props) => {
       /> */}
       {Platform.OS === 'ios' && (
         <Button
-          title={'Continue with Apple'}
+          title={returning ? 'Sign In with Apple' : 'Connect with Apple'}
           titleStyle={theme.styles.buttonOutlineTitle}
           buttonStyle={{ ...theme.styles.buttonOutline, ...s.button }}
           containerStyle={s.signInButtonContainer}
@@ -136,29 +137,28 @@ const ChooseSignInScreen = ({ navigation, route }: Props) => {
           }}
         />
       )}
+      <Divider
+        note
+        text={'or'}
+        style={s.dividerStyle}
+        subHeaderStyle={s.dividerText}
+      />
       <Button
-        title={'Continue with Email'}
+        title={returning ? 'Sign In with Email' : 'Join with Email'}
         titleStyle={theme.styles.buttonOutlineTitle}
         buttonStyle={{ ...theme.styles.buttonOutline, ...s.button }}
         containerStyle={s.signInButtonContainer}
         onPress={() =>
-          signInAction
-            ? navigation.navigate('EmailSignInScreen')
-            : navigation.navigate('CreateAccountScreen')
+          returning
+            ? navigation.navigate('EmailSignIn')
+            : navigation.navigate('CreateAccount')
         }
-      />
-      <Button
-        title={signInAction ? 'or Create Account' : 'Have an Account? Sign In'}
-        titleStyle={theme.styles.buttonScreenHeaderTitle}
-        buttonStyle={theme.styles.buttonClear}
-        containerStyle={s.signInButtonContainer}
-        onPress={() => setSignInAction(!signInAction)}
       />
     </View>
   );
 };
 
-const useStyles = ThemeManager.createStyleSheet(({ theme }) => ({
+const useStyles = ThemeManager.createStyleSheet(({ device, theme }) => ({
   appleIcon: {
     top: -4,
     left: -7,
@@ -171,6 +171,19 @@ const useStyles = ThemeManager.createStyleSheet(({ theme }) => ({
     ...theme.styles.textDim,
     textAlign: 'center',
     marginHorizontal: 40,
+  },
+  dividerText: {
+    alignSelf: 'center',
+    marginTop: -12,
+    paddingHorizontal: 10,
+    color: theme.colors.lightGray,
+    backgroundColor: theme.colors.viewBackground,
+  },
+  dividerStyle: {
+    borderBottomWidth: 1,
+    width: '50%',
+    alignSelf: 'center',
+    marginTop: -15,
   },
   facebookIcon: {
     top: -8,
@@ -186,6 +199,11 @@ const useStyles = ThemeManager.createStyleSheet(({ theme }) => ({
     marginHorizontal: 40,
   },
   googleIcon: {},
+  icon: {
+    width: device.screen.width * 0.3,
+    alignSelf: 'center',
+    marginTop: 40,
+  },
   signInButtonContainer: {
     width: '80%',
     alignSelf: 'center',
@@ -195,20 +213,6 @@ const useStyles = ThemeManager.createStyleSheet(({ theme }) => ({
     height: '100%',
     width: '100%',
     position: 'absolute',
-  },
-  subtitle: {
-    ...theme.text.h4,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 20,
-    marginTop: 20,
-  },
-  title: {
-    ...theme.text.h2,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 20,
-    marginTop: 20,
   },
 }));
 

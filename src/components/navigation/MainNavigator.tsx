@@ -1,34 +1,25 @@
 import React from 'react';
+import { useSelector } from 'react-redux';
 
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { MainNavigatorParamList, StartupScreen } from 'types/navigation';
+import { selectUser } from 'store/selectors/userSelectors';
+import { MainNavigatorParamList } from 'types/navigation';
 
-import StartupNavigator from './StartupNavigator';
+import AuthenticationNavigator from './AuthenticationNavigator';
 import TabNavigator from './TabNavigator';
 
 const MainStack = createNativeStackNavigator<MainNavigatorParamList>();
 
-interface MainNavigatorInterface {
-  startupScreen: StartupScreen;
-}
-
-const MainNavigator = ({ startupScreen }: MainNavigatorInterface) => {
-  // Wait for initialization to complete.
-  if (startupScreen === StartupScreen.None) {
-    return null;
-  }
-
+const MainNavigator = () => {
+  const { credentials } = useSelector(selectUser);
   return (
     <MainStack.Navigator
-      initialRouteName={
-        startupScreen === StartupScreen.Welcome ? 'Startup' : 'Tabs'
-      }>
+      initialRouteName={!credentials ? 'Authentication' : 'Tabs'}>
       <MainStack.Screen
-        name="Startup"
-        component={StartupNavigator}
+        name="Authentication"
+        component={AuthenticationNavigator}
         options={{
           headerShown: false,
-          animation: 'none',
         }}
       />
       <MainStack.Screen

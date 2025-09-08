@@ -1,16 +1,20 @@
 import { CaseReducer, PayloadAction, createSlice } from '@reduxjs/toolkit';
-import { revertSettings } from 'store/actions';
+import { revertAppSettings } from 'store/actions';
 import { ThemeSettings } from 'types/appSettings';
 import { Tou } from 'types/tou';
 
+export type OnboardProgress = 'complete' | 'none';
+
 export interface AppSettingsState {
   biometrics: boolean;
+  onboardProgress?: OnboardProgress;
   themeSettings: ThemeSettings;
   tou: Tou;
 }
 
 export const initialAppSettingsState = Object.freeze<AppSettingsState>({
-  biometrics: true,
+  biometrics: false,
+  onboardProgress: 'none',
   themeSettings: {
     followDevice: true,
     app: 'light',
@@ -27,6 +31,16 @@ const handleSaveBiometrics: CaseReducer<
   return {
     ...state,
     biometrics: payload.value,
+  };
+};
+
+const handleSaveOnboardProgress: CaseReducer<
+  AppSettingsState,
+  PayloadAction<{ progress: OnboardProgress }>
+> = (state, { payload }) => {
+  return {
+    ...state,
+    onboardProgress: payload.progress,
   };
 };
 
@@ -54,10 +68,11 @@ const appSettingsSlice = createSlice({
   name: 'appSettings',
   initialState: initialAppSettingsState,
   extraReducers: builder =>
-    builder.addCase(revertSettings, () => initialAppSettingsState),
+    builder.addCase(revertAppSettings, () => initialAppSettingsState),
   reducers: {
     saveAcceptTou: handleSaveAcceptTou,
     saveBiometrics: handleSaveBiometrics,
+    saveOnboardProgress: handleSaveOnboardProgress,
     saveThemeSettings: handleSaveThemeSettings,
   },
 });
@@ -65,4 +80,5 @@ const appSettingsSlice = createSlice({
 export const appSettingsReducer = appSettingsSlice.reducer;
 export const saveAcceptTou = appSettingsSlice.actions.saveAcceptTou;
 export const saveBiometrics = appSettingsSlice.actions.saveBiometrics;
+export const saveOnboardProgress = appSettingsSlice.actions.saveOnboardProgress;
 export const saveThemeSettings = appSettingsSlice.actions.saveThemeSettings;

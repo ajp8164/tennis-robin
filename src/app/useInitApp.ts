@@ -11,7 +11,6 @@ import { ReactNativeHello, log } from '@react-native-hello/core';
 import { appConfig } from 'config';
 import { svgImages } from 'images';
 import { AppError } from 'lib/errors';
-import { initPushNotifications } from 'lib/notifications';
 
 export enum InitStatus {
   NotAuthorized = 'NotAuthorized',
@@ -20,8 +19,7 @@ export enum InitStatus {
 }
 
 export const useInitApp = () => {
-
-  return async (): Promise<InitStatus> => {
+  return async () => {
     try {
       // Initialize firestore for dev as necessary.
       if (__DEV__) {
@@ -40,8 +38,6 @@ export const useInitApp = () => {
         return true;
       });
 
-      initPushNotifications();
-
       ReactNativeHello.init({
         buildEnvironment: appConfig.buildEnvironment,
         sentryEndpoint: appConfig.sentryEndpoint,
@@ -53,8 +49,6 @@ export const useInitApp = () => {
       GoogleSignin.configure({
         webClientId: appConfig.firebaseOauthClientId,
       });
-
-      return InitStatus.Success;
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (e: any) {

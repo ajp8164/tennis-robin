@@ -1,4 +1,4 @@
-import React, { useContext, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { ScrollView } from 'react-native';
 
 import { Divider, ListItem, useTheme } from '@react-native-hello/ui';
@@ -6,8 +6,8 @@ import { CompositeScreenProps } from '@react-navigation/core';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Avatar } from 'components/atoms/Avatar';
 import { appConfig } from 'config';
-import { AuthContext, useUserProfile } from 'lib/auth';
-import { CircleUserRound, Info, Settings, Users } from 'lucide-react-native';
+import { useUserProfile } from 'lib/auth';
+import { Info, Settings, Users } from 'lucide-react-native';
 import {
   SetupNavigatorParamList,
   TabNavigatorParamList,
@@ -21,7 +21,6 @@ export type Props = CompositeScreenProps<
 const SetupScreen = ({ navigation, route }: Props) => {
   const theme = useTheme();
 
-  const auth = useContext(AuthContext);
   const userProfile = useUserProfile();
 
   useEffect(() => {
@@ -46,23 +45,13 @@ const SetupScreen = ({ navigation, route }: Props) => {
         onPress={() => navigation.navigate('Players')}
       />
       <Divider text={'ACCOUNT'} />
-      {userProfile ? (
-        <ListItem
-          title={userProfile.name || userProfile.email || 'My Account'}
-          leftContent={<Avatar userProfile={userProfile} size={'list'} />}
-          position={['first', 'last']}
-          rightContent={'chevron-right'}
-          onPress={() => navigation.navigate('UserAccount')}
-        />
-      ) : (
-        <ListItem
-          title={'Sign In or Sign Up'}
-          leftContent={<CircleUserRound color={theme.colors.listItemIcon} />}
-          position={['first', 'last']}
-          rightContent={'chevron-right'}
-          onPress={() => auth.presentSignInModal()}
-        />
-      )}
+      <ListItem
+        title={userProfile?.name || userProfile?.email || 'My Account'}
+        leftContent={<Avatar userProfile={userProfile} size={'list'} />}
+        position={['first', 'last']}
+        rightContent={'chevron-right'}
+        onPress={() => navigation.navigate('UserAccount')}
+      />
       <Divider />
       <ListItem
         title={'App Settings'}

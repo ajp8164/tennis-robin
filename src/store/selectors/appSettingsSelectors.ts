@@ -11,6 +11,13 @@ export const selectBiometrics = createSelector(selectAppState, appState => {
   return appState.appSettings.biometrics;
 });
 
+export const selectOnboardProgress = createSelector(
+  selectAppState,
+  appState => {
+    return appState.appSettings.onboardProgress;
+  },
+);
+
 export const selectThemeSettings = createSelector(selectAppState, appState => {
   return appState.appSettings.themeSettings;
 });

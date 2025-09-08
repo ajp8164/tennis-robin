@@ -67,11 +67,25 @@ export const createElementsStyles = ({
   },
   button: {
     backgroundColor: theme.colors.button,
-    borderRadius: 10,
+    borderRadius: 48,
     height: 48,
     paddingHorizontal: 15,
     width: '100%',
     alignSelf: 'center',
+  },
+  buttonBottomContainer: {
+    position: 'absolute',
+    width: '100%',
+    alignSelf: 'center',
+    zIndex: 1,
+    ...Platform.select({
+      ios: {
+        bottom: 75,
+      },
+      android: {
+        bottom: 37,
+      },
+    }),
   },
   buttonTitle: {
     fontSize: theme.fontSize.normal,

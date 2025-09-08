@@ -28,18 +28,16 @@ export type PushNotificationToken = {
 
 export type MessagingTopic = 'all-installs' | 'all-users';
 
-export const initPushNotifications = () => {
+export const initPushNotifications = async (userProfile: UserProfile) => {
   const app = getApp();
   const messaging = getMessaging(app);
 
-  requestPermission(messaging).then(async permission => {
-    // Need to fetch token before subscribing to topic.
-    const token = await getDeviceToken();
-    subscribeToTopic('all-installs');
+  const permission = await requestPermission(messaging);
 
+  if (permission === AuthorizationStatus.AUTHORIZED) {
+    setupPushNotificationsForUser(userProfile);
     log.debug(`Push notifications permission: ${permission}`);
-    log.debug(`Push notifications token: ${JSON.stringify(token)}`);
-  });
+  }
 };
 
 export const subscribeToTopic = (name: MessagingTopic) => {
@@ -57,6 +55,7 @@ export const unsubscribeFromTopic = (name: MessagingTopic) => {
 const getDeviceToken = async (): Promise<PushNotificationToken> => {
   const app = getApp();
   const messaging = getMessaging(app);
+
   if (await isEmulator()) {
     // Running on the iOS simulator will produce an error. Setting a bogus value here avoids the error.
     // See https://github.com/invertase/react-native-firebase/issues/6893
@@ -84,6 +83,7 @@ export const setupPushNotificationsForUser = async (
 ) => {
   // Add push token to the authorized user profile.
   const token = await getDeviceToken();
+  log.debug(`Push notifications token: ${JSON.stringify(token)}`);
 
   const updatedProfile = Object.assign({}, userProfile);
   if (token) {

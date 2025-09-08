@@ -8,7 +8,6 @@ import {
   getAuth,
   onAuthStateChanged,
 } from '@react-native-firebase/auth';
-import { SignInModal, SignInModalMethods } from 'components/modals/SignInModal';
 import { appConfig } from 'config';
 import lodash from 'lodash';
 import { DateTime } from 'luxon';
@@ -19,19 +18,11 @@ import { useAuthorizeUser } from './userAuthorization';
 
 type AuthContext = {
   emailPasswordAuthData: EmailPasswordAuthData;
-  dismissSignInModal: () => void;
-  presentSignInModal: (msg?: string) => void;
   userIsAuthenticated: boolean;
 };
 
 export const AuthContext = createContext<AuthContext>({
-  dismissSignInModal: () => {
-    return;
-  },
   emailPasswordAuthData: { firstName: '', lastName: '' },
-  presentSignInModal: () => {
-    return;
-  },
   userIsAuthenticated: false,
 });
 
@@ -40,7 +31,6 @@ export const AuthProvider = ({
 }: {
   children: ReactNode;
 }): ReactNode => {
-  const signInModalRef = useRef<SignInModalMethods>(null);
   const [userIsAuthenticated, setUserIsAuthenticated] = useState(false);
 
   const app = getApp();
@@ -57,9 +47,7 @@ export const AuthProvider = ({
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, credentials => {
       if (isReAuthenticationRequired(user.credentials)) {
-        return present(
-          'You have been signed out.\nPlease sign in again to keep using all features.',
-        );
+        // TODO
       }
 
       setUserIsAuthenticated(!lodash.isEmpty(user.credentials));
@@ -73,14 +61,6 @@ export const AuthProvider = ({
     return unsubscribe;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  const dismiss = () => {
-    signInModalRef?.current?.dismiss();
-  };
-
-  const present = (msg?: string) => {
-    signInModalRef?.current?.present(msg);
-  };
 
   const onAuthError = (msg: string) => {
     if (msg.includes('firestore/unavailable')) {
@@ -100,12 +80,9 @@ export const AuthProvider = ({
     }
   };
 
-  const onAuthorized = (_userId: string) => {
-    dismiss();
-  };
+  const onAuthorized = (_userId: string) => {};
 
   const onUnauthorized = (accountNotActive?: boolean) => {
-    dismiss();
     if (accountNotActive) {
       Alert.alert(
         'Account Disabled',
@@ -140,13 +117,8 @@ export const AuthProvider = ({
       value={{
         emailPasswordAuthData: emailPasswordAuthData.current,
         userIsAuthenticated,
-        dismissSignInModal: dismiss,
-        presentSignInModal: present,
       }}>
-      <>
-        {children}
-        <SignInModal ref={signInModalRef} />
-      </>
+      <>{children}</>
     </AuthContext.Provider>
   );
 };

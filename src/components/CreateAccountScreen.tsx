@@ -20,9 +20,8 @@ import {
 import { ListItemInput } from 'components/atoms/List';
 import { Formik, FormikHelpers, FormikProps } from 'formik';
 import { useCreateUserWithEmailAndPassword } from 'lib/auth';
+import { AuthenticationNavigatorParamList } from 'types/navigation';
 import * as Yup from 'yup';
-
-import { SignInNavigatorParamList } from './types';
 
 enum Fields {
   firstName,
@@ -45,8 +44,8 @@ export interface EditorState {
 }
 
 export type Props = NativeStackScreenProps<
-  SignInNavigatorParamList,
-  'CreateAccountScreen'
+  AuthenticationNavigatorParamList,
+  'CreateAccount'
 >;
 
 const CreateAccountScreen = () => {
@@ -142,7 +141,7 @@ const CreateAccountScreen = () => {
 
   return (
     <>
-      <AvoidSoftInputView style={s.avoidContainer}>
+      <AvoidSoftInputView>
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={s.container}>
@@ -230,11 +229,12 @@ const CreateAccountScreen = () => {
                       secureTextEntry: true,
                     }}
                   />
+                  <Divider />
                   <Button
                     title={'Continue'}
                     titleStyle={theme.styles.buttonTitle}
                     buttonStyle={theme.styles.button}
-                    containerStyle={s.continueButtonContainer}
+                    containerStyle={theme.styles.buttonContainer}
                     disabled={!(dirty && isValid)}
                     loading={editorState.isSubmitting}
                     onPress={() => submitForm()}
@@ -266,18 +266,6 @@ const useStyles = ThemeManager.createStyleSheet(({ theme }) => ({
   },
   container: {
     height: '100%',
-  },
-  continueButtonContainer: {
-    width: '80%',
-    alignSelf: 'center',
-    marginTop: 30,
-  },
-  forgotPasswordButtonContainer: {
-    marginTop: 15,
-  },
-  forgotPassword: {
-    ...theme.text.small,
-    ...theme.styles.textDim,
   },
   footer: {
     ...theme.text.small,

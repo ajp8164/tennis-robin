@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Alert, Keyboard, Text, View } from 'react-native';
+import { Alert, Keyboard, View } from 'react-native';
 
 import { useSetState } from '@react-native-hello/core';
 import {
@@ -19,9 +19,8 @@ import {
 import { ListItemInput } from 'components/atoms/List';
 import { Formik, FormikHelpers, FormikProps } from 'formik';
 import { signInwithEmailAndPassword } from 'lib/auth';
+import { AuthenticationNavigatorParamList } from 'types/navigation';
 import * as Yup from 'yup';
-
-import { SignInNavigatorParamList } from './types';
 
 enum Fields {
   email,
@@ -40,8 +39,8 @@ export interface EditorState {
 }
 
 export type Props = NativeStackScreenProps<
-  SignInNavigatorParamList,
-  'EmailSignInScreen'
+  AuthenticationNavigatorParamList,
+  'EmailSignIn'
 >;
 
 const EmailSignInScreen = ({ navigation }: Props) => {
@@ -155,7 +154,6 @@ const EmailSignInScreen = ({ navigation }: Props) => {
                   value: values.email,
                   label: 'Email',
                   placeholder: 'Email',
-                  insideModal: true,
                   keyboardType: 'email-address',
                   autoCorrect: false,
                 }}
@@ -173,14 +171,13 @@ const EmailSignInScreen = ({ navigation }: Props) => {
                   value: values.password,
                   label: 'Password',
                   placeholder: 'Password',
-                  insideModal: true,
                   autoCorrect: false,
                   secureTextEntry: true,
                 }}
               />
               <Divider />
               <Button
-                title={'Continue'}
+                title={'Sign In'}
                 titleStyle={theme.styles.buttonTitle}
                 buttonStyle={theme.styles.button}
                 containerStyle={theme.styles.buttonContainer}
@@ -194,11 +191,8 @@ const EmailSignInScreen = ({ navigation }: Props) => {
                 titleStyle={s.forgotPassword}
                 buttonStyle={theme.styles.buttonClear}
                 containerStyle={theme.styles.buttonContainer}
-                onPress={() => navigation.navigate('ForgotPasswordScreen')}
+                onPress={() => navigation.navigate('ForgotPassword')}
               />
-              <Text style={s.footer}>
-                {'By signing up you agree to our Terms and Privacy Policy'}
-              </Text>
             </View>
           </View>
         )}

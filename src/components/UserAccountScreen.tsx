@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Alert, ScrollView, Text, View } from 'react-native';
+import { useSelector } from 'react-redux';
 
 import {
   Divider,
@@ -8,7 +9,6 @@ import {
   useTheme,
 } from '@react-native-hello/ui';
 import { CompositeScreenProps } from '@react-navigation/core';
-import { StackActions } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Avatar } from 'components/atoms/Avatar';
 import { Button } from 'components/atoms/Button';
@@ -17,6 +17,7 @@ import { signOut, useUserProfile } from 'lib/auth';
 import { biometricAuthentication } from 'lib/biometricAuthentication';
 import { UserRoundPen } from 'lucide-react-native';
 import { DateTime } from 'luxon';
+import { selectUser } from 'store/selectors/userSelectors';
 import {
   MainNavigatorParamList,
   SetupNavigatorParamList,
@@ -32,6 +33,15 @@ const UserAccountScreen = ({ navigation }: Props) => {
   const s = useStyles();
 
   const userProfile = useUserProfile();
+  const { credentials } = useSelector(selectUser);
+
+  // Detect removal of credentials for navigation to auth.
+  useEffect(() => {
+    if (!credentials) {
+      navigation.replace('Authentication', { screen: 'OnboardWelcome' });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [credentials]);
 
   const confirmSignOut = async () => {
     await biometricAuthentication()
@@ -43,11 +53,7 @@ const UserAccountScreen = ({ navigation }: Props) => {
             {
               text: 'Yes, sign out',
               style: 'destructive',
-
-              onPress: () => {
-                navigation.dispatch(StackActions.popToTop());
-                signOut();
-              },
+              onPress: () => signOut(),
             },
             {
               text: 'No',

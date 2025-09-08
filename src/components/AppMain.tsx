@@ -13,14 +13,14 @@ import {
   LinkingOptions,
   NavigationContainer,
 } from '@react-navigation/native';
-import { InitStatus, useInitApp } from 'app';
+import { useInitApp } from 'app';
 import { BackdropProvider } from 'components/atoms/Backdrop';
 import { ColorModeSwitch } from 'components/atoms/ColorModeSwitch';
 import NetworkConnectionBar from 'components/atoms/NetworkConnnectionBar';
 import MainNavigator from 'components/navigation/MainNavigator';
 import { AuthProvider } from 'lib/auth/AuthProvider';
 import { AppError } from 'lib/errors';
-import { MainNavigatorParamList, StartupScreen } from 'types/navigation';
+import { MainNavigatorParamList } from 'types/navigation';
 
 // See https://reactnavigation.org/docs/configuring-links
 const linking: LinkingOptions<MainNavigatorParamList> = {
@@ -34,9 +34,7 @@ const AppMain = () => {
   const themeName = ThemeManager.name;
   const initApp = useInitApp();
 
-  const [startupScreen, setStartupScreen] = useState<StartupScreen>(
-    StartupScreen.None,
-  );
+  const [initComplete, setInitComplete] = useState(false);
   const [fatal, setFatal] = useState<string | undefined>(undefined);
 
   useEffect(() => {
@@ -53,21 +51,12 @@ const AppMain = () => {
     (async () => {
       try {
         // Main application initialization.
-        const status = await initApp();
-        log.info(`Initialization status: ${status}`);
-
-        switch (status) {
-          case InitStatus.Success:
-          case InitStatus.NotAuthorized:
-            // The destination should handle condition NotAuthorized.
-            setStartupScreen(StartupScreen.Home);
-            break;
-          case InitStatus.NotVerified:
-          default:
-            setStartupScreen(StartupScreen.Welcome);
-        }
+        await initApp();
 
         hideSplashScreen();
+        setInitComplete(true);
+
+        log.info('Initialization complete');
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (e: any) {
@@ -88,7 +77,8 @@ const AppMain = () => {
     log.fatal(`Unhandled app error: ${error.message}\n${stack}`);
   };
 
-  if (startupScreen === StartupScreen.None) {
+  if (!initComplete) {
+    // Could have a loading screen here
     return null;
   }
 
@@ -107,7 +97,7 @@ const AppMain = () => {
                   <CameraProvider>
                     <EventProvider>
                       <BackdropProvider>
-                        <MainNavigator startupScreen={startupScreen} />
+                        <MainNavigator />
                       </BackdropProvider>
                     </EventProvider>
                   </CameraProvider>

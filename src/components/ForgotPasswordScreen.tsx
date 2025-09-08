@@ -14,9 +14,8 @@ import { Button } from 'components/atoms/Button';
 import { ListItemInput } from 'components/atoms/List';
 import { Formik, FormikHelpers, FormikProps } from 'formik';
 import { sendPasswordResetEmail } from 'lib/auth';
+import { AuthenticationNavigatorParamList } from 'types/navigation';
 import * as Yup from 'yup';
-
-import { SignInNavigatorParamList } from './types';
 
 type FormValues = {
   email: string;
@@ -27,8 +26,8 @@ export interface EditorState {
 }
 
 export type Props = NativeStackScreenProps<
-  SignInNavigatorParamList,
-  'ForgotPasswordScreen'
+  AuthenticationNavigatorParamList,
+  'ForgotPassword'
 >;
 
 const ForgotPasswordScreen = () => {
@@ -115,11 +114,12 @@ const ForgotPasswordScreen = () => {
                     autoCorrect: false,
                   }}
                 />
+                <Divider />
                 <Button
-                  title={'Send'}
+                  title={'Submit'}
                   titleStyle={theme.styles.buttonTitle}
                   buttonStyle={theme.styles.button}
-                  containerStyle={s.sendButtonContainer}
+                  containerStyle={theme.styles.buttonContainer}
                   disabled={!(dirty && isValid)}
                   loading={editorState.isSubmitting}
                   onPress={() => submitForm()}
@@ -143,11 +143,11 @@ const useStyles = ThemeManager.createStyleSheet(({ theme }) => ({
   divider: {
     marginTop: 30,
   },
-  sendButtonContainer: {
-    width: '80%',
-    alignSelf: 'center',
-    marginTop: 30,
-  },
+  // sendButtonContainer: {
+  //   // width: '80%',
+  //   alignSelf: 'center',
+  //   marginTop: 30,
+  // },
   description: {
     ...theme.text.normal,
     alignSelf: 'center',

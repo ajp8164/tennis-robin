@@ -10,15 +10,12 @@ import {
   updateDocument,
 } from 'firebase/firestore';
 import { AuthContext, signOut } from 'lib/auth';
-import {
-  removePushNotificationsFromUser,
-  setupPushNotificationsForUser,
-} from 'lib/notifications';
+import { removePushNotificationsFromUser } from 'lib/notifications';
 import { getUserAvatarColor, getUserInitials } from 'lib/user';
 import lodash from 'lodash';
 import { DateTime } from 'luxon';
 import { store } from 'store';
-import { revertCredentials } from 'store/actions';
+import { revertAppSettings, revertCredentials } from 'store/actions';
 import { saveUser } from 'store/slices/user';
 import { User, UserProfile, UserRole, UserStatus } from 'types/user';
 
@@ -204,8 +201,8 @@ const useSetUserCredentials = () => {
 //   }, [doc, me]);
 // };
 
-const postSignInActions = async (userProfile: UserProfile) => {
-  await setupPushNotificationsForUser(userProfile);
+const postSignInActions = async (_userProfile: UserProfile) => {
+  // Nothing to do yet
 };
 
 export const preSignOutActions = async () => {
@@ -220,5 +217,6 @@ export const preSignOutActions = async () => {
   userId && (await removePushNotificationsFromUser(userId));
 
   // Clear our redux store.
+  store.dispatch(revertAppSettings());
   store.dispatch(revertCredentials());
 };

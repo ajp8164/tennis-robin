@@ -2,17 +2,25 @@ import { NavigatorScreenParams } from '@react-navigation/core';
 import { EnumPickerInterface } from 'components/EnumPickerScreen';
 import { ContentView } from 'types/content';
 
-export enum StartupScreen {
-  None = 'None',
-  Home = 'Home',
-  Welcome = 'Welcome',
-}
-
 // This type should be used when type checking a screen that appears in multiple navigators.
 // Using this type avoids screen components having to import all the ..NavigatorParamList types
 // instead of chosing one at random.
 export type MultipleNavigatorParamList = {
   EnumPicker: EnumPickerInterface;
+};
+
+export type AuthenticationNavigatorParamList = {
+  BiometricsLogin: undefined;
+  ChooseSignIn: {
+    returning?: boolean;
+  };
+  CreateAccount: undefined;
+  EmailSignIn: undefined;
+  ForgotPassword: undefined;
+  OnboardBiometrics: undefined;
+  OnboardNotifications: undefined;
+  OnboardWelcome: undefined;
+  Tabs: NavigatorScreenParams<TabNavigatorParamList>;
 };
 
 export type GroupsNavigatorParamList = {
@@ -32,7 +40,7 @@ export type HomeNavigatorParamList = {
 };
 
 export type MainNavigatorParamList = {
-  Startup: NavigatorScreenParams<StartupNavigatorParamList>;
+  Authentication: NavigatorScreenParams<AuthenticationNavigatorParamList>;
   Tabs: NavigatorScreenParams<TabNavigatorParamList>;
 };
 
@@ -55,10 +63,6 @@ export type SetupNavigatorParamList = {
   };
   UserAccount: undefined;
   UserProfileEditor: undefined;
-};
-
-export type StartupNavigatorParamList = {
-  Welcome: undefined;
 };
 
 export type TabNavigatorParamList = {
