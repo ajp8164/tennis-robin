@@ -1,5 +1,12 @@
 import React, { useContext, useState } from 'react';
-import { ActivityIndicator, LayoutChangeEvent, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  LayoutChangeEvent,
+  StyleProp,
+  Text,
+  View,
+  ViewStyle,
+} from 'react-native';
 
 import { ThemeManager, useDevice, useTheme } from '@react-native-hello/ui';
 import { BottomTabBarHeightContext } from '@react-navigation/bottom-tabs';
@@ -14,6 +21,7 @@ interface EmptyViewInterface {
   isLoading?: boolean;
   buttonTitle?: string;
   positionTop?: boolean;
+  style?: StyleProp<ViewStyle>;
   onButtonPress?: () => void;
 }
 
@@ -25,6 +33,7 @@ export const EmptyView = ({
   isLoading,
   buttonTitle,
   positionTop,
+  style,
   onButtonPress,
 }: EmptyViewInterface) => {
   const theme = useTheme();
@@ -40,9 +49,12 @@ export const EmptyView = ({
   };
 
   return (
-    <View style={s.container}>
+    <View style={[s.container, style]}>
       <View
-        style={[s.items, { bottom: positionTop ? undefined : bottom - height }]}
+        style={[
+          s.items,
+          positionTop ? s.positionTop : { bottom: bottom - height },
+        ]}
         onLayout={onLayout}>
         {isLoading ? (
           <ActivityIndicator
@@ -104,6 +116,10 @@ const useStyles = ThemeManager.createStyleSheet(({ theme }) => ({
     fontFamily: theme.fonts.bold,
     marginTop: 10,
     textAlign: 'center',
+  },
+  positionTop: {
+    position: undefined,
+    minHeight: 200,
   },
   details: {
     ...theme.text.normal,

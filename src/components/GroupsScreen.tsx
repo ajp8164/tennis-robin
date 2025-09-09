@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Alert, FlatList, ListRenderItem } from 'react-native';
+import { ScrollView } from 'react-native-gesture-handler';
 
 import {
   Divider,
@@ -10,7 +11,6 @@ import {
   listItemPosition,
   useTheme,
 } from '@react-native-hello/ui';
-import { useHeaderHeight } from '@react-navigation/elements';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Button } from 'components/atoms/Button';
 import { EmptyView } from 'components/molecules/EmptyView';
@@ -24,9 +24,7 @@ export type Props = NativeStackScreenProps<GroupsNavigatorParamList, 'Groups'>;
 
 const GroupsScreen = ({ navigation }: Props) => {
   const theme = useTheme();
-  // const s = useStyles();
   const confirmAction = useConfirmAction();
-  const headerHeight = useHeaderHeight();
 
   const { docs: allGroups } = useCollection<Group>('Groups', {
     orderBy: [{ fieldPath: 'name', directionStr: 'asc' }],
@@ -135,24 +133,23 @@ const GroupsScreen = ({ navigation }: Props) => {
   }
 
   return (
-    <ListEditor ref={listEditorRef} onChangeState={setListEditorState}>
-      <FlatList
-        contentInsetAdjustmentBehavior={'automatic'}
-        style={theme.styles.view}
-        contentContainerStyle={{
-          flexGrow: 1,
-          marginBottom: headerHeight,
-        }}
-        data={allGroups}
-        renderItem={renderGroup}
-        keyExtractor={item => `${item.id}`}
-        showsVerticalScrollIndicator={false}
-        ListHeaderComponent={allGroups.length ? <Divider /> : null}
-      />
-    </ListEditor>
+    <ScrollView
+      style={theme.styles.view}
+      showsVerticalScrollIndicator={false}
+      contentInsetAdjustmentBehavior={'automatic'}>
+      <ListEditor ref={listEditorRef} onChangeState={setListEditorState}>
+        <FlatList
+          scrollEnabled={false}
+          data={allGroups}
+          renderItem={renderGroup}
+          keyExtractor={item => `${item.id}`}
+          showsVerticalScrollIndicator={false}
+          ListHeaderComponent={<Divider />}
+          ListFooterComponent={<Divider />}
+        />
+      </ListEditor>
+    </ScrollView>
   );
 };
-
-// const useStyles = ThemeManager.createStyleSheet(() => ({}));
 
 export default GroupsScreen;

@@ -29,6 +29,7 @@ import {
   FormikWatcherState,
 } from 'components/atoms/FormikStateWatcher';
 import { ListItemInput, ListItemInputMethods } from 'components/atoms/List';
+import { EmptyView } from 'components/molecules/EmptyView';
 import {
   addDocument,
   getDocuments,
@@ -285,6 +286,50 @@ const GroupEditorScreen = ({ navigation, route }: Props) => {
     );
   };
 
+  const renderPlayersHeader = () => (
+    <Divider
+      text={`${group?.players.length || ''} PLAYER${group?.players.length !== 1 ? 'S' : ''}`}
+      rightComponent={
+        <Button
+          title={'Choose Players'}
+          titleStyle={theme.styles.buttonScreenHeaderTitle}
+          buttonStyle={theme.styles.dividerTextButton}
+          onPress={() =>
+            navigation.navigate('EnumPicker', {
+              title: 'Players',
+              values: playerEnum,
+              selected: group?.players,
+              eventName: 'change-players',
+              mode: 'many-or-none',
+            })
+          }
+        />
+      }
+    />
+  );
+
+  const renderPlayersEmpty = () => (
+    <>
+      <Divider />
+      <EmptyView
+        info
+        message={'No Players'}
+        details={'Tap Choose Players to add Players.'}
+        positionTop
+        buttonTitle={'Choose Players'}
+        onButtonPress={() =>
+          navigation.navigate('EnumPicker', {
+            title: 'Players',
+            values: playerEnum,
+            selected: group?.players,
+            eventName: 'change-players',
+            mode: 'many-or-none',
+          })
+        }
+      />
+    </>
+  );
+
   return (
     <>
       <ScrollView
@@ -326,25 +371,6 @@ const GroupEditorScreen = ({ navigation, route }: Props) => {
             </View>
           )}
         </Formik>
-        <Divider
-          text={'PLAYERS'}
-          rightComponent={
-            <Button
-              title={'Choose Players'}
-              titleStyle={theme.styles.buttonScreenHeaderTitle}
-              buttonStyle={theme.styles.dividerTextButton}
-              onPress={() =>
-                navigation.navigate('EnumPicker', {
-                  title: 'Players',
-                  values: playerEnum,
-                  selected: group?.players,
-                  eventName: 'change-players',
-                  mode: 'many-or-none',
-                })
-              }
-            />
-          }
-        />
         <ListEditor ref={listEditorRef} onChangeState={setListEditorState}>
           <FlatList
             contentInsetAdjustmentBehavior={'automatic'}
@@ -354,6 +380,11 @@ const GroupEditorScreen = ({ navigation, route }: Props) => {
             keyExtractor={item => `${item.id}`}
             scrollEnabled={false}
             showsVerticalScrollIndicator={false}
+            ListHeaderComponent={
+              groupPlayers.length ? renderPlayersHeader() : null
+            }
+            ListFooterComponent={<Divider />}
+            ListEmptyComponent={renderPlayersEmpty()}
           />
         </ListEditor>
       </ScrollView>

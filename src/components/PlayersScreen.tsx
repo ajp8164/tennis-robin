@@ -147,6 +147,7 @@ const PlayersScreen = ({ navigation }: Props) => {
         keyExtractor={item => `${item.id}`}
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={allPlayers.length ? <Divider /> : null}
+        ListFooterComponent={<Divider />}
       />
     </ListEditor>
   );
