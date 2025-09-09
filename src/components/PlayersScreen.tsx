@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Alert, FlatList, ListRenderItem } from 'react-native';
 
 import {
+  Chip,
   Divider,
   ListEditor,
   ListEditorMethods,
@@ -15,7 +16,7 @@ import { Button } from 'components/atoms/Button';
 import { EmptyView } from 'components/molecules/EmptyView';
 import { deleteDocument, useCollection } from 'firebase/firestore';
 import { useConfirmAction } from 'lib/useConfirmAction';
-import { Circle, CircleMinus, Plus, Trash2 } from 'lucide-react-native';
+import { CircleMinus, Plus, Trash2 } from 'lucide-react-native';
 import { SetupNavigatorParamList } from 'types/navigation';
 import { Player, PlayerStatus } from 'types/player';
 
@@ -76,20 +77,19 @@ const PlayersScreen = ({ navigation }: Props) => {
         title={`${player.lastName}, ${player.firstName}`}
         value={
           player.status === PlayerStatus.Active ? (
-            <Circle
-              fill={theme.colors.success}
-              stroke={theme.colors.transparent}
-              size={15}
+            <Chip
+              text={'Active'}
+              color={theme.colors.success}
+              textColor={theme.colors.stickyWhite}
             />
           ) : (
-            <Circle
-              fill={theme.colors.assertive}
-              stroke={theme.colors.transparent}
-              size={15}
+            <Chip
+              text={'Inactive'}
+              color={theme.colors.assertive}
+              textColor={theme.colors.stickyWhite}
             />
           )
         }
-        valueStyle={theme.text.medium}
         position={listItemPosition(index, allPlayers.length)}
         rightContent={'chevron-right'}
         listEditor={listEditorRef.current}

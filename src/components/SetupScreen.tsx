@@ -37,6 +37,7 @@ const SetupScreen = ({ navigation, route }: Props) => {
       style={theme.styles.view}
       showsVerticalScrollIndicator={false}
       contentInsetAdjustmentBehavior={'automatic'}>
+      <Divider />
       <ListItem
         title={'Players'}
         leftContent={<Users color={theme.colors.listItemIcon} />}

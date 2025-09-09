@@ -21,25 +21,26 @@ export type EnumPickerIconProps = {
   name?: string;
 } | null;
 
+export type EnumPickerValue = {
+  id: string;
+  label: string;
+};
+
 export type EnumPickerInterface = {
   mode?: 'one' | 'one-or-none' | 'many' | 'many-or-none';
   title: string;
   itemPlural?: string;
   headerBackTitle?: string;
-  icons?: { [key in string]: EnumPickerIconProps }; // Key is a enum value as 'name:id'
+  icons?: { [key in string]: EnumPickerIconProps }; // Key is a enum id
   sectionName?: string;
   footer?: string;
-  // Values may optionally include text wrapped in curly braces, this text is not shown on the UI.
-  // The text wrapped in curly braces may be used for object id's for example. The whole string is
-  // returned in the selection result.
-  // values = ['A{0}', 'B{1}'] displays as 'A' and 'B'.
-  values: string[];
-  selected?: string | string[]; // The literal value(s) as 'name:id'
+  values: EnumPickerValue[];
+  selected?: string[]; // Array of enum id, values[].id
   eventName: string;
 };
 
 export type EnumPickerResult = {
-  value: string[];
+  value: string[]; // Array of enum id
 };
 
 export type Props = NativeStackScreenProps<
@@ -49,7 +50,6 @@ export type Props = NativeStackScreenProps<
 
 const EnumPickerScreen = ({ route, navigation }: Props) => {
   const {
-    // enumName,
     mode = 'one',
     title,
     itemPlural = 'Items',
@@ -69,7 +69,7 @@ const EnumPickerScreen = ({ route, navigation }: Props) => {
 
   // All of these strings are object ids or enum values.
   const [list, setList] = useSetState<{
-    values: string[];
+    values: EnumPickerValue[];
     selected: string[];
     initial: string[];
   }>({
@@ -86,7 +86,7 @@ const EnumPickerScreen = ({ route, navigation }: Props) => {
     const onDone = () => {
       // For multi-selection mode we send the selected values only when done.
       if (mode.includes('many')) {
-        event.emit(eventName, { value: list.selected } as EnumPickerResult);
+        event.emit(eventName, { value: list.selected });
         navigation.goBack();
       }
     };
@@ -102,50 +102,52 @@ const EnumPickerScreen = ({ route, navigation }: Props) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [list]);
 
-  const toggleSelect = (value?: string) => {
+  const toggleSelect = (value?: EnumPickerValue) => {
     if (mode === 'one' || mode === 'one-or-none') {
       value
-        ? setList({ selected: [value] })
+        ? setList({ selected: [value.id] })
         : setList({ selected: [] }, { assign: true });
     } else if (value) {
-      if (list.selected.includes(value)) {
+      if (list.selected.includes(value.id)) {
         setList(
-          { selected: list.selected.filter(v => v !== value) },
+          { selected: list.selected.filter(id => id !== value.id) },
           { assign: true },
         );
       } else {
-        setList({ selected: list.selected.concat(value) }, { assign: true });
+        setList({ selected: list.selected.concat(value.id) }, { assign: true });
       }
     }
 
     // For single selection mode we send the selected value immediately.
     if (mode === 'one' || mode === 'one-or-none') {
       event.emit(eventName, {
-        value: value ? [value] : [],
+        value: value ? [value.id] : [],
       } as EnumPickerResult);
     }
   };
 
   const selectAll = () => {
-    setList({ selected: list.values }, { assign: true });
+    setList({ selected: list.values.map(v => v.id) }, { assign: true });
   };
 
   const selectNone = () => {
     setList({ selected: [] }, { assign: true });
   };
 
-  const getIconEl = (value: string) => {
-    return icons?.[value] ? (
-      <View key={value}>{icons[value]?.leftContent}</View>
+  const getIconEl = (value: EnumPickerValue) => {
+    return icons?.[value.id] ? (
+      <View key={value.id}>{icons[value.id]?.leftContent}</View>
     ) : undefined;
   };
 
-  const renderValue: ListRenderItem<string> = ({ item: value, index }) => {
-    const name = value;
+  const renderValue: ListRenderItem<EnumPickerValue> = ({
+    item: value,
+    index,
+  }) => {
     return (
       <ListItemCheckBox
         key={`${value}${index}`}
-        title={icons?.[value]?.hideTitle ? '' : name.replace(/\{[^}]*\}/g, '')}
+        title={icons?.[value.label]?.hideTitle ? '' : value.label}
         leftContent={getIconEl(value)}
         position={
           mode === 'one-or-none'
@@ -160,7 +162,7 @@ const EnumPickerScreen = ({ route, navigation }: Props) => {
                   ? ['last']
                   : []
         }
-        checked={list.selected?.includes(value)}
+        checked={list.selected?.includes(value.id)}
         onChange={() => toggleSelect(value)}
       />
     );

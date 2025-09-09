@@ -57,9 +57,10 @@ const AuthenticationNavigator = ({ navigation }: Props) => {
     <AuthenticationStack.Navigator
       initialRouteName={biometrics ? 'BiometricsLogin' : 'OnboardWelcome'}
       screenOptions={{
+        headerBackButtonDisplayMode: 'minimal',
         headerStyle: { backgroundColor: theme.colors.screenHeaderBackground },
         headerTintColor: theme.colors.screenHeaderButtonText,
-        headerBackButtonDisplayMode: 'minimal',
+        headerTitleStyle: { color: theme.colors.screenHeaderTitle },
       }}>
       <AuthenticationStack.Screen
         name="BiometricsLogin"

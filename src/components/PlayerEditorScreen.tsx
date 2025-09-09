@@ -101,12 +101,6 @@ const PlayerEditorScreen = ({ navigation, route }: Props) => {
     );
   }, []);
 
-  const cancel = () => {
-    formikRef.current?.resetForm();
-    Keyboard.dismiss();
-    navigation.goBack();
-  };
-
   const save = () => {
     formikRef.current?.handleSubmit();
     formikRef.current?.resetForm({ values: formikRef.current?.values });
@@ -151,16 +145,6 @@ const PlayerEditorScreen = ({ navigation, route }: Props) => {
     }
 
     navigation.setOptions({
-      headerLeft: () => {
-        return (
-          <Button
-            title={'Cancel'}
-            titleStyle={theme.styles.buttonScreenHeaderTitle}
-            buttonStyle={theme.styles.buttonScreenHeader}
-            onPress={cancel}
-          />
-        );
-      },
       headerRight: () => {
         return (
           <Button

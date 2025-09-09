@@ -1,5 +1,6 @@
 import React from 'react';
 
+import { useTheme } from '@react-native-hello/ui';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import HomeScreen from 'components/HomeScreen';
 import { HomeNavigatorParamList } from 'types/navigation';
@@ -7,11 +8,17 @@ import { HomeNavigatorParamList } from 'types/navigation';
 const HomeStack = createNativeStackNavigator<HomeNavigatorParamList>();
 
 const HomeNavigator = () => {
+  const theme = useTheme();
   return (
     <HomeStack.Navigator
       initialRouteName={'Home'}
       screenOptions={{
-        title: undefined,
+        headerBackButtonDisplayMode: 'minimal',
+        headerStyle: {
+          backgroundColor: theme.colors.screenHeaderBackground,
+        },
+        headerTitleStyle: { color: theme.colors.screenHeaderTitle },
+        headerTintColor: theme.colors.screenHeaderButtonText,
       }}>
       <HomeStack.Screen
         name="Home"

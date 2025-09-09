@@ -78,6 +78,7 @@ const GroupsScreen = ({ navigation }: Props) => {
       <ListItemSwipeable
         key={group.id}
         title={group.name}
+        subtitle={`${group.players.length} Player${group.players.length !== 1 ? 's' : ''}`}
         valueStyle={theme.text.medium}
         position={listItemPosition(index, allGroups.length)}
         rightContent={'chevron-right'}
@@ -130,10 +131,12 @@ const GroupsScreen = ({ navigation }: Props) => {
   return (
     <ListEditor ref={listEditorRef} onChangeState={setListEditorState}>
       <FlatList
+        contentInsetAdjustmentBehavior={'automatic'}
         style={theme.styles.view}
         data={allGroups}
         renderItem={renderGroup}
         keyExtractor={item => `${item.id}`}
+        scrollEnabled={false}
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={allGroups.length ? <Divider /> : null}
       />

@@ -33,6 +33,9 @@ export type GroupsNavigatorParamList = {
   NewGroup: {
     groupId?: string;
   };
+  Player: {
+    playerId: string;
+  };
 };
 
 export type HomeNavigatorParamList = {

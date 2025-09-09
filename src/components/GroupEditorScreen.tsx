@@ -1,16 +1,28 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Keyboard, ScrollView, View } from 'react-native';
+import {
+  FlatList,
+  Keyboard,
+  ListRenderItem,
+  ScrollView,
+  View,
+} from 'react-native';
 
 import { useEvent } from '@react-native-hello/core';
 import {
+  Chip,
   Divider,
   InputMethods,
   KeyboardAccessory,
   KeyboardAccessoryMethods,
+  ListEditor,
+  ListEditorMethods,
+  ListEditorState,
+  ListItemSwipeable,
+  listItemPosition,
   useTheme,
 } from '@react-native-hello/ui';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { EnumPickerResult } from 'components/EnumPickerScreen';
+import { EnumPickerResult, EnumPickerValue } from 'components/EnumPickerScreen';
 import { Button } from 'components/atoms/Button';
 import {
   FormikStateWatcher,
@@ -19,14 +31,17 @@ import {
 import { ListItemInput, ListItemInputMethods } from 'components/atoms/List';
 import {
   addDocument,
-  getDocument,
+  getDocuments,
   updateDocument,
   useCollection,
+  useDocument,
 } from 'firebase/firestore';
 import { Formik, FormikProps } from 'formik';
+import { useUserProfile } from 'lib/auth';
+import { CircleMinus, EyeOff } from 'lucide-react-native';
 import { Group } from 'types/group';
 import { GroupsNavigatorParamList } from 'types/navigation';
-import { Player } from 'types/player';
+import { Player, PlayerStatus } from 'types/player';
 import * as Yup from 'yup';
 
 // CompositeScreenProps not working here since NewGroup is also in the SetupNavigator
@@ -49,9 +64,13 @@ const GroupEditorScreen = ({ navigation, route }: Props) => {
 
   const theme = useTheme();
   const event = useEvent();
+  const userProfile = useUserProfile();
 
-  const [playerEnum, setPlayerEnum] = useState<string[]>([]);
+  const { doc: group } = useDocument<Group>('Groups', groupId);
+  const [groupPlayers, setGroupPlayers] = useState<Player[]>([]);
 
+  // For building the player picker enum.
+  const [playerEnum, setPlayerEnum] = useState<EnumPickerValue[]>([]);
   const { docs: allPlayers } = useCollection<Player>('Players', {
     orderBy: [
       { fieldPath: 'lastName', directionStr: 'asc' },
@@ -62,28 +81,6 @@ const GroupEditorScreen = ({ navigation, route }: Props) => {
   const [initialValues, setInitialValues] = useState<FormValues>({
     name: '',
   });
-
-  useEffect(() => {
-    if (groupId) {
-      getDocument<Group>('Groups', groupId).then(group => {
-        if (group) {
-          setInitialValues({
-            name: group.name,
-          });
-        }
-      });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Create an enumeration of players for selection into the group.
-  useEffect(() => {
-    const playerEnum = allPlayers.map(p => {
-      return `${p.lastName} ${p.firstName}{${p.id}}`;
-    });
-
-    setPlayerEnum(playerEnum);
-  }, [allPlayers]);
 
   const schema = Yup.object().shape({
     name: Yup.string().required(),
@@ -97,6 +94,51 @@ const GroupEditorScreen = ({ navigation, route }: Props) => {
   const nameFieldRef = useRef<ListItemInputMethods>(null);
   const [resolvedRefs, setResolvedRefs] = useState<(InputMethods | null)[]>([]);
 
+  const listEditorRef = useRef<ListEditorMethods>(null);
+  const [listEditorState, setListEditorState] = useState<ListEditorState>();
+
+  useEffect(() => {
+    if (group && !initialValues.name) {
+      setInitialValues({
+        name: group.name,
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [group]);
+
+  // When the group player assignments are changed refetch the collection of players.
+  useEffect(() => {
+    (async () => {
+      const groupPlayers = await getDocuments<Player>('Players', {
+        where: [
+          {
+            fieldPath: '__name__',
+            opStr: 'in',
+            value: group?.players || [],
+          },
+        ],
+        orderBy: [
+          { fieldPath: 'lastName', directionStr: 'asc' },
+          { fieldPath: 'firstName', directionStr: 'asc' },
+        ],
+      });
+
+      setGroupPlayers(groupPlayers.result);
+    })();
+  }, [group?.players]);
+
+  // Create an enumeration of players for selection into the group.
+  useEffect(() => {
+    const playerEnum = allPlayers.map<EnumPickerValue>(p => {
+      return {
+        id: p.id!,
+        label: `${p.lastName} ${p.firstName}`,
+      };
+    });
+
+    setPlayerEnum(playerEnum);
+  }, [allPlayers]);
+
   // Supports keyboard accessory view.
   // Ensures all refs are set.
   useEffect(() => {
@@ -104,23 +146,59 @@ const GroupEditorScreen = ({ navigation, route }: Props) => {
   }, []);
 
   useEffect(() => {
+    navigation.setOptions({
+      headerRight: () => {
+        return (
+          <>
+            <Button
+              title={listEditorState?.enabled ? 'Done' : 'Edit'}
+              titleStyle={theme.styles.buttonScreenHeaderTitle}
+              buttonStyle={theme.styles.buttonScreenHeader}
+              onPress={() => listEditorRef.current?.onToggleEditMode()}
+            />
+            <Button
+              title={'Save'}
+              titleStyle={theme.styles.buttonScreenHeaderTitle}
+              buttonStyle={theme.styles.buttonScreenHeader}
+              disabledTitleStyle={theme.styles.buttonScreenHeaderTitle}
+              disabledStyle={theme.styles.buttonScreenHeaderDisabled}
+              disabled={!formikCanSubmit}
+              headerRight
+              onPress={save}
+            />
+          </>
+        );
+      },
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [listEditorState, formikCanSubmit]);
+
+  useEffect(() => {
     // Event handlers for EnumPicker
-    event.on('player', onChangePlayers);
+    event.on('change-players', onChangePlayers);
 
     return () => {
-      event.removeListener('player', onChangePlayers);
+      event.removeListener('change-players', onChangePlayers);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [group]);
 
-  const onChangePlayers = (result: EnumPickerResult) => {
-    console.log(result.value);
+  const onChangePlayers = async (result: EnumPickerResult) => {
+    if (group) {
+      updateDocument<Group>('Groups', {
+        ...group,
+        players: result.value,
+      });
+    }
   };
 
-  const cancel = () => {
-    formikRef.current?.resetForm();
-    Keyboard.dismiss();
-    navigation.goBack();
+  const removePlayer = async (playerId: string) => {
+    if (group) {
+      updateDocument<Group>('Groups', {
+        ...group,
+        players: group.players.filter(p => p !== playerId),
+      });
+    }
   };
 
   const save = () => {
@@ -131,14 +209,16 @@ const GroupEditorScreen = ({ navigation, route }: Props) => {
   };
 
   const onSubmit = (values: FormValues) => {
-    if (groupId) {
+    if (group) {
       updateDocument<Group>('Groups', {
-        id: groupId,
+        ...group,
         name: values.name,
       });
     } else {
       addDocument<Group>('Groups', {
         name: values.name,
+        owners: [userProfile!.id],
+        players: [],
       });
     }
   };
@@ -156,32 +236,53 @@ const GroupEditorScreen = ({ navigation, route }: Props) => {
         title: next.values.name,
       });
     }
+  };
 
-    navigation.setOptions({
-      headerLeft: () => {
-        return (
-          <Button
-            title={'Cancel'}
-            titleStyle={theme.styles.buttonScreenHeaderTitle}
-            buttonStyle={theme.styles.buttonScreenHeader}
-            onPress={cancel}
-          />
-        );
-      },
-      headerRight: () => {
-        return (
-          <Button
-            title={'Save'}
-            titleStyle={theme.styles.buttonScreenHeaderTitle}
-            buttonStyle={theme.styles.buttonScreenHeader}
-            disabledTitleStyle={theme.styles.buttonScreenHeaderTitle}
-            disabledStyle={theme.styles.buttonScreenHeaderDisabled}
-            disabled={!canSubmit}
-            onPress={save}
-          />
-        );
-      },
-    });
+  const renderPlayer: ListRenderItem<Player> = ({ item: player, index }) => {
+    return (
+      <ListItemSwipeable
+        key={player.id}
+        title={`${player.lastName} ${player.firstName}`}
+        value={
+          player.status === PlayerStatus.Active ? (
+            <Chip
+              text={'Active'}
+              color={theme.colors.success}
+              textColor={theme.colors.stickyWhite}
+            />
+          ) : (
+            <Chip
+              text={'Inactive'}
+              color={theme.colors.assertive}
+              textColor={theme.colors.stickyWhite}
+            />
+          )
+        }
+        position={listItemPosition(index, groupPlayers.length)}
+        rightContent={'chevron-right'}
+        listEditor={listEditorRef.current}
+        onPress={() =>
+          navigation.navigate('Player', {
+            playerId: player.id!,
+          })
+        }
+        showEditor={listEditorState?.show}
+        editAction={{
+          ButtonComponent: <CircleMinus color={theme.colors.assertive} />,
+          op: 'open-swipeable',
+          draggable: true,
+        }}
+        swipeableActionsRight={[
+          {
+            text: 'Remove',
+            color: theme.colors.brandSecondary,
+            ButtonComponent: <EyeOff color={theme.colors.stickyWhite} />,
+            op: 'remove',
+            onPress: () => player.id && removePlayer(player.id),
+          },
+        ]}
+      />
+    );
   };
 
   return (
@@ -229,21 +330,32 @@ const GroupEditorScreen = ({ navigation, route }: Props) => {
           text={'PLAYERS'}
           rightComponent={
             <Button
-              title={'Add Player'}
+              title={'Choose Players'}
               titleStyle={theme.styles.buttonScreenHeaderTitle}
               buttonStyle={theme.styles.dividerTextButton}
               onPress={() =>
                 navigation.navigate('EnumPicker', {
                   title: 'Players',
                   values: playerEnum,
-                  selected: [],
-                  eventName: 'player',
+                  selected: group?.players,
+                  eventName: 'change-players',
                   mode: 'many-or-none',
                 })
               }
             />
           }
         />
+        <ListEditor ref={listEditorRef} onChangeState={setListEditorState}>
+          <FlatList
+            contentInsetAdjustmentBehavior={'automatic'}
+            style={theme.styles.view}
+            data={groupPlayers}
+            renderItem={renderPlayer}
+            keyExtractor={item => `${item.id}`}
+            scrollEnabled={false}
+            showsVerticalScrollIndicator={false}
+          />
+        </ListEditor>
       </ScrollView>
       <KeyboardAccessory
         ref={keyboardAccessory}

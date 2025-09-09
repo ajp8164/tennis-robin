@@ -5,18 +5,23 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import EnumPickerScreen from 'components/EnumPickerScreen';
 import GroupEditorScreen from 'components/GroupEditorScreen';
 import GroupsScreen from 'components/GroupsScreen';
+import PlayerScreen from 'components/PlayerScreen';
 import { GroupsNavigatorParamList } from 'types/navigation';
 
 const GroupsStack = createNativeStackNavigator<GroupsNavigatorParamList>();
 
 const GroupsNavigator = () => {
   const theme = useTheme();
-
   return (
     <GroupsStack.Navigator
       initialRouteName={'Groups'}
       screenOptions={{
-        title: undefined,
+        headerBackButtonDisplayMode: 'minimal',
+        headerStyle: {
+          backgroundColor: theme.colors.screenHeaderBackground,
+        },
+        headerTitleStyle: { color: theme.colors.screenHeaderTitle },
+        headerTintColor: theme.colors.screenHeaderButtonText,
       }}>
       <GroupsStack.Screen
         name="Groups"
@@ -44,6 +49,13 @@ const GroupsNavigator = () => {
         component={GroupEditorScreen}
         options={{
           title: 'New Group',
+        }}
+      />
+      <GroupsStack.Screen
+        name="Player"
+        component={PlayerScreen}
+        options={{
+          title: 'Player',
         }}
       />
       <GroupsStack.Screen

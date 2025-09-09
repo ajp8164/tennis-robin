@@ -22,6 +22,7 @@ const SetupNavigator = () => {
     <SetupStack.Navigator
       initialRouteName="Setup"
       screenOptions={{
+        headerBackButtonDisplayMode: 'minimal',
         headerStyle: {
           backgroundColor: theme.colors.screenHeaderBackground,
         },
