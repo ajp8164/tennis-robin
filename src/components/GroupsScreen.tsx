@@ -10,6 +10,7 @@ import {
   listItemPosition,
   useTheme,
 } from '@react-native-hello/ui';
+import { useHeaderHeight } from '@react-navigation/elements';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Button } from 'components/atoms/Button';
 import { EmptyView } from 'components/molecules/EmptyView';
@@ -25,22 +26,27 @@ const GroupsScreen = ({ navigation }: Props) => {
   const theme = useTheme();
   // const s = useStyles();
   const confirmAction = useConfirmAction();
+  const headerHeight = useHeaderHeight();
 
-  const { docs: allGroups } = useCollection<Group>(
-    'Groups',
-    // {
-    // orderBy: [
-    //   { fieldPath: 'lastName', directionStr: 'asc' },
-    //   { fieldPath: 'firstName', directionStr: 'asc' },
-    // ],
-    // }
-  );
+  const { docs: allGroups } = useCollection<Group>('Groups', {
+    orderBy: [{ fieldPath: 'name', directionStr: 'asc' }],
+  });
 
   const listEditorRef = useRef<ListEditorMethods>(null);
   const [listEditorState, setListEditorState] = useState<ListEditorState>();
 
   useEffect(() => {
     navigation.setOptions({
+      headerLeft: () => {
+        return (
+          <Button
+            title={listEditorState?.enabled ? 'Done' : 'Edit'}
+            titleStyle={theme.styles.buttonScreenHeaderTitle}
+            buttonStyle={theme.styles.buttonScreenHeader}
+            onPress={() => listEditorRef.current?.onToggleEditMode()}
+          />
+        );
+      },
       headerRight: () => {
         return (
           <Button
@@ -55,7 +61,7 @@ const GroupsScreen = ({ navigation }: Props) => {
       },
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [listEditorState]);
 
   const deleteGroup = async (groupId: string) => {
     try {
@@ -133,10 +139,13 @@ const GroupsScreen = ({ navigation }: Props) => {
       <FlatList
         contentInsetAdjustmentBehavior={'automatic'}
         style={theme.styles.view}
+        contentContainerStyle={{
+          flexGrow: 1,
+          marginBottom: headerHeight,
+        }}
         data={allGroups}
         renderItem={renderGroup}
         keyExtractor={item => `${item.id}`}
-        scrollEnabled={false}
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={allGroups.length ? <Divider /> : null}
       />

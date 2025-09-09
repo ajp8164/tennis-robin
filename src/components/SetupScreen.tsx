@@ -3,6 +3,7 @@ import { ScrollView } from 'react-native';
 
 import { Divider, ListItem, useTheme } from '@react-native-hello/ui';
 import { CompositeScreenProps } from '@react-navigation/core';
+import { useHeaderHeight } from '@react-navigation/elements';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Avatar } from 'components/atoms/Avatar';
 import { appConfig } from 'config';
@@ -20,6 +21,7 @@ export type Props = CompositeScreenProps<
 
 const SetupScreen = ({ navigation, route }: Props) => {
   const theme = useTheme();
+  const headerHeight = useHeaderHeight();
 
   const userProfile = useUserProfile();
 
@@ -36,7 +38,11 @@ const SetupScreen = ({ navigation, route }: Props) => {
     <ScrollView
       style={theme.styles.view}
       showsVerticalScrollIndicator={false}
-      contentInsetAdjustmentBehavior={'automatic'}>
+      contentInsetAdjustmentBehavior={'automatic'}
+      contentContainerStyle={{
+        flexGrow: 1,
+        marginBottom: headerHeight,
+      }}>
       <Divider />
       <ListItem
         title={'Players'}
