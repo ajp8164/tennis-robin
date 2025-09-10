@@ -30,7 +30,6 @@ export const collectionChangeListener = <
   T extends FirebaseFirestoreTypes.DocumentData,
 >(
   collectionPath: string,
-  // handler: (snapshot: FirebaseFirestoreTypes.QuerySnapshot<T>) => void,
   handler: (documents: WithId<T>[]) => void,
   opts?: CollectionChangeListenerOptions,
 ): Unsubscribe | undefined => {
@@ -73,8 +72,6 @@ export const collectionChangeListener = <
     ) as FirebaseFirestoreTypes.CollectionReference<T>;
   }
 
-  // let q: FirebaseFirestoreTypes.Query<T> = collRef;
-
   const q: QueryWithMeta = {
     query: collRef,
     orderBy: [],
@@ -85,9 +82,6 @@ export const collectionChangeListener = <
   const whereNotArchived = firestoreWhere('archivedOn', '==', null);
 
   if (where) {
-    // where.forEach(w => {
-    //   q = firestoreQuery(q, firestoreWhere(w.fieldPath, w.opStr, w.value));
-    // });
     let noQuery = false;
 
     where.forEach(w => {
@@ -123,7 +117,6 @@ export const collectionChangeListener = <
         }
       } else {
         // Not an array filter query.
-        // q = firestoreQuery(q, firestoreWhere(w.fieldPath, w.opStr, w.value));
         q.query = firestoreQuery(
           q.query,
           firestoreWhere(w.fieldPath, w.opStr, w.value),
@@ -141,7 +134,6 @@ export const collectionChangeListener = <
   // Apply orderBy
   if (orderBy) {
     orderBy.forEach(o => {
-      // q = firestoreQuery(q, firestoreOrderBy(o.fieldPath, o.directionStr));
       q.query = firestoreQuery(
         q.query,
         firestoreOrderBy(o.fieldPath, o.directionStr),
@@ -156,56 +148,19 @@ export const collectionChangeListener = <
 
   // Apply limit (+1 to detect end)
   if (limit) {
-    // q = firestoreQuery(q, firestoreLimit(limit + 1));
     q.query = firestoreQuery(q.query, firestoreLimit(limit + 1));
   }
 
   if (lastDocument) {
-    // q = firestoreQuery(q, firestoreStartAfter(lastDocument));
     q.query = firestoreQuery(q.query, firestoreStartAfter(lastDocument));
   }
 
-  // Listen to changes
-  // const unsubscribe = onSnapshot(
-  //   q,
-  //   { includeMetadataChanges: true },
-  //   // handler,
-  //   snapshot => {
-  //     const documents: T[] = [];
-  //     if (snapshot.size) {
-  //       snapshot.forEach(doc => {
-  //         documents.push({ id: doc.id, ...doc.data() } as T);
-  //       });
-  //     }
-  //     // setDocuments(documents);
-  //   },
-  //   (e: FirestoreError) => {
-  //     if (
-  //       e instanceof Error &&
-  //       !e.message.includes('firestore/permission-denied')
-  //     ) {
-  //       log.error(
-  //         `Failed onSnapshot for ${collectionPath} collection: ${e.message}`,
-  //       );
-  //     }
-  //   },
-  // );
-
-  // addFirestoreSubscription(unsubscribe, collectionPath);
-  // return unsubscribe;
-
-  // const querySnapshot = {} as FirebaseFirestoreTypes.QuerySnapshot<T>;
   const unsubscribes: Unsubscribe[] = [];
   const chunkResults: Record<number, WithId<T>[]> = {};
   const initializedChunks = new Set<number>();
-  // const result: T[] = [];
-  console.log('Q', q);
-
-  console.log('whereInChunks', whereInChunks);
 
   if (whereInChunks.length) {
     whereInChunks.forEach((chunk, idx) => {
-      console.log('******* CHUNK', idx);
       // Pagination (lastDocument/limit) and orderBy are not used in the chunked query.
       // Ordering is done after all chunks are assembled. Pagination must be handled in
       // some other way (e.g. additional where clauses).

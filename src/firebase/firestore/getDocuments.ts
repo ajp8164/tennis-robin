@@ -54,9 +54,7 @@ export const getDocuments = async <
     const whereInChunks: QueryFieldFilterConstraint[] = [];
     const whereNotArchived = firestoreWhere('archivedOn', '==', null);
 
-    // const whereInChunks: QueryFieldFilterConstraint[] = [];
     if (where) {
-      console.log('WHERE', where);
       let noQuery = false;
 
       where.forEach(w => {

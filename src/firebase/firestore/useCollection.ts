@@ -17,15 +17,6 @@ export const useCollection = <T extends FirebaseFirestoreTypes.DocumentData>(
   useEffect(() => {
     const unsubscribe = collectionChangeListener<T>(
       collectionPath,
-      // snapshot => {
-      //   const documents: T[] = [];
-      //   if (snapshot.size) {
-      //     snapshot.forEach(doc => {
-      //       documents.push({ id: doc.id, ...doc.data() } as T);
-      //     });
-      //   }
-      //   setDocuments(documents);
-      // },
       documents => setDocuments(documents),
       opts,
     );
