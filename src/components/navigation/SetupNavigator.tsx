@@ -8,6 +8,8 @@ import ContentScreen from 'components/ContentScreen';
 import PlayerEditorScreen from 'components/PlayerEditorScreen';
 import PlayersScreen from 'components/PlayersScreen';
 import SetupScreen from 'components/SetupScreen';
+import TeamEditorScreen from 'components/TeamEditorScreen';
+import TeamsScreen from 'components/TeamsScreen';
 import UserAccountScreen from 'components/UserAccountScreen';
 import UserProfileEditorScreen from 'components/UserProfileEditorScreen';
 import { appConfig } from 'config';
@@ -63,6 +65,30 @@ const SetupNavigator = () => {
         component={PlayerEditorScreen}
         options={{
           title: 'New Player',
+          presentation: 'modal',
+        }}
+      />
+      <SetupStack.Screen
+        name="Teams"
+        component={TeamsScreen}
+        options={{
+          title: 'Teams',
+        }}
+      />
+      <SetupStack.Screen
+        name="TeamEditor"
+        component={TeamEditorScreen}
+        options={({ route }) => {
+          return {
+            title: route.params.screenTitle,
+          };
+        }}
+      />
+      <SetupStack.Screen
+        name="NewTeam"
+        component={TeamEditorScreen}
+        options={{
+          title: 'New Team',
           presentation: 'modal',
         }}
       />

@@ -1,7 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Alert, FlatList, ListRenderItem } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
+import Animated, { FadeIn } from 'react-native-reanimated';
 
+import { documentId } from '@react-native-firebase/firestore';
 import {
   Divider,
   ListEditor,
@@ -11,10 +13,12 @@ import {
   listItemPosition,
   useTheme,
 } from '@react-native-hello/ui';
+import { useHeaderHeight } from '@react-navigation/elements';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Button } from 'components/atoms/Button';
 import { EmptyView } from 'components/molecules/EmptyView';
-import { deleteDocument, useCollection } from 'firebase/firestore';
+import { archiveDocument, useCollection } from 'firebase/firestore';
+import { useSelectedTeam } from 'lib/team';
 import { useConfirmAction } from 'lib/useConfirmAction';
 import { CircleMinus, Plus, Trash2 } from 'lucide-react-native';
 import { Group } from 'types/group';
@@ -24,12 +28,22 @@ export type Props = NativeStackScreenProps<GroupsNavigatorParamList, 'Groups'>;
 
 const GroupsScreen = ({ navigation }: Props) => {
   const theme = useTheme();
+  const headerHeight = useHeaderHeight();
   const confirmAction = useConfirmAction();
 
+  const selectedTeam = useSelectedTeam();
+
   const { docs: allGroups } = useCollection<Group>('Groups', {
+    where: [
+      {
+        fieldPath: documentId(),
+        opStr: 'in',
+        value: selectedTeam?.groups || [],
+      },
+    ],
     orderBy: [{ fieldPath: 'name', directionStr: 'asc' }],
   });
-
+  console.log(allGroups);
   const listEditorRef = useRef<ListEditorMethods>(null);
   const [listEditorState, setListEditorState] = useState<ListEditorState>();
 
@@ -61,9 +75,9 @@ const GroupsScreen = ({ navigation }: Props) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [listEditorState]);
 
-  const deleteGroup = async (groupId: string) => {
+  const archiveGroup = async (group: Group) => {
     try {
-      await deleteDocument('Groups', groupId);
+      await archiveDocument('Groups', group);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (e: any) {
       Alert.alert(
@@ -113,30 +127,37 @@ const GroupsScreen = ({ navigation }: Props) => {
                   'This action cannot be undone.\nAre you sure you want to delete this group?',
               });
             },
-            onPress: () => group.id && deleteGroup(group.id),
+            onPress: () => group.id && archiveGroup(group),
           },
         ]}
       />
     );
   };
-
-  if (!allGroups.length) {
-    return (
+  const renderGroupsEmpty = () => (
+    <>
+      <Divider />
       <EmptyView
         info
         message={'No Groups'}
         details={'Tap the + button to add a Group.'}
+        positionTop
         buttonTitle={'Add Group'}
         onButtonPress={() => navigation.navigate('NewGroup', {})}
       />
-    );
-  }
+    </>
+  );
 
   return (
     <ScrollView
       style={theme.styles.view}
       showsVerticalScrollIndicator={false}
-      contentInsetAdjustmentBehavior={'automatic'}>
+      contentInsetAdjustmentBehavior={'automatic'}
+      contentContainerStyle={{ flexGrow: 1, marginBottom: headerHeight }}>
+      <Animated.Text
+        style={[theme.text.medium, { paddingLeft: 10 }]}
+        entering={FadeIn}>
+        {selectedTeam?.name || ''}
+      </Animated.Text>
       <ListEditor ref={listEditorRef} onChangeState={setListEditorState}>
         <FlatList
           scrollEnabled={false}
@@ -146,6 +167,7 @@ const GroupsScreen = ({ navigation }: Props) => {
           showsVerticalScrollIndicator={false}
           ListHeaderComponent={<Divider />}
           ListFooterComponent={<Divider />}
+          ListEmptyComponent={renderGroupsEmpty()}
         />
       </ListEditor>
     </ScrollView>

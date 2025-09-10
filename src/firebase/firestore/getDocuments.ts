@@ -15,35 +15,48 @@ import {
 import { log } from '@react-native-hello/core';
 import { AppError } from 'lib/errors';
 
-import { QueryOrderBy, QueryResult, QueryWhere } from './index';
+import {
+  QueryOrderBy,
+  QueryResult,
+  QueryWhere,
+  QueryWithMeta,
+  WithId,
+  whereInChunkSize,
+} from './index';
 
-const whereInChunkSize = 10; // Firestore limit
-
-export const getDocuments = async <T extends { id?: string }>(
+export const getDocuments = async <
+  T extends FirebaseFirestoreTypes.DocumentData,
+>(
   collectionPath: string,
   opts?: {
     orderBy?: QueryOrderBy[];
     limit?: number;
     where?: QueryWhere[];
     lastDocument?: FirebaseFirestoreTypes.QueryDocumentSnapshot<FirebaseFirestoreTypes.DocumentData>;
-    skipIdMap?: boolean;
     fromCache?: boolean;
   },
 ): Promise<QueryResult<T>> => {
-  const { orderBy, limit, lastDocument, skipIdMap, where, fromCache } =
-    opts || {};
+  const { orderBy, limit, lastDocument, where, fromCache } = opts || {};
 
   const app = getApp();
   const db = getFirestore(app);
 
   try {
-    const whereInChunks: QueryFieldFilterConstraint[] = [];
-
-    let q: FirebaseFirestoreTypes.Query<FirebaseFirestoreTypes.DocumentData> =
+    const collRef: FirebaseFirestoreTypes.Query<FirebaseFirestoreTypes.DocumentData> =
       collection(db, collectionPath);
 
+    const q: QueryWithMeta = {
+      query: collRef,
+      orderBy: [],
+    };
+
     // Apply where filters
+    const whereInChunks: QueryFieldFilterConstraint[] = [];
+    const whereNotArchived = firestoreWhere('archivedOn', '==', null);
+
+    // const whereInChunks: QueryFieldFilterConstraint[] = [];
     if (where) {
+      console.log('WHERE', where);
       let noQuery = false;
 
       where.forEach(w => {
@@ -79,10 +92,14 @@ export const getDocuments = async <T extends { id?: string }>(
           }
         } else {
           // Not an array filter query.
-          q = firestoreQuery(q, firestoreWhere(w.fieldPath, w.opStr, w.value));
+          q.query = firestoreQuery(
+            q.query,
+            firestoreWhere(w.fieldPath, w.opStr, w.value),
+          );
         }
       });
 
+      // If the where clause would not select any documents then return;
       if (noQuery) {
         return {
           allLoaded: true,
@@ -96,18 +113,26 @@ export const getDocuments = async <T extends { id?: string }>(
     // Apply orderBy
     if (orderBy) {
       orderBy.forEach(o => {
-        q = firestoreQuery(q, firestoreOrderBy(o.fieldPath, o.directionStr));
+        q.query = firestoreQuery(
+          q.query,
+          firestoreOrderBy(o.fieldPath, o.directionStr),
+        );
+
+        q.orderBy.push({
+          field: o.fieldPath as string,
+          direction: o.directionStr,
+        });
       });
     }
 
     // Apply pagination
     if (lastDocument) {
-      q = firestoreQuery(q, startAfter(lastDocument));
+      q.query = firestoreQuery(q.query, startAfter(lastDocument));
     }
 
     // Apply limit (+1 to detect end)
     if (limit) {
-      q = firestoreQuery(q, firestoreLimit(limit + 1));
+      q.query = firestoreQuery(q.query, firestoreLimit(limit + 1));
     }
 
     const getDocsFn = fromCache ? getDocsFromCache : getDocs;
@@ -115,34 +140,52 @@ export const getDocuments = async <T extends { id?: string }>(
     let docCount = 0;
     let lastDocRead = {} as FirebaseFirestoreTypes.DocumentData;
     let querySnapshot = {} as FirebaseFirestoreTypes.QuerySnapshot<T>;
-    const result: T[] = [];
+    const result: WithId<T>[] = [];
 
     if (whereInChunks.length) {
       // Chunked query.
       for (const wiChunk of whereInChunks) {
-        querySnapshot = await getDocsFn(firestoreQuery(q, wiChunk));
+        // Always select from unarchived documents.
+        q.query = firestoreQuery(q.query, whereNotArchived);
+
+        querySnapshot = await getDocsFn(firestoreQuery(q.query, wiChunk));
 
         docCount += querySnapshot.docs.length;
         lastDocRead = querySnapshot.docs[querySnapshot.docs.length - 1];
 
         result.push(
           ...querySnapshot.docs.map(d => ({
-            id: skipIdMap ? undefined : d.id,
             ...d.data(),
+            id: d.id,
           })),
         );
       }
+
+      // Apply orderBy. Chunked queries cannot be ordered on the server so we
+      // use the orderBy filter to sort here. Sort asc unless desc is specified.
+      q.orderBy.forEach(ob => {
+        result.sort((a, b) => {
+          if (a[ob.field] < b[ob.field])
+            return ob.direction === 'desc' ? 1 : -1;
+          if (a[ob.field] > b[ob.field])
+            return ob.direction === 'desc' ? -1 : 1;
+          return 0;
+        });
+      });
     } else {
       // Single query.
-      querySnapshot = await getDocsFn(q);
+      // Always select from unarchived documents.
+      q.query = firestoreQuery(q.query, whereNotArchived);
+
+      querySnapshot = await getDocsFn(q.query);
 
       docCount += querySnapshot.docs.length;
       lastDocRead = querySnapshot.docs[querySnapshot.docs.length - 1];
 
       result.push(
         ...querySnapshot.docs.map(d => ({
-          id: skipIdMap ? undefined : d.id,
           ...d.data(),
+          id: d.id,
         })),
       );
     }

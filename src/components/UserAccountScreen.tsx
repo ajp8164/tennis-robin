@@ -85,9 +85,11 @@ const UserAccountScreen = ({ navigation }: Props) => {
         {userProfile.name.length ? (
           <Text style={s.subtitle}>{userProfile.email}</Text>
         ) : null}
-        <Text style={s.subtitle}>
-          {`Since ${DateTime.fromISO(userProfile.createdOn).toFormat('MMMM yyyy')}`}
-        </Text>
+        {userProfile.createdOn ? (
+          <Text style={s.subtitle}>
+            {`Since ${DateTime.fromISO(userProfile.createdOn).toFormat('MMMM yyyy')}`}
+          </Text>
+        ) : null}
       </View>
       <Divider />
       <ListItem

@@ -14,7 +14,9 @@ export enum UserStatus {
 
 export type UserProfile = {
   id: string;
-  createdOn: ISODateString;
+  createdOn?: ISODateString;
+  updatedOn?: ISODateString;
+  archivedOn?: ISODateString;
   name: string;
   firstName: string;
   lastName: string;
@@ -27,7 +29,6 @@ export type UserProfile = {
   };
   role: UserRole;
   status: UserStatus;
-  groups: string[];
   notifications: {
     badgeCount: number;
     pushTokens: string[];

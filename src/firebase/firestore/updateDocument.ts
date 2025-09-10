@@ -6,6 +6,7 @@ import {
   updateDoc,
 } from '@react-native-firebase/firestore';
 import { log } from '@react-native-hello/core';
+import { DateTime } from 'luxon';
 
 import { WithId } from './index';
 
@@ -18,6 +19,8 @@ export const updateDocument = async <T>(path: string, doc: T) => {
   if (!id) throw `Failed to update document at path ${path}: no id`;
 
   delete (updated as Partial<WithId<T>>).id; // Remove id from object before storing
+
+  updated.updatedOn = DateTime.now().toISO();
 
   const docRef: FirebaseFirestoreTypes.DocumentReference<FirebaseFirestoreTypes.DocumentData> =
     FSDoc(db, path, id);

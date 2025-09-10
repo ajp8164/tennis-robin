@@ -56,6 +56,9 @@ export type SetupNavigatorParamList = {
   NewPlayer: {
     playerId?: string;
   };
+  NewTeam: {
+    teamId?: string;
+  };
   Players: undefined;
   PlayerEditor: {
     playerId: string;
@@ -63,6 +66,11 @@ export type SetupNavigatorParamList = {
   };
   Setup: {
     subNav?: string;
+  };
+  Teams: undefined;
+  TeamEditor: {
+    teamId: string;
+    screenTitle: string;
   };
   UserAccount: undefined;
   UserProfileEditor: undefined;

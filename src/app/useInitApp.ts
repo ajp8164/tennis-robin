@@ -11,6 +11,7 @@ import { ReactNativeHello, log } from '@react-native-hello/core';
 import { appConfig } from 'config';
 import { svgImages } from 'images';
 import { AppError } from 'lib/errors';
+import { useDefaultTeam } from 'lib/team';
 
 export enum InitStatus {
   NotAuthorized = 'NotAuthorized',
@@ -19,6 +20,8 @@ export enum InitStatus {
 }
 
 export const useInitApp = () => {
+  useDefaultTeam();
+
   return async () => {
     try {
       // Initialize firestore for dev as necessary.

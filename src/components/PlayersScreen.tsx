@@ -14,7 +14,7 @@ import {
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Button } from 'components/atoms/Button';
 import { EmptyView } from 'components/molecules/EmptyView';
-import { deleteDocument, useCollection } from 'firebase/firestore';
+import { archiveDocument, useCollection } from 'firebase/firestore';
 import { useConfirmAction } from 'lib/useConfirmAction';
 import { CircleMinus, Plus, Trash2 } from 'lucide-react-native';
 import { SetupNavigatorParamList } from 'types/navigation';
@@ -54,9 +54,9 @@ const PlayersScreen = ({ navigation }: Props) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const deletePlayer = async (playerId: string) => {
+  const archivePlayer = async (player: Player) => {
     try {
-      await deleteDocument('Players', playerId);
+      await archiveDocument('Players', player);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (e: any) {
       Alert.alert(
@@ -119,7 +119,7 @@ const PlayersScreen = ({ navigation }: Props) => {
                   'This action cannot be undone.\nAre you sure you want to delete this player?',
               });
             },
-            onPress: () => player.id && deletePlayer(player.id),
+            onPress: () => archivePlayer(player),
           },
         ]}
       />
@@ -145,6 +145,7 @@ const PlayersScreen = ({ navigation }: Props) => {
         data={allPlayers}
         renderItem={renderPlayer}
         keyExtractor={item => `${item.id}`}
+        contentContainerStyle={{ flexGrow: 1 }}
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={allPlayers.length ? <Divider /> : null}
         ListFooterComponent={<Divider />}

@@ -2,6 +2,8 @@ import { getApp } from '@react-native-firebase/app';
 import {
   doc as FSDoc,
   FirebaseFirestoreTypes,
+  FirestoreError,
+  QueryFieldFilterConstraint,
   Unsubscribe,
   collection,
   limit as firestoreLimit,
@@ -13,18 +15,25 @@ import {
   onSnapshot,
 } from '@react-native-firebase/firestore';
 import { log } from '@react-native-hello/core';
+import { AppError } from 'lib/errors';
 import { UserRole } from 'types/user';
 
-import { CollectionChangeListenerOptions } from './index';
+import {
+  CollectionChangeListenerOptions,
+  QueryWithMeta,
+  WithId,
+  whereInChunkSize,
+} from './index';
 import { addFirestoreSubscription } from './subscriptions';
 
 export const collectionChangeListener = <
   T extends FirebaseFirestoreTypes.DocumentData,
 >(
   collectionPath: string,
-  handler: (snapshot: FirebaseFirestoreTypes.QuerySnapshot<T>) => void,
+  // handler: (snapshot: FirebaseFirestoreTypes.QuerySnapshot<T>) => void,
+  handler: (documents: WithId<T>[]) => void,
   opts?: CollectionChangeListenerOptions,
-): Unsubscribe => {
+): Unsubscribe | undefined => {
   const { lastDocument, limit, orderBy, where, subCollection, auth } =
     opts || {};
   const app = getApp();
@@ -64,45 +73,222 @@ export const collectionChangeListener = <
     ) as FirebaseFirestoreTypes.CollectionReference<T>;
   }
 
-  // Apply filters
-  let q: FirebaseFirestoreTypes.Query<T> = collRef;
+  // let q: FirebaseFirestoreTypes.Query<T> = collRef;
+
+  const q: QueryWithMeta = {
+    query: collRef,
+    orderBy: [],
+  };
+
+  // Apply where filters
+  const whereInChunks: QueryFieldFilterConstraint[] = [];
+  const whereNotArchived = firestoreWhere('archivedOn', '==', null);
+
   if (where) {
+    // where.forEach(w => {
+    //   q = firestoreQuery(q, firestoreWhere(w.fieldPath, w.opStr, w.value));
+    // });
+    let noQuery = false;
+
     where.forEach(w => {
-      q = firestoreQuery(q, firestoreWhere(w.fieldPath, w.opStr, w.value));
+      // Check for whereIn operation. Firestore enforces a limit to the length of
+      // the value array (whereInChunkSize). We need to break the query in to chunks
+      // and assemble the results as queries are processed.
+      //
+      // These where-filter operations are subject to the limit.
+      if (['in', 'array-contains-any'].includes(w.opStr)) {
+        // Short circuit a whereIn filter that will return no results (an empty value array).
+        if (!w.value.length) {
+          noQuery = true;
+          return;
+        }
+
+        // This implementation allows only one whereIn filter clause. Throw an error
+        // if more than one is specified.
+        if (whereInChunks.length > 0) {
+          throw new AppError(
+            'Cannot call getDocuments with multiple where "in" or where "array-contains-any"',
+          );
+        }
+
+        // Split values into chunks of where-filter clauses.
+        for (let i = 0; i < w.value.length; i += whereInChunkSize) {
+          whereInChunks.push(
+            firestoreWhere(
+              w.fieldPath,
+              w.opStr,
+              w.value.slice(i, i + whereInChunkSize),
+            ),
+          );
+        }
+      } else {
+        // Not an array filter query.
+        // q = firestoreQuery(q, firestoreWhere(w.fieldPath, w.opStr, w.value));
+        q.query = firestoreQuery(
+          q.query,
+          firestoreWhere(w.fieldPath, w.opStr, w.value),
+        );
+      }
     });
+
+    // If the where clause would not select any documents then return.
+    if (noQuery) {
+      handler([]);
+      return;
+    }
   }
 
+  // Apply orderBy
   if (orderBy) {
     orderBy.forEach(o => {
-      q = firestoreQuery(q, firestoreOrderBy(o.fieldPath, o.directionStr));
+      // q = firestoreQuery(q, firestoreOrderBy(o.fieldPath, o.directionStr));
+      q.query = firestoreQuery(
+        q.query,
+        firestoreOrderBy(o.fieldPath, o.directionStr),
+      );
+
+      q.orderBy.push({
+        field: o.fieldPath as string,
+        direction: o.directionStr,
+      });
     });
   }
 
+  // Apply limit (+1 to detect end)
   if (limit) {
-    q = firestoreQuery(q, firestoreLimit(limit));
+    // q = firestoreQuery(q, firestoreLimit(limit + 1));
+    q.query = firestoreQuery(q.query, firestoreLimit(limit + 1));
   }
 
   if (lastDocument) {
-    q = firestoreQuery(q, firestoreStartAfter(lastDocument));
+    // q = firestoreQuery(q, firestoreStartAfter(lastDocument));
+    q.query = firestoreQuery(q.query, firestoreStartAfter(lastDocument));
   }
 
   // Listen to changes
-  const unsubscribe = onSnapshot(
-    q,
-    { includeMetadataChanges: true },
-    handler,
-    (e: unknown) => {
-      if (
-        e instanceof Error &&
-        !e.message.includes('firestore/permission-denied')
-      ) {
-        log.error(
-          `Failed onSnapshot for ${collectionPath} collection: ${e.message}`,
-        );
-      }
-    },
-  );
+  // const unsubscribe = onSnapshot(
+  //   q,
+  //   { includeMetadataChanges: true },
+  //   // handler,
+  //   snapshot => {
+  //     const documents: T[] = [];
+  //     if (snapshot.size) {
+  //       snapshot.forEach(doc => {
+  //         documents.push({ id: doc.id, ...doc.data() } as T);
+  //       });
+  //     }
+  //     // setDocuments(documents);
+  //   },
+  //   (e: FirestoreError) => {
+  //     if (
+  //       e instanceof Error &&
+  //       !e.message.includes('firestore/permission-denied')
+  //     ) {
+  //       log.error(
+  //         `Failed onSnapshot for ${collectionPath} collection: ${e.message}`,
+  //       );
+  //     }
+  //   },
+  // );
 
-  addFirestoreSubscription(unsubscribe, collectionPath);
-  return unsubscribe;
+  // addFirestoreSubscription(unsubscribe, collectionPath);
+  // return unsubscribe;
+
+  // const querySnapshot = {} as FirebaseFirestoreTypes.QuerySnapshot<T>;
+  const unsubscribes: Unsubscribe[] = [];
+  const chunkResults: Record<number, WithId<T>[]> = {};
+  const initializedChunks = new Set<number>();
+  // const result: T[] = [];
+  console.log('Q', q);
+
+  console.log('whereInChunks', whereInChunks);
+
+  if (whereInChunks.length) {
+    whereInChunks.forEach((chunk, idx) => {
+      console.log('******* CHUNK', idx);
+      // Pagination (lastDocument/limit) and orderBy are not used in the chunked query.
+      // Ordering is done after all chunks are assembled. Pagination must be handled in
+      // some other way (e.g. additional where clauses).
+      let qC = firestoreQuery(collection(db, collectionPath), chunk);
+
+      // Always select from unarchived documents.
+      qC = firestoreQuery(qC, whereNotArchived);
+
+      const unsubscribe = onSnapshot(
+        qC,
+        (snapshot: FirebaseFirestoreTypes.QuerySnapshot<T>) => {
+          // Update this chunk’s results.
+          chunkResults[idx] = snapshot.docs.map(
+            doc => ({ id: doc.id, ...doc.data() }) as WithId<T>,
+          );
+
+          initializedChunks.add(idx);
+
+          // Wait until all chunks have emitted at least once.
+          if (initializedChunks.size === whereInChunks.length) {
+            const merged = Object.values(chunkResults).flat();
+
+            // Apply orderBy. Chunked queries cannot be ordered on the server so we
+            // use the orderBy filter to sort here. Sort asc unless desc is specified.
+            q.orderBy.forEach(ob => {
+              merged.sort((a, b) => {
+                if (a[ob.field] < b[ob.field])
+                  return ob.direction === 'desc' ? 1 : -1;
+                if (a[ob.field] > b[ob.field])
+                  return ob.direction === 'desc' ? -1 : 1;
+                return 0;
+              });
+            });
+
+            handler(merged);
+          }
+        },
+        (e: FirestoreError) => {
+          if (
+            e instanceof Error &&
+            !e.message.includes('firestore/permission-denied')
+          ) {
+            log.error(
+              `Failed onSnapshot for ${collectionPath} collection: ${e.message}`,
+            );
+          }
+        },
+      );
+
+      addFirestoreSubscription(unsubscribe, collectionPath);
+      unsubscribes.push(unsubscribe);
+    });
+
+    return () => unsubscribes.forEach(u => u());
+  } else {
+    // Not a chunked snapshot.
+    // Always select from unarchived documents.
+    q.query = firestoreQuery(q.query, whereNotArchived);
+
+    const unsubscribe = onSnapshot(
+      q.query,
+      { includeMetadataChanges: true },
+      (snapshot: FirebaseFirestoreTypes.QuerySnapshot<T>) => {
+        const documents: WithId<T>[] = [];
+        if (snapshot.size) {
+          snapshot.forEach(doc => {
+            documents.push({ id: doc.id, ...doc.data() } as WithId<T>);
+          });
+        }
+        handler(documents);
+      },
+      (e: FirestoreError) => {
+        if (
+          e instanceof Error &&
+          !e.message.includes('firestore/permission-denied')
+        ) {
+          log.error(
+            `Failed onSnapshot for ${collectionPath} collection: ${e.message}`,
+          );
+        }
+      },
+    );
+
+    return unsubscribe;
+  }
 };

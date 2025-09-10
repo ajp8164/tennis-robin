@@ -47,6 +47,8 @@ const PlayerEditorScreen = ({ navigation, route }: Props) => {
 
   const theme = useTheme();
 
+  const [player, setPlayer] = useState<Player>();
+
   const [initialValues, setInitialValues] = useState<FormValues>({
     firstName: '',
     lastName: '',
@@ -58,6 +60,7 @@ const PlayerEditorScreen = ({ navigation, route }: Props) => {
     if (playerId) {
       getDocument<Player>('Players', playerId).then(player => {
         if (player) {
+          setPlayer(player);
           setInitialValues({
             firstName: player.firstName,
             lastName: player.lastName,
@@ -111,12 +114,12 @@ const PlayerEditorScreen = ({ navigation, route }: Props) => {
   const onSubmit = (values: FormValues) => {
     if (playerId) {
       updateDocument<Player>('Players', {
-        id: playerId,
+        ...player,
         firstName: values.firstName,
         lastName: values.lastName,
         email: values.email,
         status: values.status,
-      });
+      } as Player);
     } else {
       addDocument<Player>('Players', {
         firstName: values.firstName,

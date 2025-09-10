@@ -13,7 +13,6 @@ import { AuthContext, signOut } from 'lib/auth';
 import { removePushNotificationsFromUser } from 'lib/notifications';
 import { getUserAvatarColor, getUserInitials } from 'lib/user';
 import lodash from 'lodash';
-import { DateTime } from 'luxon';
 import { store } from 'store';
 import { revertAppSettings, revertCredentials } from 'store/actions';
 import { saveUser } from 'store/slices/user';
@@ -40,7 +39,6 @@ export const useAuthorizeUser = () => {
 
     return {
       id: credentials.uid,
-      createdOn: DateTime.now().toISO(),
       name: displayName,
       firstName,
       lastName,
@@ -54,7 +52,6 @@ export const useAuthorizeUser = () => {
       },
       role: UserRole.User,
       status: UserStatus.Active,
-      groups: [],
       notifications: {
         badgeCount: 0,
         pushTokens: [],

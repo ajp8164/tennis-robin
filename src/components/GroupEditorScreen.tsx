@@ -39,10 +39,12 @@ import {
 } from 'firebase/firestore';
 import { Formik, FormikProps } from 'formik';
 import { useUserProfile } from 'lib/auth';
+import { useSelectedTeam } from 'lib/team';
 import { CircleMinus, EyeOff } from 'lucide-react-native';
 import { Group } from 'types/group';
 import { GroupsNavigatorParamList } from 'types/navigation';
 import { Player, PlayerStatus } from 'types/player';
+import { Team } from 'types/team';
 import * as Yup from 'yup';
 
 // CompositeScreenProps not working here since NewGroup is also in the SetupNavigator
@@ -66,18 +68,28 @@ const GroupEditorScreen = ({ navigation, route }: Props) => {
   const theme = useTheme();
   const event = useEvent();
   const userProfile = useUserProfile();
+  const selectedTeam = useSelectedTeam();
 
   const { doc: group } = useDocument<Group>('Groups', groupId);
   const [groupPlayers, setGroupPlayers] = useState<Player[]>([]);
 
   // For building the player picker enum.
   const [playerEnum, setPlayerEnum] = useState<EnumPickerValue[]>([]);
+
   const { docs: allPlayers } = useCollection<Player>('Players', {
+    where: [
+      {
+        fieldPath: 'user',
+        opStr: 'in',
+        value: selectedTeam?.users || [],
+      },
+    ],
     orderBy: [
       { fieldPath: 'lastName', directionStr: 'asc' },
       { fieldPath: 'firstName', directionStr: 'asc' },
     ],
   });
+  console.log('U', allPlayers, selectedTeam?.users);
 
   const [initialValues, setInitialValues] = useState<FormValues>({
     name: '',
@@ -209,18 +221,26 @@ const GroupEditorScreen = ({ navigation, route }: Props) => {
     navigation.goBack();
   };
 
-  const onSubmit = (values: FormValues) => {
+  const onSubmit = async (values: FormValues) => {
     if (group) {
       updateDocument<Group>('Groups', {
         ...group,
         name: values.name,
       });
     } else {
-      addDocument<Group>('Groups', {
+      const newGroup = await addDocument<Group>('Groups', {
         name: values.name,
         owners: [userProfile!.id],
         players: [],
       });
+
+      // Associate the new group with my selected team.
+      if (selectedTeam && newGroup.id) {
+        updateDocument<Team>('Teams', {
+          ...selectedTeam,
+          groups: [...selectedTeam.groups, newGroup.id],
+        } as Team);
+      }
     }
   };
 
@@ -299,6 +319,7 @@ const GroupEditorScreen = ({ navigation, route }: Props) => {
               title: 'Players',
               values: playerEnum,
               selected: group?.players,
+              itemPlural: 'Players',
               eventName: 'change-players',
               mode: 'many-or-none',
             })
@@ -322,6 +343,7 @@ const GroupEditorScreen = ({ navigation, route }: Props) => {
             title: 'Players',
             values: playerEnum,
             selected: group?.players,
+            itemPlural: 'Players',
             eventName: 'change-players',
             mode: 'many-or-none',
           })
@@ -335,7 +357,8 @@ const GroupEditorScreen = ({ navigation, route }: Props) => {
       <ScrollView
         style={theme.styles.view}
         showsVerticalScrollIndicator={false}
-        contentInsetAdjustmentBehavior={'automatic'}>
+        contentInsetAdjustmentBehavior={'automatic'}
+        contentContainerStyle={{ flexGrow: 1 }}>
         <Divider />
         <Formik
           innerRef={formik => {

@@ -21,10 +21,7 @@ const ignoredActions = [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER];
 const persistConfig = {
   key: 'root',
   storage: AsyncStorage,
-  whitelist: [
-    'appSettings',
-    'user',
-  ],
+  whitelist: ['appSettings', 'team', 'user'],
 };
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);

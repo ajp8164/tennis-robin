@@ -8,6 +8,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Avatar } from 'components/atoms/Avatar';
 import { appConfig } from 'config';
 import { useUserProfile } from 'lib/auth';
+import { useSelectedTeam } from 'lib/team';
 import { Info, Settings, Users } from 'lucide-react-native';
 import {
   SetupNavigatorParamList,
@@ -25,6 +26,8 @@ const SetupScreen = ({ navigation, route }: Props) => {
 
   const userProfile = useUserProfile();
 
+  const selectedTeam = useSelectedTeam();
+
   useEffect(() => {
     if (route.params?.subNav) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -39,10 +42,17 @@ const SetupScreen = ({ navigation, route }: Props) => {
       style={theme.styles.view}
       showsVerticalScrollIndicator={false}
       contentInsetAdjustmentBehavior={'automatic'}
-      contentContainerStyle={{
-        flexGrow: 1,
-        marginBottom: headerHeight,
-      }}>
+      contentContainerStyle={{ flexGrow: 1, marginBottom: headerHeight }}>
+      <Divider />
+      <ListItem
+        title={'Current Team'}
+        subtitle={'Tap to select or create a team'}
+        value={selectedTeam?.name}
+        leftContent={<Users color={theme.colors.listItemIcon} />}
+        position={['first', 'last']}
+        rightContent={'chevron-right'}
+        onPress={() => navigation.navigate('Teams')}
+      />
       <Divider />
       <ListItem
         title={'Players'}
