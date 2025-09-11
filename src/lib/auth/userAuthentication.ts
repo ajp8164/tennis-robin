@@ -1,4 +1,5 @@
 import { useContext } from 'react';
+import { Alert } from 'react-native';
 import { AccessToken, LoginManager } from 'react-native-fbsdk-next';
 
 import { appleAuth } from '@invertase/react-native-apple-authentication';
@@ -241,13 +242,19 @@ export const useCreateUserWithEmailAndPassword = () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (e: any) {
       if (e.message.includes('auth/email-already-exists')) {
-        throw new Error(
+        Alert.alert(
+          'Email Not Available',
           'The provided email is already in use by an existing user.',
+          [{ text: 'OK' }],
+          { cancelable: false },
         );
       }
       log.error(`Create account error: ${e.message}`);
-      throw new Error(
+      Alert.alert(
+        'Account Not Created',
         'An internal error occurred while creating your account. Please try again.',
+        [{ text: 'OK' }],
+        { cancelable: false },
       );
     }
   };
