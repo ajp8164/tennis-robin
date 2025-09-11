@@ -25,6 +25,7 @@ const HomeScreen = () => {
   // Check for pending tokens and action them immediatley.
   // Query tokens using my email address.
   useEffect(() => {
+    if (!userProfile) return;
     (async () => {
       const { result: tokens } = await getDocuments<Token>('Tokens', {
         where: [
