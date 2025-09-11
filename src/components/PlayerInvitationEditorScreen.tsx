@@ -100,19 +100,9 @@ const PlayerInvitationEditorScreen = ({ navigation }: Props) => {
   const onFormikWatcherStateChange = (
     state: FormikWatcherState<FormValues>,
   ) => {
-    const { next, changedFields, isValid = false } = state;
+    const { next, isValid = false } = state;
     const canSubmit = next.dirty && isValid;
     setFormikCanSubmit(canSubmit);
-
-    // Update header as name changes.
-    if (
-      changedFields?.includes('firstName') ||
-      changedFields?.includes('lastName')
-    ) {
-      navigation.setOptions({
-        title: `${next?.values.firstName || ''} ${next?.values.lastName || ''}`,
-      });
-    }
 
     navigation.setOptions({
       headerLeft: () => {
