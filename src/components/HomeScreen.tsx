@@ -9,7 +9,6 @@ import {
   useTheme,
 } from '@react-native-hello/ui';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { Button } from 'components/atoms/Button';
 import { InviteRedemptionModal } from 'components/modals/InviteRedemptionModal';
 import { appConfig } from 'config';
 import { getDocuments } from 'firebase/firestore';
@@ -75,7 +74,7 @@ const HomeScreen = () => {
           <Text
             style={[
               theme.text.h2,
-              { fontWeight: '700', marginBottom: 30 },
+              { fontWeight: '700', marginBottom: 10 },
             ]}>{`Welcome to\n${appConfig.appName}!`}</Text>
           <Text style={s.text}>{`${selectedTeam?.name}`}</Text>
           {acceptedInvitation ? (
@@ -85,13 +84,6 @@ const HomeScreen = () => {
               }>{`Welcome to team "${acceptedInvitation.teamName}" ${userProfile?.firstName}!`}</Text>
           ) : null}
         </View>
-        <Button
-          title={'New Tournament'}
-          titleStyle={theme.styles.buttonTitle}
-          buttonStyle={theme.styles.button}
-          containerStyle={[theme.styles.buttonBottomContainer, s.buttonBottom]}
-          onPress={() => null}
-        />
       </View>
       <InviteRedemptionModal
         ref={inviteRedemptionModalModalRef}
@@ -105,9 +97,6 @@ const useStyles = ThemeManager.createStyleSheet(({ device, theme }) => ({
   accepted: {
     ...theme.text.xl,
     marginTop: 50,
-  },
-  buttonBottom: {
-    bottom: 30,
   },
   content: {
     position: 'absolute',

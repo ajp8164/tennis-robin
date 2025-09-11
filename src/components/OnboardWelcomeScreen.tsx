@@ -53,7 +53,7 @@ const OnboardWelcomeScreen = ({ navigation }: Props) => {
           }
         />
       </View>
-      <Version />
+      <Version withInset />
     </View>
   );
 };

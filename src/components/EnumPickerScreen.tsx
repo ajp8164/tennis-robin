@@ -1,4 +1,4 @@
-import React, { ReactElement, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { FlatList, ListRenderItem, ScrollView, View } from 'react-native';
 
 import { useEvent, useSetState } from '@react-native-hello/core';
@@ -10,20 +10,24 @@ import {
 } from '@react-native-hello/ui';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Button } from 'components/atoms/Button';
+import { DynamicIcon } from 'components/atoms/DynamicIcon';
 import { EmptyView } from 'components/molecules/EmptyView';
 import { useScreenEditHeader } from 'lib/useScreenEditHeader';
 import lodash from 'lodash';
+import { LucideIcon } from 'lucide-react-native';
 import { MultipleNavigatorParamList } from 'types/navigation';
 
 export type EnumPickerIconProps = {
-  hideTitle?: boolean;
-  leftContent?: ReactElement;
-  name?: string;
+  icon: LucideIcon;
+  color?: string;
 } | null;
 
 export type EnumPickerValue = {
   id: string;
-  label: string;
+  title: string;
+  subtitle?: string;
+  leftIcon?: EnumPickerIconProps;
+  rightIcon?: EnumPickerIconProps;
 };
 
 export type EnumPickerInterface = {
@@ -31,7 +35,6 @@ export type EnumPickerInterface = {
   title: string;
   itemPlural?: string;
   headerBackTitle?: string;
-  icons?: { [key in string]: EnumPickerIconProps }; // Key is a enum id
   sectionName?: string;
   footer?: string;
   values: EnumPickerValue[];
@@ -54,7 +57,6 @@ const EnumPickerScreen = ({ route, navigation }: Props) => {
     title,
     itemPlural = 'Items',
     headerBackTitle,
-    icons,
     sectionName,
     footer,
     values,
@@ -134,12 +136,6 @@ const EnumPickerScreen = ({ route, navigation }: Props) => {
     setList({ selected: [] }, { assign: true });
   };
 
-  const getIconEl = (value: EnumPickerValue) => {
-    return icons?.[value.id] ? (
-      <View key={value.id}>{icons[value.id]?.leftContent}</View>
-    ) : undefined;
-  };
-
   const renderValue: ListRenderItem<EnumPickerValue> = ({
     item: value,
     index,
@@ -147,8 +143,28 @@ const EnumPickerScreen = ({ route, navigation }: Props) => {
     return (
       <ListItemCheckBox
         key={`${value}${index}`}
-        title={icons?.[value.label]?.hideTitle ? '' : value.label}
-        leftContent={getIconEl(value)}
+        title={value.title}
+        subtitle={value.subtitle}
+        leftContent={
+          value.leftIcon ? (
+            <DynamicIcon
+              icon={value.leftIcon.icon}
+              color={value.leftIcon.color}
+            />
+          ) : (
+            <></>
+          )
+        }
+        value={
+          value.rightIcon ? (
+            <DynamicIcon
+              icon={value.rightIcon.icon}
+              color={value.rightIcon.color}
+            />
+          ) : (
+            <></>
+          )
+        }
         position={
           mode === 'one-or-none'
             ? index === 0

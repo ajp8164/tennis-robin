@@ -42,17 +42,17 @@ import { useUserProfile } from 'lib/auth';
 import { usePlayerStatusDecoration } from 'lib/player';
 import { useSelectedTeam } from 'lib/team';
 import { CircleMinus, EyeOff } from 'lucide-react-native';
-import { Group } from 'types/group';
-import { GroupsNavigatorParamList } from 'types/navigation';
+import { TournamentsNavigatorParamList } from 'types/navigation';
 import { Player } from 'types/player';
 import { Team } from 'types/team';
+import { Tournament } from 'types/tournament';
 import * as Yup from 'yup';
 
-// CompositeScreenProps not working here since NewGroup is also in the SetupNavigator
+// CompositeScreenProps not working here since NewTournament is also in the SetupNavigator
 // just using a different presentation (didn't create a new navigator for a single screen).
 export type Props =
-  | NativeStackScreenProps<GroupsNavigatorParamList, 'GroupEditor'>
-  | NativeStackScreenProps<GroupsNavigatorParamList, 'NewGroup'>;
+  | NativeStackScreenProps<TournamentsNavigatorParamList, 'TournamentEditor'>
+  | NativeStackScreenProps<TournamentsNavigatorParamList, 'NewTournament'>;
 
 // Order of fields for accessory view.
 enum Fields {
@@ -63,8 +63,8 @@ type FormValues = {
   name: string;
 };
 
-const GroupEditorScreen = ({ navigation, route }: Props) => {
-  const { groupId } = route.params || {};
+const TournamentEditorScreen = ({ navigation, route }: Props) => {
+  const { tournamentId } = route.params || {};
 
   const theme = useTheme();
   const event = useEvent();
@@ -72,15 +72,18 @@ const GroupEditorScreen = ({ navigation, route }: Props) => {
   const userProfile = useUserProfile();
   const selectedTeam = useSelectedTeam();
 
-  const { doc: group } = useDocument<Group>('Groups', groupId);
-  // const [groupPlayers, setGroupPlayers] = useState<Player[]>([]);
+  const { doc: tournament } = useDocument<Tournament>(
+    'Tournaments',
+    tournamentId,
+  );
+  // const [tournamentPlayers, setTournamentPlayers] = useState<Player[]>([]);
 
-  const { docs: groupPlayers } = useCollection<Player>('Players', {
+  const { docs: tournamentPlayers } = useCollection<Player>('Players', {
     where: [
       {
         fieldPath: '__name__',
         opStr: 'in',
-        value: group?.players || [],
+        value: tournament?.players || [],
       },
     ],
     orderBy: [
@@ -126,24 +129,30 @@ const GroupEditorScreen = ({ navigation, route }: Props) => {
   const [listEditorState, setListEditorState] = useState<ListEditorState>();
 
   useEffect(() => {
-    if (group && !initialValues.name) {
+    if (tournament && !initialValues.name) {
       setInitialValues({
-        name: group.name,
+        name: tournament.name,
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [group]);
+  }, [tournament]);
 
-  // Create an enumeration of players for selection into the group.
+  // Create an enumeration of players for selection into the tournament.
   useEffect(() => {
     const playerEnum = allPlayers.map<EnumPickerValue>(p => {
       return {
         id: p.id!,
-        label: `${p.lastName} ${p.firstName}`,
+        title: `${p.firstName} ${p.lastName}`,
+        subtitle: playerStatusDecoration[p.status].label,
+        leftIcon: {
+          icon: playerStatusDecoration[p.status].icon,
+          color: playerStatusDecoration[p.status].color,
+        },
       };
     });
 
     setPlayerEnum(playerEnum);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allPlayers]);
 
   // Supports keyboard accessory view.
@@ -157,12 +166,14 @@ const GroupEditorScreen = ({ navigation, route }: Props) => {
       headerRight: () => {
         return (
           <>
-            <Button
-              title={listEditorState?.enabled ? 'Done' : 'Edit'}
-              titleStyle={theme.styles.buttonScreenHeaderTitle}
-              buttonStyle={theme.styles.buttonScreenHeader}
-              onPress={() => listEditorRef.current?.onToggleEditMode()}
-            />
+            {tournamentPlayers.length ? (
+              <Button
+                title={listEditorState?.enabled ? 'Done' : 'Edit'}
+                titleStyle={theme.styles.buttonScreenHeaderTitle}
+                buttonStyle={theme.styles.buttonScreenHeader}
+                onPress={() => listEditorRef.current?.onToggleEditMode()}
+              />
+            ) : null}
             <Button
               title={'Save'}
               titleStyle={theme.styles.buttonScreenHeaderTitle}
@@ -188,22 +199,22 @@ const GroupEditorScreen = ({ navigation, route }: Props) => {
       event.removeListener('change-players', onChangePlayers);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [group]);
+  }, [tournament]);
 
   const onChangePlayers = async (result: EnumPickerResult) => {
-    if (group) {
-      updateDocument<Group>('Groups', {
-        ...group,
+    if (tournament) {
+      updateDocument<Tournament>('Tournaments', {
+        ...tournament,
         players: result.value,
       });
     }
   };
 
   const removePlayer = async (playerId: string) => {
-    if (group) {
-      updateDocument<Group>('Groups', {
-        ...group,
-        players: group.players.filter(p => p !== playerId),
+    if (tournament) {
+      updateDocument<Tournament>('Tournaments', {
+        ...tournament,
+        players: tournament.players.filter(p => p !== playerId),
       });
     }
   };
@@ -216,23 +227,25 @@ const GroupEditorScreen = ({ navigation, route }: Props) => {
   };
 
   const onSubmit = async (values: FormValues) => {
-    if (group) {
-      updateDocument<Group>('Groups', {
-        ...group,
+    if (tournament) {
+      updateDocument<Tournament>('Tournaments', {
+        ...tournament,
         name: values.name,
       });
     } else {
-      const newGroup = await addDocument<Group>('Groups', {
+      const newTournament = await addDocument<Tournament>('Tournaments', {
         name: values.name,
         owners: [userProfile!.id],
         players: [],
       });
 
-      // Associate the new group with my selected team.
-      if (selectedTeam && newGroup.id) {
+      // Associate the new tournament with my selected team.
+      if (selectedTeam && newTournament.id) {
         updateDocument<Team>('Teams', {
           ...selectedTeam,
-          groups: [...new Set([...selectedTeam.groups, newGroup.id])],
+          tournaments: [
+            ...new Set([...selectedTeam.tournaments, newTournament.id]),
+          ],
         } as Team);
       }
     }
@@ -265,7 +278,7 @@ const GroupEditorScreen = ({ navigation, route }: Props) => {
             color={playerStatusDecoration[player.status].color}
           />
         }
-        position={listItemPosition(index, groupPlayers.length)}
+        position={listItemPosition(index, tournamentPlayers.length)}
         rightContent={'chevron-right'}
         listEditor={listEditorRef.current}
         onPress={() =>
@@ -294,7 +307,7 @@ const GroupEditorScreen = ({ navigation, route }: Props) => {
 
   const renderPlayersHeader = () => (
     <Divider
-      text={`${group?.players.length || ''} PLAYER${group?.players.length !== 1 ? 'S' : ''}`}
+      text={`${tournament?.players.length || ''} PLAYER${tournament?.players.length !== 1 ? 'S' : ''}`}
       rightComponent={
         <Button
           title={'Choose Players'}
@@ -304,7 +317,7 @@ const GroupEditorScreen = ({ navigation, route }: Props) => {
             navigation.navigate('EnumPicker', {
               title: 'Players',
               values: playerEnum,
-              selected: group?.players,
+              selected: tournament?.players,
               itemPlural: 'Players',
               eventName: 'change-players',
               mode: 'many-or-none',
@@ -321,14 +334,14 @@ const GroupEditorScreen = ({ navigation, route }: Props) => {
       <EmptyView
         type={'info'}
         message={'No Players'}
-        details={'Tap Choose Players to add Players.'}
+        details={'Add Players to your Tournament.'}
         positionTop
         buttonTitle={'Choose Players'}
         onButtonPress={() =>
           navigation.navigate('EnumPicker', {
             title: 'Players',
             values: playerEnum,
-            selected: group?.players,
+            selected: tournament?.players,
             itemPlural: 'Players',
             eventName: 'change-players',
             mode: 'many-or-none',
@@ -372,8 +385,8 @@ const GroupEditorScreen = ({ navigation, route }: Props) => {
                   onFocus: () =>
                     keyboardAccessory.current?.focusedField(Fields.name),
                   value: values.name,
-                  label: 'Group Name',
-                  placeholder: 'Group Name',
+                  label: 'Tournament Name',
+                  placeholder: 'Tournament Name',
                   autoCapitalize: 'words',
                 }}
               />
@@ -384,13 +397,13 @@ const GroupEditorScreen = ({ navigation, route }: Props) => {
           <FlatList
             contentInsetAdjustmentBehavior={'automatic'}
             style={theme.styles.view}
-            data={groupPlayers}
+            data={tournamentPlayers}
             renderItem={renderPlayer}
             keyExtractor={item => `${item.id}`}
             scrollEnabled={false}
             showsVerticalScrollIndicator={false}
             ListHeaderComponent={
-              groupPlayers.length ? renderPlayersHeader() : null
+              tournamentPlayers.length ? renderPlayersHeader() : null
             }
             ListFooterComponent={<Divider />}
             ListEmptyComponent={renderPlayersEmpty()}
@@ -409,4 +422,4 @@ const GroupEditorScreen = ({ navigation, route }: Props) => {
   );
 };
 
-export default GroupEditorScreen;
+export default TournamentEditorScreen;

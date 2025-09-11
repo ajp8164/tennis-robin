@@ -2,6 +2,9 @@ import React from 'react';
 
 import { useTheme } from '@react-native-hello/ui';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import EnumPickerScreen from 'components/EnumPickerScreen';
+import PlayerScreen from 'components/PlayerScreen';
+import TournamentEditorScreen from 'components/TournamentEditorScreen';
 import TournamentsScreen from 'components/TournamentsScreen';
 import { TournamentsNavigatorParamList } from 'types/navigation';
 
@@ -25,8 +28,42 @@ const TournamentsNavigator = () => {
         name="Tournaments"
         component={TournamentsScreen}
         options={{
-          headerBackVisible: false,
-          headerShown: false,
+          headerLeft: () => null,
+          headerLargeTitle: true,
+          headerLargeTitleShadowVisible: false,
+          headerLargeStyle: {
+            backgroundColor: theme.colors.viewBackground,
+          },
+        }}
+      />
+      <TournamentsStack.Screen
+        name="TournamentEditor"
+        component={TournamentEditorScreen}
+        options={({ route }) => {
+          return {
+            title: route.params.screenTitle,
+          };
+        }}
+      />
+      <TournamentsStack.Screen
+        name="NewTournament"
+        component={TournamentEditorScreen}
+        options={{
+          title: 'New Tournament',
+        }}
+      />
+      <TournamentsStack.Screen
+        name="Player"
+        component={PlayerScreen}
+        options={{
+          title: 'Player',
+        }}
+      />
+      <TournamentsStack.Screen
+        name="EnumPicker"
+        component={EnumPickerScreen}
+        options={{
+          title: '',
         }}
       />
     </TournamentsStack.Navigator>

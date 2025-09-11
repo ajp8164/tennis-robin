@@ -96,7 +96,7 @@ const TeamEditorScreen = ({ navigation, route }: Props) => {
         name: values.name,
         owners: [userProfile!.id],
         players: [myPlayer!.id!], // TODO handle error?
-        groups: [],
+        tournaments: [],
         defaultTeam: false,
       });
     }
@@ -117,6 +117,16 @@ const TeamEditorScreen = ({ navigation, route }: Props) => {
     }
 
     navigation.setOptions({
+      headerLeft: () => {
+        return (
+          <Button
+            title={'Cancel'}
+            titleStyle={theme.styles.buttonScreenHeaderTitle}
+            buttonStyle={theme.styles.buttonScreenHeader}
+            onPress={navigation.goBack}
+          />
+        );
+      },
       headerRight: () => {
         return (
           <Button

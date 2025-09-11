@@ -108,6 +108,7 @@ const SetupNavigator = () => {
         options={{
           title: 'New Team',
           presentation: 'modal',
+          gestureEnabled: false,
         }}
       />
       <SetupStack.Screen

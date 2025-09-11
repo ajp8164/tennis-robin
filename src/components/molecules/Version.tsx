@@ -1,14 +1,16 @@
 import React from 'react';
-import { Text, ViewStyle } from 'react-native';
+import { Text } from 'react-native';
 import VersionNumber from 'react-native-version-number';
 
 import { ThemeManager, useDevice } from '@react-native-hello/ui';
 
 export interface Props {
-  style?: ViewStyle | ViewStyle[];
+  withInset?: boolean;
 }
 
-const Version = () => {
+const Version = (props: Props) => {
+  const { withInset } = props;
+
   const s = useStyles();
   const device = useDevice();
 
@@ -16,9 +18,11 @@ const Version = () => {
     <Text
       style={[
         s.version,
-        { bottom: device.bottomTabBarHeight - device.insets.bottom + 15 },
+        {
+          bottom: withInset ? device.insets.bottom + 15 : 15,
+        },
       ]}>
-      {`Release ${VersionNumber.appVersion} (${VersionNumber.buildVersion})`}
+      {`Version ${VersionNumber.appVersion} (${VersionNumber.buildVersion})`}
     </Text>
   );
 };
@@ -26,6 +30,7 @@ const Version = () => {
 const useStyles = ThemeManager.createStyleSheet(({ theme }) => ({
   version: {
     ...theme.text.small,
+    position: 'absolute',
     alignSelf: 'center',
     color: theme.colors.brandSecondary,
   },

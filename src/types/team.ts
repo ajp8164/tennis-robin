@@ -8,6 +8,6 @@ export type Team = {
   name: string;
   owners: string[];
   players: string[];
-  groups: string[];
+  tournaments: string[];
   defaultTeam: boolean;
 };

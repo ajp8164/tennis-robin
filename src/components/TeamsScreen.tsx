@@ -164,19 +164,23 @@ const TeamsScreen = ({ navigation }: Props) => {
       <>
         {allTeams && <Divider />}
         <ListItemCheckBoxInfo
-          title={defaultTeamName}
+          title={defaultTeam?.name || defaultTeamName}
           position={['first', 'last']}
-          hideInfo={true}
+          // hideInfo={true}
           checked={selectedTeamId === defaultTeam?.id}
           onPress={() => setTeam(defaultTeam)}
+          onPressInfo={() =>
+            navigation.navigate('TeamEditor', {
+              teamId: defaultTeam?.id || '',
+              screenTitle: defaultTeam?.name || defaultTeamName,
+            })
+          }
         />
         <Divider
           note
           light
           subHeaderStyle={theme.text.medium}
-          text={
-            'The default team is associated with all tournament groups not assigned to a named team. You may choose to use the default team or create named teams or both.'
-          }
+          text={'The default team may be renamed but cannot be deleted.'}
         />
       </>
     );

@@ -65,7 +65,7 @@ const SetupScreen = ({ navigation, route }: Props) => {
         />
         <ListItem
           title={'Players'}
-          subtitle={`Players on team ${selectedTeam?.name}`}
+          subtitle={`Players on team "${selectedTeam?.name}"`}
           value={`${selectedTeam?.players.length}`}
           leftContent={<Users color={theme.colors.listItemIcon} />}
           rightContent={'chevron-right'}

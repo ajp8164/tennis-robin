@@ -4,13 +4,12 @@ import SystemNavigationBar from 'react-native-system-navigation-bar';
 
 import { ThemeManager, useTheme } from '@react-native-hello/ui';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import TournamentsNavigator from 'components/navigation/TournamentsNavigator';
-import { Home, Settings, Trophy, Users } from 'lucide-react-native';
+import { Home, Settings, Trophy } from 'lucide-react-native';
 import { TabNavigatorParamList } from 'types/navigation';
 
-import GroupsNavigator from './GroupsNavigator';
 import HomeNavigator from './HomeNavigator';
 import SetupNavigator from './SetupNavigator';
+import TournamentsNavigator from './TournamentsNavigator';
 
 const Tab = createBottomTabNavigator<TabNavigatorParamList>();
 
@@ -62,14 +61,6 @@ const TabNavigator = () => {
         options={{
           tabBarShowLabel: false,
           tabBarIcon: ({ color }) => <Trophy color={color} size={33} />,
-        }}
-      />
-      <Tab.Screen
-        name="GroupsTab"
-        component={GroupsNavigator}
-        options={{
-          tabBarShowLabel: false,
-          tabBarIcon: ({ color }) => <Users color={color} size={33} />,
         }}
       />
       <Tab.Screen

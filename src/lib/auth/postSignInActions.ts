@@ -56,11 +56,16 @@ const initializeMyDefaultTeam = async (
       name: defaultTeamName,
       owners: [userProfile.id],
       players: [player.id!],
-      groups: [],
+      tournaments: [],
       defaultTeam: true,
     });
 
     // Set default team as the selection.
     store.dispatch(saveSelectedTeam({ teamId: team.id }));
+  } else {
+    // Ensure a team is selected.
+    if (!store.getState().team.teamId) {
+      store.dispatch(saveSelectedTeam({ teamId: result[0].id }));
+    }
   }
 };
