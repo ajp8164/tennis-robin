@@ -46,9 +46,6 @@ const SetupScreen = ({ navigation, route }: Props) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [route.params?.subNav]);
 
-  console.log(
-    myPlayer ? playerStatusDecoration[myPlayer.status].icon : 'pending',
-  );
   return (
     <>
       <ScrollView
