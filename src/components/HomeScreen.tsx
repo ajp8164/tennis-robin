@@ -68,7 +68,7 @@ const HomeScreen = () => {
           title={'New Tournament'}
           titleStyle={theme.styles.buttonTitle}
           buttonStyle={theme.styles.button}
-          containerStyle={theme.styles.buttonBottomContainer}
+          containerStyle={[theme.styles.buttonBottomContainer, s.buttonBottom]}
           onPress={() => null}
         />
       </View>
@@ -81,6 +81,9 @@ const HomeScreen = () => {
 };
 
 const useStyles = ThemeManager.createStyleSheet(({ device, theme }) => ({
+  buttonBottom: {
+    bottom: 30,
+  },
   icon: {
     width: device.screen.width * 0.5,
     alignSelf: 'center',
