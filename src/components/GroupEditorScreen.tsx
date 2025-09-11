@@ -7,9 +7,9 @@ import {
   View,
 } from 'react-native';
 
+import { documentId } from '@react-native-firebase/firestore';
 import { useEvent } from '@react-native-hello/core';
 import {
-  Chip,
   Divider,
   InputMethods,
   KeyboardAccessory,
@@ -24,6 +24,7 @@ import {
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { EnumPickerResult, EnumPickerValue } from 'components/EnumPickerScreen';
 import { Button } from 'components/atoms/Button';
+import { DynamicIcon } from 'components/atoms/DynamicIcon';
 import {
   FormikStateWatcher,
   FormikWatcherState,
@@ -32,18 +33,18 @@ import { ListItemInput, ListItemInputMethods } from 'components/atoms/List';
 import { EmptyView } from 'components/molecules/EmptyView';
 import {
   addDocument,
-  getDocuments,
   updateDocument,
   useCollection,
   useDocument,
 } from 'firebase/firestore';
 import { Formik, FormikProps } from 'formik';
 import { useUserProfile } from 'lib/auth';
+import { usePlayerStatusDecoration } from 'lib/player';
 import { useSelectedTeam } from 'lib/team';
 import { CircleMinus, EyeOff } from 'lucide-react-native';
 import { Group } from 'types/group';
 import { GroupsNavigatorParamList } from 'types/navigation';
-import { Player, PlayerStatus } from 'types/player';
+import { Player } from 'types/player';
 import { Team } from 'types/team';
 import * as Yup from 'yup';
 
@@ -67,21 +68,19 @@ const GroupEditorScreen = ({ navigation, route }: Props) => {
 
   const theme = useTheme();
   const event = useEvent();
+  const playerStatusDecoration = usePlayerStatusDecoration();
   const userProfile = useUserProfile();
   const selectedTeam = useSelectedTeam();
 
   const { doc: group } = useDocument<Group>('Groups', groupId);
-  const [groupPlayers, setGroupPlayers] = useState<Player[]>([]);
+  // const [groupPlayers, setGroupPlayers] = useState<Player[]>([]);
 
-  // For building the player picker enum.
-  const [playerEnum, setPlayerEnum] = useState<EnumPickerValue[]>([]);
-
-  const { docs: allPlayers } = useCollection<Player>('Players', {
+  const { docs: groupPlayers } = useCollection<Player>('Players', {
     where: [
       {
-        fieldPath: 'user',
+        fieldPath: '__name__',
         opStr: 'in',
-        value: selectedTeam?.users || [],
+        value: group?.players || [],
       },
     ],
     orderBy: [
@@ -89,7 +88,23 @@ const GroupEditorScreen = ({ navigation, route }: Props) => {
       { fieldPath: 'firstName', directionStr: 'asc' },
     ],
   });
-  console.log('U', allPlayers, selectedTeam?.users);
+
+  // For building the player picker enum.
+  const [playerEnum, setPlayerEnum] = useState<EnumPickerValue[]>([]);
+
+  const { docs: allPlayers } = useCollection<Player>('Players', {
+    where: [
+      {
+        fieldPath: documentId(),
+        opStr: 'in',
+        value: selectedTeam?.players || [],
+      },
+    ],
+    orderBy: [
+      { fieldPath: 'lastName', directionStr: 'asc' },
+      { fieldPath: 'firstName', directionStr: 'asc' },
+    ],
+  });
 
   const [initialValues, setInitialValues] = useState<FormValues>({
     name: '',
@@ -118,27 +133,6 @@ const GroupEditorScreen = ({ navigation, route }: Props) => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [group]);
-
-  // When the group player assignments are changed refetch the collection of players.
-  useEffect(() => {
-    (async () => {
-      const groupPlayers = await getDocuments<Player>('Players', {
-        where: [
-          {
-            fieldPath: '__name__',
-            opStr: 'in',
-            value: group?.players || [],
-          },
-        ],
-        orderBy: [
-          { fieldPath: 'lastName', directionStr: 'asc' },
-          { fieldPath: 'firstName', directionStr: 'asc' },
-        ],
-      });
-
-      setGroupPlayers(groupPlayers.result);
-    })();
-  }, [group?.players]);
 
   // Create an enumeration of players for selection into the group.
   useEffect(() => {
@@ -264,20 +258,12 @@ const GroupEditorScreen = ({ navigation, route }: Props) => {
       <ListItemSwipeable
         key={player.id}
         title={`${player.lastName} ${player.firstName}`}
+        subtitle={playerStatusDecoration[player.status].label}
         value={
-          player.status === PlayerStatus.Active ? (
-            <Chip
-              text={'Active'}
-              color={theme.colors.success}
-              textColor={theme.colors.stickyWhite}
-            />
-          ) : (
-            <Chip
-              text={'Inactive'}
-              color={theme.colors.assertive}
-              textColor={theme.colors.stickyWhite}
-            />
-          )
+          <DynamicIcon
+            icon={playerStatusDecoration[player.status].icon}
+            color={playerStatusDecoration[player.status].color}
+          />
         }
         position={listItemPosition(index, groupPlayers.length)}
         rightContent={'chevron-right'}
@@ -333,7 +319,7 @@ const GroupEditorScreen = ({ navigation, route }: Props) => {
     <>
       <Divider />
       <EmptyView
-        info
+        type={'info'}
         message={'No Players'}
         details={'Tap Choose Players to add Players.'}
         positionTop

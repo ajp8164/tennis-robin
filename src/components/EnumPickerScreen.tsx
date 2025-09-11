@@ -171,7 +171,7 @@ const EnumPickerScreen = ({ route, navigation }: Props) => {
   if (!list.values.length) {
     return (
       <EmptyView
-        info
+        type={'info'}
         message={`No ${itemPlural}`}
         details={`Create ${itemPlural} on the Setup tab.`}
       />

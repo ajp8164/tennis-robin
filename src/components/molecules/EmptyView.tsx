@@ -14,8 +14,7 @@ import { Button } from 'components/atoms/Button';
 import { Info, Search, TriangleAlert } from 'lucide-react-native';
 
 interface EmptyViewInterface {
-  error?: boolean;
-  info?: boolean;
+  type?: 'error' | 'info' | 'search' | 'none';
   message?: string;
   details?: string;
   isLoading?: boolean;
@@ -26,9 +25,8 @@ interface EmptyViewInterface {
 }
 
 export const EmptyView = ({
-  info,
-  error,
-  message = 'Nothing here!',
+  type = 'search',
+  message,
   details,
   isLoading,
   buttonTitle,
@@ -62,27 +60,27 @@ export const EmptyView = ({
             color={theme.colors.midGray}
             style={s.activityIndicator}
           />
-        ) : error ? (
+        ) : type === 'error' ? (
           <TriangleAlert
             stroke={theme.colors.viewBackground}
             fill={theme.colors.midGray}
             size={60}
           />
-        ) : info ? (
+        ) : type === 'info' ? (
           <Info
             stroke={theme.colors.viewBackground}
             fill={theme.colors.midGray}
             size={60}
           />
-        ) : (
+        ) : type === 'search' ? (
           <Search
             stroke={theme.colors.midGray}
             size={50}
             style={{ marginTop: 10 }}
           />
-        )}
-        <Text style={s.message}>{message}</Text>
-        <Text style={s.details}>{details}</Text>
+        ) : null}
+        {message ? <Text style={s.message}>{message}</Text> : null}
+        {details ? <Text style={s.details}>{details}</Text> : null}
         {buttonTitle && onButtonPress ? (
           <Button
             title={buttonTitle}
@@ -119,7 +117,6 @@ const useStyles = ThemeManager.createStyleSheet(({ theme }) => ({
   },
   positionTop: {
     position: undefined,
-    minHeight: 200,
   },
   details: {
     ...theme.text.normal,

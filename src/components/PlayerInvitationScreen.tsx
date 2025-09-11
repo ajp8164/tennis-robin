@@ -5,24 +5,26 @@ import { Divider, useTheme } from '@react-native-hello/ui';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { getDocument } from 'firebase/firestore';
 import { usePlayerStatusDecoration } from 'lib/player';
-import { GroupsNavigatorParamList } from 'types/navigation';
-import { Player } from 'types/player';
+import { SetupNavigatorParamList } from 'types/navigation';
+import { PlayerStatus } from 'types/player';
+import { Token } from 'types/token';
 
-export type Props = NativeStackScreenProps<GroupsNavigatorParamList, 'Player'>;
+export type Props = NativeStackScreenProps<
+  SetupNavigatorParamList,
+  'PlayerInvitation'
+>;
 
-const PlayerScreen = ({ route }: Props) => {
-  const { playerId } = route.params || {};
+const PlayerInvitationScreen = ({ route }: Props) => {
+  const { tokenId } = route.params || {};
 
   const theme = useTheme();
-  const [player, setPlayer] = useState<Player>();
   const playerStatusDecoration = usePlayerStatusDecoration();
+  const [token, setToken] = useState<Token>();
 
   useEffect(() => {
-    if (playerId) {
-      getDocument<Player>('Players', playerId).then(player => {
-        setPlayer(player);
-      });
-    }
+    getDocument<Token>('Tokens', tokenId).then(token => {
+      setToken(token);
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -33,18 +35,16 @@ const PlayerScreen = ({ route }: Props) => {
       contentInsetAdjustmentBehavior={'automatic'}>
       <Divider />
       <Text style={theme.text.h3}>
-        {`${player?.firstName} ${player?.lastName}`}
+        {`${token?.firstName} ${token?.lastName}`}
       </Text>
-      <Text style={theme.text.normal}>{player?.email}</Text>
+      <Text style={theme.text.normal}>{token?.email}</Text>
       <Divider />
-      {player?.status ? (
-        <Text
-          style={
-            theme.text.normal
-          }>{`Status: ${playerStatusDecoration[player.status].label}`}</Text>
-      ) : null}
+      <Text
+        style={
+          theme.text.normal
+        }>{`Status: ${playerStatusDecoration[PlayerStatus.Invited].label}`}</Text>
     </ScrollView>
   );
 };
 
-export default PlayerScreen;
+export default PlayerInvitationScreen;

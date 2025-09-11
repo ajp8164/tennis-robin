@@ -18,6 +18,7 @@ import { ListItemInput, ListItemInputMethods } from 'components/atoms/List';
 import { addDocument, updateDocument, useDocument } from 'firebase/firestore';
 import { Formik, FormikProps } from 'formik';
 import { useUserProfile } from 'lib/auth';
+import { useMyPlayer } from 'lib/player';
 import { SetupNavigatorParamList } from 'types/navigation';
 import { Team } from 'types/team';
 import * as Yup from 'yup';
@@ -42,6 +43,7 @@ const TeamEditorScreen = ({ navigation, route }: Props) => {
 
   const theme = useTheme();
   const userProfile = useUserProfile();
+  const myPlayer = useMyPlayer();
 
   const { doc: team } = useDocument<Team>('Teams', teamId);
 
@@ -93,7 +95,7 @@ const TeamEditorScreen = ({ navigation, route }: Props) => {
       addDocument<Team>('Teams', {
         name: values.name,
         owners: [userProfile!.id],
-        users: [userProfile!.id],
+        players: [myPlayer!.id!], // TODO handle error?
         groups: [],
         defaultTeam: false,
       });

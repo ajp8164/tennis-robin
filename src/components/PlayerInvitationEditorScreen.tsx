@@ -1,12 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Keyboard, ScrollView, View } from 'react-native';
 
+import { useEvent, uuidv4 } from '@react-native-hello/core';
 import {
   Divider,
   InputMethods,
   KeyboardAccessory,
   KeyboardAccessoryMethods,
-  ListItemSwitch,
   useTheme,
 } from '@react-native-hello/ui';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -16,17 +16,15 @@ import {
   FormikWatcherState,
 } from 'components/atoms/FormikStateWatcher';
 import { ListItemInput, ListItemInputMethods } from 'components/atoms/List';
-import { addDocument, getDocument, updateDocument } from 'firebase/firestore';
 import { Formik, FormikProps } from 'formik';
+import { Contact } from 'types/contact';
 import { SetupNavigatorParamList } from 'types/navigation';
-import { Player, PlayerStatus } from 'types/player';
 import * as Yup from 'yup';
 
-// CompositeScreenProps not working here since NewPlayer is also in the SetupNavigator
-// just using a different presentation (didn't create a new navigator for a single screen).
-export type Props =
-  | NativeStackScreenProps<SetupNavigatorParamList, 'PlayerEditor'>
-  | NativeStackScreenProps<SetupNavigatorParamList, 'NewPlayer'>;
+export type Props = NativeStackScreenProps<
+  SetupNavigatorParamList,
+  'PlayerInvitationEditor'
+>;
 
 // Order of fields for accessory view.
 enum Fields {
@@ -39,39 +37,17 @@ type FormValues = {
   firstName: string;
   lastName: string;
   email: string;
-  status: PlayerStatus;
 };
 
-const PlayerEditorScreen = ({ navigation, route }: Props) => {
-  const { playerId } = route.params || {};
-
+const PlayerInvitationEditorScreen = ({ navigation }: Props) => {
   const theme = useTheme();
+  const event = useEvent();
 
-  const [player, setPlayer] = useState<Player>();
-
-  const [initialValues, setInitialValues] = useState<FormValues>({
+  const initialValues = {
     firstName: '',
     lastName: '',
     email: '',
-    status: PlayerStatus.Inactive,
-  });
-
-  useEffect(() => {
-    if (playerId) {
-      getDocument<Player>('Players', playerId).then(player => {
-        if (player) {
-          setPlayer(player);
-          setInitialValues({
-            firstName: player.firstName,
-            lastName: player.lastName,
-            email: player.email,
-            status: player.status,
-          });
-        }
-      });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  };
 
   const schema = Yup.object().shape({
     firstName: Yup.string().required(),
@@ -112,22 +88,13 @@ const PlayerEditorScreen = ({ navigation, route }: Props) => {
   };
 
   const onSubmit = (values: FormValues) => {
-    if (playerId) {
-      updateDocument<Player>('Players', {
-        ...player,
-        firstName: values.firstName,
-        lastName: values.lastName,
-        email: values.email,
-        status: values.status,
-      } as Player);
-    } else {
-      addDocument<Player>('Players', {
-        firstName: values.firstName,
-        lastName: values.lastName,
-        email: values.email,
-        status: values.status,
-      });
-    }
+    event.emit('entered-contact', {
+      id: uuidv4(),
+      type: 'entered',
+      firstName: values.firstName,
+      lastName: values.lastName,
+      email: values.email,
+    } as Contact);
   };
 
   const onFormikWatcherStateChange = (
@@ -148,10 +115,20 @@ const PlayerEditorScreen = ({ navigation, route }: Props) => {
     }
 
     navigation.setOptions({
+      headerLeft: () => {
+        return (
+          <Button
+            title={'Cancel'}
+            titleStyle={theme.styles.buttonScreenHeaderTitle}
+            buttonStyle={theme.styles.buttonScreenHeader}
+            onPress={navigation.goBack}
+          />
+        );
+      },
       headerRight: () => {
         return (
           <Button
-            title={'Save'}
+            title={'Add'}
             titleStyle={theme.styles.buttonScreenHeaderTitle}
             buttonStyle={theme.styles.buttonScreenHeader}
             disabledTitleStyle={theme.styles.buttonScreenHeaderTitle}
@@ -182,7 +159,7 @@ const PlayerEditorScreen = ({ navigation, route }: Props) => {
           validationSchema={schema}
           validateOnMount
           onSubmit={onSubmit}>
-          {({ errors, handleChange, setFieldValue, values }) => (
+          {({ errors, handleChange, values }) => (
             <View>
               <FormikStateWatcher<FormValues>
                 onChange={onFormikWatcherStateChange}
@@ -232,18 +209,6 @@ const PlayerEditorScreen = ({ navigation, route }: Props) => {
                   keyboardType: 'email-address',
                 }}
               />
-              <Divider />
-              <ListItemSwitch
-                title={'Active'}
-                value={values.status === PlayerStatus.Active}
-                position={['first', 'last']}
-                onValueChange={value =>
-                  setFieldValue(
-                    'status',
-                    value ? PlayerStatus.Active : PlayerStatus.Inactive,
-                  )
-                }
-              />
             </View>
           )}
         </Formik>
@@ -260,4 +225,4 @@ const PlayerEditorScreen = ({ navigation, route }: Props) => {
   );
 };
 
-export default PlayerEditorScreen;
+export default PlayerInvitationEditorScreen;

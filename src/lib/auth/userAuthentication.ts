@@ -18,7 +18,9 @@ import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { log } from '@react-native-hello/core';
 // import { NativeModules } from 'react-native';
 import { appConfig } from 'config';
-import { AuthContext, preSignOutActions } from 'lib/auth';
+import { AuthContext } from 'lib/auth';
+
+import { preSignOutActions } from './preSignOutActions';
 
 // const { RNTwitterSignIn } = NativeModules;
 
@@ -176,13 +178,13 @@ export const signOut = async () => {
   const app = getApp();
   const auth = getAuth(app);
   try {
-    const userProfile = await preSignOutActions();
+    await preSignOutActions();
 
     // Sign out here results in an event to auth().onAuthStateChanged() with null credentials.
     LoginManager.logOut();
     await FBSignOut(auth);
 
-    log.debug(`User sign out complete: ${JSON.stringify(userProfile)}`);
+    log.debug('User sign out complete');
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (e: any) {
@@ -225,14 +227,14 @@ export const useCreateUserWithEmailAndPassword = () => {
       authContext.emailPasswordAuthData = { firstName, lastName };
 
       // Create the account at firebase.
-      const user = await FBCreateUserWithEmailAndPassword(
+      const credential = await FBCreateUserWithEmailAndPassword(
         auth,
         email,
         password,
       );
 
       // Need to update since firebase won't accept this data on create.
-      await user.user.updateProfile({
+      await credential.user.updateProfile({
         displayName: `${firstName} ${lastName}`,
       });
 

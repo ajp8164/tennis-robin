@@ -5,7 +5,7 @@ export type Player = {
   createdOn?: ISODateString;
   updatedOn?: ISODateString;
   archivedOn?: ISODateString;
-  user: string;
+  user?: string;
   firstName: string;
   lastName: string;
   email: string;
@@ -13,6 +13,9 @@ export type Player = {
 };
 
 export enum PlayerStatus {
-  Active = 'Active',
-  Inactive = 'Inactive',
+  Active = 'active',
+  Inactive = 'inactive',
+  Invited = 'invited',
+  OutSick = 'out-sick',
+  Vacation = 'vacation',
 }

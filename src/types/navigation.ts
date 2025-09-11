@@ -53,17 +53,18 @@ export type SetupNavigatorParamList = {
   Content: {
     content: ContentView;
   };
-  NewPlayer: {
-    playerId?: string;
-  };
   NewTeam: {
     teamId?: string;
   };
-  Players: undefined;
-  PlayerEditor: {
+  Player: {
     playerId: string;
-    screenTitle: string;
   };
+  Players: undefined;
+  PlayerInvitation: {
+    tokenId: string;
+  };
+  PlayerInvitations: undefined;
+  PlayerInvitationEditor: undefined;
   Setup: {
     subNav?: string;
   };

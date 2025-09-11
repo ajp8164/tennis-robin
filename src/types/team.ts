@@ -7,7 +7,7 @@ export type Team = {
   archivedOn?: ISODateString;
   name: string;
   owners: string[];
-  users: string[];
+  players: string[];
   groups: string[];
   defaultTeam: boolean;
 };

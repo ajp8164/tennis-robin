@@ -5,7 +5,10 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import AboutScreen from 'components/AboutScreen';
 import AppSettingsScreen from 'components/AppSettingsScreen';
 import ContentScreen from 'components/ContentScreen';
-import PlayerEditorScreen from 'components/PlayerEditorScreen';
+import PlayerInvitationEditorScreen from 'components/PlayerInvitationEditorScreen';
+import PlayerInvitationScreen from 'components/PlayerInvitationScreen';
+import PlayerInvitationsScreen from 'components/PlayerInvitationsScreen';
+import PlayerScreen from 'components/PlayerScreen';
 import PlayersScreen from 'components/PlayersScreen';
 import SetupScreen from 'components/SetupScreen';
 import TeamEditorScreen from 'components/TeamEditorScreen';
@@ -45,6 +48,13 @@ const SetupNavigator = () => {
         }}
       />
       <SetupStack.Screen
+        name="Player"
+        component={PlayerScreen}
+        options={{
+          title: 'Player',
+        }}
+      />
+      <SetupStack.Screen
         name="Players"
         component={PlayersScreen}
         options={{
@@ -52,20 +62,28 @@ const SetupNavigator = () => {
         }}
       />
       <SetupStack.Screen
-        name="PlayerEditor"
-        component={PlayerEditorScreen}
-        options={({ route }) => {
-          return {
-            title: route.params.screenTitle,
-          };
+        name="PlayerInvitation"
+        component={PlayerInvitationScreen}
+        options={{
+          title: 'Invitation',
         }}
       />
       <SetupStack.Screen
-        name="NewPlayer"
-        component={PlayerEditorScreen}
+        name="PlayerInvitationEditor"
+        component={PlayerInvitationEditorScreen}
         options={{
-          title: 'New Player',
+          title: 'Invite Player',
           presentation: 'modal',
+          gestureEnabled: false,
+        }}
+      />
+      <SetupStack.Screen
+        name="PlayerInvitations"
+        component={PlayerInvitationsScreen}
+        options={{
+          title: 'Invite Players',
+          presentation: 'modal',
+          gestureEnabled: false,
         }}
       />
       <SetupStack.Screen

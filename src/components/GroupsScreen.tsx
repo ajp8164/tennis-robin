@@ -43,7 +43,7 @@ const GroupsScreen = ({ navigation }: Props) => {
     ],
     orderBy: [{ fieldPath: 'name', directionStr: 'asc' }],
   });
-  console.log(allGroups);
+
   const listEditorRef = useRef<ListEditorMethods>(null);
   const [listEditorState, setListEditorState] = useState<ListEditorState>();
 
@@ -137,7 +137,7 @@ const GroupsScreen = ({ navigation }: Props) => {
     <>
       <Divider />
       <EmptyView
-        info
+        type={'info'}
         message={'No Groups'}
         details={'Tap the + button to add a Group.'}
         positionTop

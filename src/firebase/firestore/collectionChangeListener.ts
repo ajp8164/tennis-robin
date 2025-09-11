@@ -101,7 +101,7 @@ export const collectionChangeListener = <
         // if more than one is specified.
         if (whereInChunks.length > 0) {
           throw new AppError(
-            'Cannot call getDocuments with multiple where "in" or where "array-contains-any"',
+            'Cannot call collectionChangeListener with multiple where "in" or where "array-contains-any"',
           );
         }
 

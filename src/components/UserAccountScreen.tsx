@@ -67,7 +67,7 @@ const UserAccountScreen = ({ navigation }: Props) => {
   };
 
   if (!userProfile) {
-    return <EmptyView error message={'User Profile Not Found!'} />;
+    return <EmptyView type={'error'} message={'User Profile Not Found!'} />;
   }
 
   return (
