@@ -80,7 +80,7 @@ export const createElementsStyles = ({
     zIndex: 1,
     ...Platform.select({
       ios: {
-        bottom: 75,
+        bottom: 30,
       },
       android: {
         bottom: 37,

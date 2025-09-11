@@ -15,6 +15,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Button } from 'components/atoms/Button';
 import { appConfig } from 'config';
 import { addDocument, useCollection } from 'firebase/firestore';
+import { useUserProfile } from 'lib/auth';
 import { generateCode } from 'lib/generateCode';
 import { usePlayerStatusDecoration } from 'lib/player';
 import { useSelectedTeam } from 'lib/team';
@@ -36,6 +37,7 @@ const PlayerInvitationsScreen = ({ navigation }: Props) => {
   const s = useStyles();
   const playerStatusDecoration = usePlayerStatusDecoration();
 
+  const userProfile = useUserProfile();
   const selectedTeam = useSelectedTeam();
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [selectedContacts, setSelectedContacts] = useState<Set<string>>(
@@ -118,7 +120,9 @@ const PlayerInvitationsScreen = ({ navigation }: Props) => {
             buttonStyle={theme.styles.buttonScreenHeader}
             disabledTitleStyle={theme.styles.buttonScreenHeaderTitle}
             disabledStyle={theme.styles.buttonScreenHeaderDisabled}
-            disabled={selectedContacts.size === 0}
+            disabled={
+              selectedContacts.size === 0 || !selectedTeam || !userProfile
+            }
             onPress={() => sendInvitations()}
           />
         );
@@ -145,7 +149,7 @@ const PlayerInvitationsScreen = ({ navigation }: Props) => {
     selectedContacts.forEach(id => {
       // Get the contact object.
       const contact = contacts.find(c => c.id === id);
-      if (contact) {
+      if (contact && selectedTeam && userProfile) {
         // Process each contact invitation async.
         (async () => {
           // Send email...
@@ -154,9 +158,6 @@ const PlayerInvitationsScreen = ({ navigation }: Props) => {
 
           // Create an invite token and save it using the code as the document id.
           const code = generateCode();
-          console.log('CODE', code);
-          console.log('selectedTeam', selectedTeam);
-          console.log('email', contact.email);
 
           await addDocument<Token>(
             'Tokens',
@@ -167,7 +168,8 @@ const PlayerInvitationsScreen = ({ navigation }: Props) => {
               firstName: contact.firstName,
               lastName: contact.lastName,
               email: contact.email,
-              teamId: selectedTeam?.id,
+              teamId: selectedTeam.id,
+              inviterUserId: userProfile.id,
             },
             { id: code },
           );

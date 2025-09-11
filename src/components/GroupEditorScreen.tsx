@@ -232,7 +232,7 @@ const GroupEditorScreen = ({ navigation, route }: Props) => {
       if (selectedTeam && newGroup.id) {
         updateDocument<Team>('Teams', {
           ...selectedTeam,
-          groups: [...selectedTeam.groups, newGroup.id],
+          groups: [...new Set([...selectedTeam.groups, newGroup.id])],
         } as Team);
       }
     }

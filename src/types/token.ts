@@ -8,4 +8,5 @@ export type Token = {
   lastName?: string;
   email?: string;
   teamId?: string;
+  inviterUserId?: string;
 };
