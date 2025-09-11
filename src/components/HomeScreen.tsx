@@ -2,12 +2,19 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Text, View } from 'react-native';
 import { SvgXml } from 'react-native-svg';
 
-import { ThemeManager, getSvg, useTheme } from '@react-native-hello/ui';
+import {
+  ThemeManager,
+  getSvg,
+  useDevice,
+  useTheme,
+} from '@react-native-hello/ui';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Button } from 'components/atoms/Button';
 import { InviteRedemptionModal } from 'components/modals/InviteRedemptionModal';
+import { appConfig } from 'config';
 import { getDocuments } from 'firebase/firestore';
 import { useUserProfile } from 'lib/auth';
+import { useSelectedTeam } from 'lib/team';
 import { HomeNavigatorParamList } from 'types/navigation';
 import { Token } from 'types/token';
 
@@ -16,9 +23,13 @@ export type Props = NativeStackScreenProps<HomeNavigatorParamList, 'Home'>;
 const HomeScreen = () => {
   const theme = useTheme();
   const s = useStyles();
+  const device = useDevice();
 
   const userProfile = useUserProfile();
-  const [acceptedInvitation, setAcceptedInvitation] = useState(false);
+  const selectedTeam = useSelectedTeam();
+  const [acceptedInvitation, setAcceptedInvitation] = useState<{
+    teamName: string;
+  }>();
 
   const inviteRedemptionModalModalRef = useRef<InviteRedemptionModal>(null);
 
@@ -43,27 +54,37 @@ const HomeScreen = () => {
     })();
   }, [userProfile]);
 
-  const onInvitationAccepted = () => {
-    setAcceptedInvitation(true);
+  const onInvitationAccepted = (teamName: string) => {
+    setAcceptedInvitation({ teamName });
   };
 
   return (
     <>
-      <View style={theme.styles.view}>
-        <SvgXml
-          xml={getSvg('brandIcon')}
-          width={s.icon.width}
-          height={s.icon.width}
-          style={s.icon}
-        />
-        {acceptedInvitation ? (
-          <View>
+      <View style={[theme.styles.view]}>
+        <View
+          style={[
+            s.content,
+            { top: device.insets.top + device.headerBar.height },
+          ]}>
+          <SvgXml
+            xml={getSvg('brandIcon')}
+            width={s.icon.width}
+            height={s.icon.width}
+            style={s.icon}
+          />
+          <Text
+            style={[
+              theme.text.h2,
+              { fontWeight: '700', marginBottom: 30 },
+            ]}>{`Welcome to\n${appConfig.appName}!`}</Text>
+          <Text style={s.text}>{`${selectedTeam?.name}`}</Text>
+          {acceptedInvitation ? (
             <Text
               style={
-                s.title
-              }>{`Welcome to the team ${userProfile?.firstName}!`}</Text>
-          </View>
-        ) : null}
+                s.accepted
+              }>{`Welcome to team "${acceptedInvitation.teamName}" ${userProfile?.firstName}!`}</Text>
+          ) : null}
+        </View>
         <Button
           title={'New Tournament'}
           titleStyle={theme.styles.buttonTitle}
@@ -81,21 +102,24 @@ const HomeScreen = () => {
 };
 
 const useStyles = ThemeManager.createStyleSheet(({ device, theme }) => ({
+  accepted: {
+    ...theme.text.xl,
+    marginTop: 50,
+  },
   buttonBottom: {
     bottom: 30,
+  },
+  content: {
+    position: 'absolute',
+    paddingHorizontal: 17,
+    width: '100%',
   },
   icon: {
     width: device.screen.width * 0.5,
     alignSelf: 'center',
-    marginTop: '60%',
   },
   text: {
-    ...theme.text.xl,
-    textAlign: 'center',
-  },
-  title: {
-    ...theme.text.large,
-    textAlign: 'center',
+    ...theme.text.normal,
   },
 }));
 

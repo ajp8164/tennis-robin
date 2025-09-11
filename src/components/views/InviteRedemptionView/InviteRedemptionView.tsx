@@ -22,7 +22,7 @@ import { UserProfile } from 'types/user';
 
 interface InviteRedemptionViewInterface {
   tokenId: string;
-  onAccepted: () => void;
+  onAccepted: (teamName: string) => void;
   onDeclined: () => void;
   onCanceled: () => void;
 }
@@ -69,7 +69,7 @@ export const InviteRedemptionView = (props: InviteRedemptionViewInterface) => {
   const acceptInvite = async () => {
     await addToTeam();
     await deleteToken();
-    onAccepted();
+    onAccepted(team?.name || '');
   };
 
   const addToTeam = async () => {

@@ -48,8 +48,8 @@ const InviteRedemptionModal = React.forwardRef<
       backgroundStyle={{ backgroundColor: theme.colors.viewAltBackground }}>
       <InviteRedemptionView
         tokenId={tokenId}
-        onAccepted={() => {
-          onAccepted();
+        onAccepted={teamName => {
+          onAccepted(teamName);
           dismiss();
         }}
         onDeclined={() => dismiss()}

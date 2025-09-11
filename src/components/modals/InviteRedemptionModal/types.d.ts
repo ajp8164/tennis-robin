@@ -12,7 +12,7 @@ declare const InviteRedemptionModal: React.MemoExoticComponent<
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface InviteRedemptionModalProps {
   snapPoints?: (string | number)[];
-  onAccepted: () => void;
+  onAccepted: (teamName: string) => void;
 }
 
 export interface InviteRedemptionModalMethods {
