@@ -11,6 +11,10 @@ export const selectBiometrics = createSelector(selectAppState, appState => {
   return appState.appSettings.biometrics;
 });
 
+export const selectFirstLaunch = createSelector(selectAppState, appState => {
+  return appState.appSettings.firstLaunch;
+});
+
 export const selectOnboardProgress = createSelector(
   selectAppState,
   appState => {

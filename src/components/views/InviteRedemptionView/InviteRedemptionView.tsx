@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Text, View } from 'react-native';
+import { CodeField, Cursor } from 'react-native-confirmation-code-field';
 import { SvgXml } from 'react-native-svg';
 
 import {
@@ -36,35 +37,45 @@ export const InviteRedemptionView = (props: InviteRedemptionViewInterface) => {
   const myPlayer = useMyPlayer();
   const [team, setTeam] = useState<Team>();
   const [invitedBy, setInvitedBy] = useState<UserProfile>();
+  const [enteredTokenId, setEnteredTokenId] = useState<string>('');
 
   useEffect(() => {
-    (async () => {
-      // Get the token.
-      const token = await getDocument<Token>('Tokens', tokenId);
-      if (token && token?.teamId) {
-        // Get the team.
-        const team = await getDocument<Team>('Teams', token.teamId);
+    verifyToken(tokenId);
+  }, [tokenId]);
 
-        if (team && token.inviterUserId) {
-          setTeam(team);
+  const verifyToken = async (tokenId: string) => {
+    // Get the token.
+    const token = await getDocument<Token>('Tokens', tokenId);
+    if (token && token?.teamId) {
+      // Get the team.
+      const team = await getDocument<Team>('Teams', token.teamId);
 
-          const user = await getDocument<UserProfile>(
-            'Users',
-            token.inviterUserId,
-          );
-          if (user) {
-            setInvitedBy(user);
-          } else {
-            // Problem with user
-          }
+      if (team && token.inviterUserId) {
+        setTeam(team);
+
+        const user = await getDocument<UserProfile>(
+          'Users',
+          token.inviterUserId,
+        );
+        if (user) {
+          setInvitedBy(user);
         } else {
-          // Problem with team
+          // Problem with user
         }
       } else {
-        // Problem with token
+        // Problem with team
       }
-    })();
-  }, [tokenId]);
+    } else {
+      // Problem with token
+    }
+  };
+
+  const tryAcceptInvite = async () => {
+    if (tokenId === 'ask') {
+      await verifyToken(enteredTokenId);
+    }
+    acceptInvite();
+  };
 
   const acceptInvite = async () => {
     await addToTeam();
@@ -90,7 +101,7 @@ export const InviteRedemptionView = (props: InviteRedemptionViewInterface) => {
     onDeclined();
   };
 
-  if (!invitedBy) {
+  if (!invitedBy && tokenId !== 'ask') {
     return (
       <View style={theme.styles.viewAlt}>
         <EmptyView
@@ -117,17 +128,50 @@ export const InviteRedemptionView = (props: InviteRedemptionViewInterface) => {
   return (
     <View style={theme.styles.viewAlt}>
       <Divider />
-      <View style={s.messageContainer}>
-        <Text style={s.title}>
-          {`${invitedBy?.firstName} ${invitedBy?.lastName} has invited\nyou to join the team`}
-        </Text>
-        <Text style={s.title}>{`"${team?.name}"`}</Text>
+      <View style={s.container}>
+        {tokenId === 'ask' ? (
+          <Text style={s.title}>{'Have a\nTeam Invitation?'}</Text>
+        ) : (
+          <>
+            <Text style={s.title}>
+              {`${invitedBy?.firstName} ${invitedBy?.lastName} has invited\nyou to join the team`}
+            </Text>
+            <Text style={s.title}>{`"${team?.name}"`}</Text>
+          </>
+        )}
         <SvgXml
           xml={getSvg('brandIcon')}
           width={s.icon.width}
           height={s.icon.width}
           style={s.icon}
         />
+        {tokenId === 'ask' ? (
+          <>
+            <Text style={s.description}>
+              {'Enter your Team Invitation code'}
+            </Text>
+            <CodeField
+              value={enteredTokenId}
+              onChangeText={setEnteredTokenId}
+              cellCount={6}
+              rootStyle={s.codeFieldContainer}
+              textContentType={'oneTimeCode'}
+              autoFocus={true}
+              keyboardAppearance={ThemeManager.name}
+              allowFontScaling={false}
+              renderCell={({ index, symbol, isFocused }) => (
+                <Text key={index} style={[s.cell, isFocused && s.focusCell]}>
+                  {symbol ||
+                    (isFocused ? (
+                      <Text style={s.cursor}>
+                        <Cursor />
+                      </Text>
+                    ) : null)}
+                </Text>
+              )}
+            />
+          </>
+        ) : null}
         <Text style={s.description}>
           {'We play matches each week from September to May.'}
         </Text>
@@ -144,15 +188,20 @@ export const InviteRedemptionView = (props: InviteRedemptionViewInterface) => {
           title={'Accept'}
           titleStyle={theme.styles.buttonTitle}
           buttonStyle={theme.styles.button}
-          onPress={() => acceptInvite()}
+          disabledStyle={theme.styles.buttonDisabled}
+          disabledTitleStyle={theme.styles.buttonTitle}
+          disabled={tokenId === 'ask' && enteredTokenId.length !== 6}
+          onPress={() => tryAcceptInvite()}
         />
         <Button
-          title={'Decline'}
+          title={tokenId === 'ask' ? 'Cancel' : 'Decline'}
           titleStyle={theme.styles.buttonOutlineTitle}
           buttonStyle={theme.styles.buttonOutline}
           outline
           containerStyle={s.buttonContainer}
-          onPress={() => declineInvite()}
+          onPress={() => {
+            tokenId === 'ask' ? onCanceled() : declineInvite();
+          }}
         />
       </View>
     </View>
@@ -169,6 +218,29 @@ const useStyles = ThemeManager.createStyleSheet(({ device, theme }) => ({
   buttonContainer: {
     marginTop: 15,
   },
+  cell: {
+    ...theme.text.h3,
+    width: 40,
+    height: 40,
+    lineHeight: 35,
+    borderWidth: 2,
+    borderRadius: 5,
+    borderColor: theme.colors.midGray,
+    textAlign: 'center',
+    textTransform: 'capitalize',
+  },
+  codeFieldContainer: {
+    marginVertical: 15,
+    marginHorizontal: 30,
+  },
+  container: {
+    marginTop: 30,
+  },
+  cursor: {
+    ...theme.text.xl,
+    lineHeight: 34,
+    color: theme.colors.brandSecondary,
+  },
   description: {
     ...theme.text.normal,
     textAlign: 'center',
@@ -178,13 +250,13 @@ const useStyles = ThemeManager.createStyleSheet(({ device, theme }) => ({
   empty: {
     backgroundColor: theme.colors.viewAltBackground,
   },
+  focusCell: {
+    borderColor: theme.colors.brandSecondary,
+  },
   icon: {
     width: device.screen.width * 0.5,
     alignSelf: 'center',
     marginTop: 10,
-  },
-  messageContainer: {
-    marginTop: '20%',
   },
   title: {
     ...theme.text.h3,

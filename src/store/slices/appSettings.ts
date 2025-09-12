@@ -7,6 +7,7 @@ export type OnboardProgress = 'complete' | 'none';
 
 export interface AppSettingsState {
   biometrics: boolean;
+  firstLaunch: boolean;
   onboardProgress?: OnboardProgress;
   themeSettings: ThemeSettings;
   tou: Tou;
@@ -14,6 +15,7 @@ export interface AppSettingsState {
 
 export const initialAppSettingsState = Object.freeze<AppSettingsState>({
   biometrics: false,
+  firstLaunch: true,
   onboardProgress: 'none',
   themeSettings: {
     followDevice: true,
@@ -31,6 +33,16 @@ const handleSaveBiometrics: CaseReducer<
   return {
     ...state,
     biometrics: payload.value,
+  };
+};
+
+const handleSaveFirstLaunch: CaseReducer<
+  AppSettingsState,
+  PayloadAction<{ value: boolean }>
+> = (state, { payload }) => {
+  return {
+    ...state,
+    firstLaunch: payload.value,
   };
 };
 
@@ -72,6 +84,7 @@ const appSettingsSlice = createSlice({
   reducers: {
     saveAcceptTou: handleSaveAcceptTou,
     saveBiometrics: handleSaveBiometrics,
+    saveFirstLaunch: handleSaveFirstLaunch,
     saveOnboardProgress: handleSaveOnboardProgress,
     saveThemeSettings: handleSaveThemeSettings,
   },
@@ -80,5 +93,6 @@ const appSettingsSlice = createSlice({
 export const appSettingsReducer = appSettingsSlice.reducer;
 export const saveAcceptTou = appSettingsSlice.actions.saveAcceptTou;
 export const saveBiometrics = appSettingsSlice.actions.saveBiometrics;
+export const saveFirstLaunch = appSettingsSlice.actions.saveFirstLaunch;
 export const saveOnboardProgress = appSettingsSlice.actions.saveOnboardProgress;
 export const saveThemeSettings = appSettingsSlice.actions.saveThemeSettings;

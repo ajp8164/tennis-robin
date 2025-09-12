@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Text, View } from 'react-native';
 import { SvgXml } from 'react-native-svg';
+import { useDispatch, useSelector } from 'react-redux';
 
 import {
   ThemeManager,
@@ -14,6 +15,8 @@ import { appConfig } from 'config';
 import { getDocuments } from 'firebase/firestore';
 import { useUserProfile } from 'lib/auth';
 import { useSelectedTeam } from 'lib/team';
+import { selectFirstLaunch } from 'store/selectors/appSettingsSelectors';
+import { saveFirstLaunch } from 'store/slices/appSettings';
 import { HomeNavigatorParamList } from 'types/navigation';
 import { Token } from 'types/token';
 
@@ -23,7 +26,9 @@ const HomeScreen = () => {
   const theme = useTheme();
   const s = useStyles();
   const device = useDevice();
+  const dispatch = useDispatch();
 
+  const firstLaunch = useSelector(selectFirstLaunch);
   const userProfile = useUserProfile();
   const selectedTeam = useSelectedTeam();
   const [acceptedInvitation, setAcceptedInvitation] = useState<{
@@ -49,9 +54,14 @@ const HomeScreen = () => {
 
       if (tokens.length) {
         inviteRedemptionModalModalRef.current?.present(tokens[0].value);
+      } else if (firstLaunch) {
+        // First launch - have an invitation?
+        inviteRedemptionModalModalRef.current?.present('ask');
+        dispatch(saveFirstLaunch({ value: false }));
       }
     })();
-  }, [userProfile]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [firstLaunch, userProfile]);
 
   const onInvitationAccepted = (teamName: string) => {
     setAcceptedInvitation({ teamName });
