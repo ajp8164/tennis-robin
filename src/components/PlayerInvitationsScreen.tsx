@@ -13,6 +13,7 @@ import {
 } from '@react-native-hello/ui';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Button } from 'components/atoms/Button';
+import { EmptyView } from 'components/molecules/EmptyView';
 import { appConfig } from 'config';
 import { addDocument, useCollection } from 'firebase/firestore';
 import { useUserProfile } from 'lib/auth';
@@ -39,6 +40,10 @@ const PlayerInvitationsScreen = ({ navigation }: Props) => {
 
   const userProfile = useUserProfile();
   const selectedTeam = useSelectedTeam();
+
+  const [contactsPermission, setContactsPermission] = useState<
+    'undefined' | 'authorized' | 'denied'
+  >('undefined');
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [selectedContacts, setSelectedContacts] = useState<Set<string>>(
     new Set(),
@@ -71,7 +76,13 @@ const PlayerInvitationsScreen = ({ navigation }: Props) => {
   });
 
   useEffect(() => {
+    Contacts.checkPermission().then(permission => {
+      setContactsPermission(permission);
+    });
+
     Contacts.requestPermission().then(permission => {
+      setContactsPermission(permission);
+
       if (permission === 'authorized') {
         Contacts.getAll().then(contacts => {
           try {
@@ -243,11 +254,10 @@ const PlayerInvitationsScreen = ({ navigation }: Props) => {
   };
 
   const renderEnteredEmpty = () => (
-    <Divider
-      note
-      light
-      text={"Tap '+' to add more contacts."}
-      subHeaderStyle={{ textAlign: 'center', paddingBottom: 15 }}
+    <EmptyView
+      type={'none'}
+      positionTop
+      details={'Tap ' + ' to add more contacts.'}
     />
   );
 
@@ -277,15 +287,18 @@ const PlayerInvitationsScreen = ({ navigation }: Props) => {
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={renderEnteredEmpty()}
       />
-      <Divider text={'MY CONTACTS'} />
-      <FlatList
-        data={contactsApp}
-        renderItem={renderAppContact}
-        keyExtractor={item => `${item.id}`}
-        scrollEnabled={false}
-        showsVerticalScrollIndicator={false}
-        ListFooterComponent={<Divider />}
-      />
+
+      {contactsPermission === 'authorized' ? (
+        <FlatList
+          data={contactsApp}
+          renderItem={renderAppContact}
+          keyExtractor={item => `${item.id}`}
+          scrollEnabled={false}
+          showsVerticalScrollIndicator={false}
+          ListHeaderComponent={<Divider text={'MY CONTACTS'} />}
+          ListFooterComponent={<Divider />}
+        />
+      ) : null}
     </ScrollView>
   );
 };

@@ -56,7 +56,7 @@ const SetupScreen = ({ navigation, route }: Props) => {
         <Divider />
         <ListItem
           title={'Teams'}
-          subtitle={'Select or create a team'}
+          subtitle={'Select a team'}
           value={selectedTeam?.name}
           leftContent={<Users color={theme.colors.listItemIcon} />}
           position={['first']}

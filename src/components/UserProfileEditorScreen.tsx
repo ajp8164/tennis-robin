@@ -278,7 +278,12 @@ const UserProfileEditorScreen = ({ navigation }: Props) => {
                     editable: false,
                   }}
                 />
-                <Divider />
+                <Divider
+                  note
+                  light
+                  text={'Your user name cannot be changed.'}
+                  subHeaderStyle={theme.text.medium}
+                />
                 <ListItemInput
                   error={!!errors.firstName}
                   position={['first']}
