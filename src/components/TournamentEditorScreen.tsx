@@ -17,6 +17,7 @@ import {
   ListEditor,
   ListEditorMethods,
   ListEditorState,
+  ListItemCheckBox,
   ListItemSwipeable,
   listItemPosition,
   useTheme,
@@ -33,6 +34,7 @@ import { ListItemInput, ListItemInputMethods } from 'components/atoms/List';
 import { EmptyView } from 'components/molecules/EmptyView';
 import {
   addDocument,
+  getDocuments,
   updateDocument,
   useCollection,
   useDocument,
@@ -72,12 +74,12 @@ const TournamentEditorScreen = ({ navigation, route }: Props) => {
   const playerStatusDecoration = usePlayerStatusDecoration();
   const userProfile = useUserProfile();
   const selectedTeam = useSelectedTeam();
+  const [selectedPlayers, setSelectedPlayers] = useState<Player[]>([]);
 
   const { doc: tournament } = useDocument<Tournament>(
     'Tournaments',
     tournamentId,
   );
-  // const [tournamentPlayers, setTournamentPlayers] = useState<Player[]>([]);
 
   const { docs: tournamentPlayers } = useCollection<Player>('Players', {
     where: [
@@ -138,6 +140,11 @@ const TournamentEditorScreen = ({ navigation, route }: Props) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tournament]);
 
+  useEffect(() => {
+    setSelectedPlayers(tournamentPlayers);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tournamentPlayers]);
+
   // Create an enumeration of players for selection into the tournament.
   useEffect(() => {
     const playerEnum = allPlayers.map<EnumPickerValue>(p => {
@@ -164,10 +171,20 @@ const TournamentEditorScreen = ({ navigation, route }: Props) => {
 
   useEffect(() => {
     navigation.setOptions({
+      headerLeft: () => {
+        return (
+          <Button
+            title={'Cancel'}
+            titleStyle={theme.styles.buttonScreenHeaderTitle}
+            buttonStyle={theme.styles.buttonScreenHeader}
+            onPress={navigation.goBack}
+          />
+        );
+      },
       headerRight: () => {
         return (
           <>
-            {tournamentPlayers.length ? (
+            {selectedPlayers.length ? (
               <Button
                 title={listEditorState?.enabled ? 'Done' : 'Edit'}
                 titleStyle={theme.styles.buttonScreenHeaderTitle}
@@ -190,7 +207,7 @@ const TournamentEditorScreen = ({ navigation, route }: Props) => {
       },
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [listEditorState, formikCanSubmit]);
+  }, [listEditorState, formikCanSubmit, selectedPlayers]);
 
   useEffect(() => {
     // Event handlers for EnumPicker
@@ -203,12 +220,18 @@ const TournamentEditorScreen = ({ navigation, route }: Props) => {
   }, [tournament]);
 
   const onChangePlayers = async (result: EnumPickerResult) => {
-    console.log(result);
+    const { result: players } = await getDocuments<Player>('Players', {
+      where: [{ fieldPath: documentId(), opStr: 'in', value: result.value }],
+    });
+
+    // Replace the player selections.
     if (tournament) {
       updateDocument<Tournament>('Tournaments', {
         ...tournament,
-        players: result.value,
+        players: players.map(p => p.id!),
       });
+    } else {
+      setSelectedPlayers(players);
     }
   };
 
@@ -218,6 +241,9 @@ const TournamentEditorScreen = ({ navigation, route }: Props) => {
         ...tournament,
         players: tournament.players.filter(p => p !== playerId),
       });
+    } else {
+      // Remove the player from our selections.
+      setSelectedPlayers(selectedPlayers.filter(p => p.id !== playerId));
     }
   };
 
@@ -238,7 +264,7 @@ const TournamentEditorScreen = ({ navigation, route }: Props) => {
       const newTournament = await addDocument<Tournament>('Tournaments', {
         name: values.name,
         owners: [userProfile!.id],
-        players: [],
+        players: selectedPlayers.map(p => p.id!),
       });
 
       // Associate the new tournament with my selected team.
@@ -251,6 +277,17 @@ const TournamentEditorScreen = ({ navigation, route }: Props) => {
         } as Team);
       }
     }
+  };
+
+  const choosePlayers = () => {
+    navigation.navigate('EnumPicker', {
+      title: 'Players',
+      values: playerEnum,
+      selected: selectedPlayers.map(p => p.id!),
+      itemPlural: 'Players',
+      eventName: 'change-players',
+      mode: 'many-or-none',
+    });
   };
 
   const onFormikWatcherStateChange = (
@@ -273,7 +310,7 @@ const TournamentEditorScreen = ({ navigation, route }: Props) => {
             color={playerStatusDecoration[player.status].color}
           />
         }
-        position={listItemPosition(index, tournamentPlayers.length)}
+        position={listItemPosition(index, selectedPlayers.length)}
         rightContent={'chevron-right'}
         listEditor={listEditorRef.current}
         onPress={() =>
@@ -308,16 +345,7 @@ const TournamentEditorScreen = ({ navigation, route }: Props) => {
           title={'Choose Players'}
           titleStyle={theme.styles.buttonScreenHeaderTitle}
           buttonStyle={theme.styles.dividerTextButton}
-          onPress={() =>
-            navigation.navigate('EnumPicker', {
-              title: 'Players',
-              values: playerEnum,
-              selected: tournament?.players,
-              itemPlural: 'Players',
-              eventName: 'change-players',
-              mode: 'many-or-none',
-            })
-          }
+          onPress={choosePlayers}
         />
       }
     />
@@ -332,16 +360,7 @@ const TournamentEditorScreen = ({ navigation, route }: Props) => {
         details={'Add Players to your Tournament.'}
         positionTop
         buttonTitle={'Choose Players'}
-        onButtonPress={() =>
-          navigation.navigate('EnumPicker', {
-            title: 'Players',
-            values: playerEnum,
-            selected: tournament?.players,
-            itemPlural: 'Players',
-            eventName: 'change-players',
-            mode: 'many-or-none',
-          })
-        }
+        onButtonPress={choosePlayers}
       />
     </>
   );
@@ -353,7 +372,22 @@ const TournamentEditorScreen = ({ navigation, route }: Props) => {
         showsVerticalScrollIndicator={false}
         contentInsetAdjustmentBehavior={'automatic'}
         contentContainerStyle={{ flexGrow: 1 }}>
-        <Divider />
+        <Divider text={'TYPE'} />
+        <ListItemCheckBox
+          title={'Unique Partner Round Robin'}
+          position={['first', 'last']}
+          checked={true}
+          onChange={() => null}
+        />
+        <Divider
+          note
+          light
+          text={
+            'Players are grouped into pairs. Each player partners with every other player exactly once. No pair repeats.'
+          }
+          subHeaderStyle={theme.text.medium}
+        />
+        <Divider text={'DETAILS'} />
         <Formik
           innerRef={formik => {
             if (formik) {
@@ -391,14 +425,13 @@ const TournamentEditorScreen = ({ navigation, route }: Props) => {
         <ListEditor ref={listEditorRef} onChangeState={setListEditorState}>
           <FlatList
             contentInsetAdjustmentBehavior={'automatic'}
-            style={theme.styles.view}
-            data={tournamentPlayers}
+            data={selectedPlayers}
             renderItem={renderPlayer}
             keyExtractor={item => `${item.id}`}
             scrollEnabled={false}
             showsVerticalScrollIndicator={false}
             ListHeaderComponent={
-              tournamentPlayers.length ? renderPlayersHeader() : null
+              selectedPlayers.length ? renderPlayersHeader() : null
             }
             ListFooterComponent={<Divider />}
             ListEmptyComponent={renderPlayersEmpty()}

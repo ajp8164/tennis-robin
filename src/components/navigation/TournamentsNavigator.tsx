@@ -42,6 +42,7 @@ const TournamentsNavigator = () => {
         options={({ route }) => {
           return {
             title: route.params.screenTitle,
+            presentation: 'modal',
           };
         }}
       />
@@ -50,6 +51,7 @@ const TournamentsNavigator = () => {
         component={TournamentEditorScreen}
         options={{
           title: 'New Tournament',
+          presentation: 'modal',
         }}
       />
       <TournamentsStack.Screen
