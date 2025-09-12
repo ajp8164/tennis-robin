@@ -38,6 +38,7 @@ import {
   useDocument,
 } from 'firebase/firestore';
 import { Formik, FormikProps } from 'formik';
+import { appIcons } from 'lib/appIcons';
 import { useUserProfile } from 'lib/auth';
 import { usePlayerStatusDecoration } from 'lib/player';
 import { useSelectedTeam } from 'lib/team';
@@ -202,6 +203,7 @@ const TournamentEditorScreen = ({ navigation, route }: Props) => {
   }, [tournament]);
 
   const onChangePlayers = async (result: EnumPickerResult) => {
+    console.log(result);
     if (tournament) {
       updateDocument<Tournament>('Tournaments', {
         ...tournament,
@@ -267,7 +269,7 @@ const TournamentEditorScreen = ({ navigation, route }: Props) => {
         subtitle={playerStatusDecoration[player.status].label}
         value={
           <DynamicIcon
-            icon={playerStatusDecoration[player.status].icon}
+            icon={appIcons[playerStatusDecoration[player.status].icon]}
             color={playerStatusDecoration[player.status].color}
           />
         }

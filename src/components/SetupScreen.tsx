@@ -12,6 +12,7 @@ import {
   MyStatusModalMethods,
 } from 'components/modals/MyStatusModal';
 import { appConfig } from 'config';
+import { appIcons } from 'lib/appIcons';
 import { useUserProfile } from 'lib/auth';
 import { useMyPlayer, usePlayerStatusDecoration } from 'lib/player';
 import { useSelectedTeam } from 'lib/team';
@@ -79,7 +80,7 @@ const SetupScreen = ({ navigation, route }: Props) => {
           value={
             myPlayer ? (
               <DynamicIcon
-                icon={playerStatusDecoration[myPlayer.status].icon}
+                icon={appIcons[playerStatusDecoration[myPlayer.status].icon]}
                 color={playerStatusDecoration[myPlayer.status].color}
               />
             ) : null

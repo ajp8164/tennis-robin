@@ -21,6 +21,7 @@ import {
   deleteDocument,
   useCollection,
 } from 'firebase/firestore';
+import { appIcons } from 'lib/appIcons';
 import { usePlayerStatusDecoration } from 'lib/player';
 import { useSelectedTeam } from 'lib/team';
 import { useConfirmAction } from 'lib/useConfirmAction';
@@ -159,7 +160,7 @@ const PlayersScreen = ({ navigation }: Props) => {
         value={
           isPlayer ? (
             <DynamicIcon
-              icon={playerStatusDecoration[item.status].icon}
+              icon={appIcons[playerStatusDecoration[item.status].icon]}
               color={playerStatusDecoration[item.status].color}
             />
           ) : (

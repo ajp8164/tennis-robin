@@ -9,6 +9,7 @@ import {
 } from '@react-native-hello/ui';
 import { DynamicIcon } from 'components/atoms/DynamicIcon';
 import { updateDocument } from 'firebase/firestore';
+import { appIcons } from 'lib/appIcons';
 import { useMyPlayer, usePlayerStatusDecoration } from 'lib/player';
 import { Player, PlayerStatus } from 'types/player';
 
@@ -52,7 +53,7 @@ export const MyStatusView = (props: MyStatusViewInterface) => {
                 position={['first', 'last']}
                 leftContent={
                   <DynamicIcon
-                    icon={playerStatusDecoration[status].icon}
+                    icon={appIcons[playerStatusDecoration[status].icon]}
                     color={theme.colors.stickyWhite}
                   />
                 }

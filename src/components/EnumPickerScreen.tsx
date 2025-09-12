@@ -12,13 +12,15 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Button } from 'components/atoms/Button';
 import { DynamicIcon } from 'components/atoms/DynamicIcon';
 import { EmptyView } from 'components/molecules/EmptyView';
+import { appIcons } from 'lib/appIcons';
 import { useScreenEditHeader } from 'lib/useScreenEditHeader';
 import lodash from 'lodash';
-import { LucideIcon } from 'lucide-react-native';
 import { MultipleNavigatorParamList } from 'types/navigation';
 
+export type IconName = keyof typeof appIcons;
+
 export type EnumPickerIconProps = {
-  icon: LucideIcon;
+  icon: IconName;
   color?: string;
 } | null;
 
@@ -148,7 +150,7 @@ const EnumPickerScreen = ({ route, navigation }: Props) => {
         leftContent={
           value.leftIcon ? (
             <DynamicIcon
-              icon={value.leftIcon.icon}
+              icon={appIcons[value.leftIcon.icon]}
               color={value.leftIcon.color}
             />
           ) : (
@@ -158,7 +160,7 @@ const EnumPickerScreen = ({ route, navigation }: Props) => {
         value={
           value.rightIcon ? (
             <DynamicIcon
-              icon={value.rightIcon.icon}
+              icon={appIcons[value.rightIcon.icon]}
               color={value.rightIcon.color}
             />
           ) : (
