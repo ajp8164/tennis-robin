@@ -1,5 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Alert, FlatList, ListRenderItem } from 'react-native';
+import {
+  Alert,
+  ListRenderItem,
+  SectionList,
+  SectionListData,
+  View,
+} from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
@@ -18,11 +24,18 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Button } from 'components/atoms/Button';
 import { EmptyView } from 'components/molecules/EmptyView';
 import { archiveDocument, useCollection } from 'firebase/firestore';
+import { groupItems } from 'lib/sectionList';
 import { useSelectedTeam } from 'lib/team';
 import { useConfirmAction } from 'lib/useConfirmAction';
 import { CircleMinus, Plus, Trash2 } from 'lucide-react-native';
+import { DateTime } from 'luxon';
 import { TournamentsNavigatorParamList } from 'types/navigation';
 import { Tournament } from 'types/tournament';
+
+type Section = {
+  title?: string;
+  data: Tournament[];
+};
 
 export type Props = NativeStackScreenProps<
   TournamentsNavigatorParamList,
@@ -98,6 +111,17 @@ const TournamentsScreen = ({ navigation }: Props) => {
     }
   };
 
+  const groupTournaments = (
+    tournaments?: Tournament[],
+  ): SectionListData<Tournament, Section>[] => {
+    return groupItems<Tournament, Section>(tournaments || [], tournaments => {
+      const date = tournaments.date;
+      return date
+        ? DateTime.fromISO(date).toFormat('MMMM yyyy').toUpperCase()
+        : '';
+    });
+  };
+
   const renderTournament: ListRenderItem<Tournament> = ({
     item: tournament,
     index,
@@ -107,6 +131,7 @@ const TournamentsScreen = ({ navigation }: Props) => {
         key={tournament.id}
         title={tournament.name}
         subtitle={`${tournament.players.length} Player${tournament.players.length !== 1 ? 's' : ''}`}
+        value={`${tournament.location}\n${DateTime.fromISO(tournament.date).toFormat("M/d 'at' h:mm")}`}
         valueStyle={theme.text.medium}
         position={listItemPosition(index, allTournaments.length)}
         rightContent={'chevron-right'}
@@ -169,13 +194,19 @@ const TournamentsScreen = ({ navigation }: Props) => {
         {selectedTeam?.name || ''}
       </Animated.Text>
       <ListEditor ref={listEditorRef} onChangeState={setListEditorState}>
-        <FlatList
-          scrollEnabled={false}
-          data={allTournaments}
-          renderItem={renderTournament}
-          keyExtractor={item => `${item.id}`}
+        <SectionList
           showsVerticalScrollIndicator={false}
-          ListHeaderComponent={<Divider />}
+          contentInsetAdjustmentBehavior={'automatic'}
+          stickySectionHeadersEnabled={true}
+          scrollEnabled={false}
+          sections={groupTournaments([...allTournaments].reverse())} // Most recent tournament at the top
+          keyExtractor={(item, index) => `${index}${item.id}`}
+          renderItem={renderTournament}
+          renderSectionHeader={({ section: { title } }) => (
+            <View style={theme.styles.listSectionHeader}>
+              <Divider text={title} />
+            </View>
+          )}
           ListFooterComponent={<Divider />}
           ListEmptyComponent={renderTournamentsEmpty()}
         />

@@ -156,7 +156,6 @@ export const InviteRedemptionView = (props: InviteRedemptionViewInterface) => {
               cellCount={6}
               rootStyle={s.codeFieldContainer}
               textContentType={'oneTimeCode'}
-              autoFocus={true}
               keyboardAppearance={ThemeManager.name}
               allowFontScaling={false}
               renderCell={({ index, symbol, isFocused }) => (

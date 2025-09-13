@@ -10,10 +10,12 @@ import {
   useTheme,
 } from '@react-native-hello/ui';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { Button } from 'components/atoms/Button';
 import { InviteRedemptionModal } from 'components/modals/InviteRedemptionModal';
 import { appConfig } from 'config';
 import { getDocuments } from 'firebase/firestore';
 import { useUserProfile } from 'lib/auth';
+import { addTestPlayers } from 'lib/scripts/addTestPlayers';
 import { useSelectedTeam } from 'lib/team';
 import { selectFirstLaunch } from 'store/selectors/appSettingsSelectors';
 import { saveFirstLaunch } from 'store/slices/appSettings';
@@ -63,7 +65,7 @@ const HomeScreen = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [firstLaunch, userProfile]);
 
-  const onInvitationAccepted = (teamName: string) => {
+  const acceptInvitation = (teamName: string) => {
     setAcceptedInvitation({ teamName });
   };
 
@@ -91,13 +93,26 @@ const HomeScreen = () => {
             <Text
               style={
                 s.accepted
-              }>{`Welcome to team "${acceptedInvitation.teamName}" ${userProfile?.firstName}!`}</Text>
+              }>{`Welcome to team\n"${acceptedInvitation.teamName}"!`}</Text>
           ) : null}
         </View>
+        <Button
+          title={'Add Test Players'}
+          titleStyle={theme.styles.buttonTitle}
+          buttonStyle={theme.styles.button}
+          containerStyle={{
+            position: 'absolute',
+            bottom: 15,
+            alignSelf: 'center',
+          }}
+          onPress={() =>
+            selectedTeam ? addTestPlayers(selectedTeam.id) : null
+          }
+        />
       </View>
       <InviteRedemptionModal
         ref={inviteRedemptionModalModalRef}
-        onAccepted={onInvitationAccepted}
+        onAccepted={acceptInvitation}
       />
     </>
   );
@@ -106,7 +121,7 @@ const HomeScreen = () => {
 const useStyles = ThemeManager.createStyleSheet(({ device, theme }) => ({
   accepted: {
     ...theme.text.xl,
-    marginTop: 50,
+    marginTop: 10,
   },
   content: {
     position: 'absolute',

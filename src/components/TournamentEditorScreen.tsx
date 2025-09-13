@@ -6,8 +6,10 @@ import {
   ScrollView,
   View,
 } from 'react-native';
+import Animated, { FadeIn } from 'react-native-reanimated';
 
 import { documentId } from '@react-native-firebase/firestore';
+import { ISODateString } from '@react-native-hello/common';
 import { useEvent } from '@react-native-hello/core';
 import {
   Divider,
@@ -17,8 +19,10 @@ import {
   ListEditor,
   ListEditorMethods,
   ListEditorState,
-  ListItemCheckBox,
+  ListItem,
+  ListItemDateTime,
   ListItemSwipeable,
+  ThemeManager,
   listItemPosition,
   useTheme,
 } from '@react-native-hello/ui';
@@ -30,7 +34,12 @@ import {
   FormikStateWatcher,
   FormikWatcherState,
 } from 'components/atoms/FormikStateWatcher';
-import { ListItemInput, ListItemInputMethods } from 'components/atoms/List';
+import {
+  ListItemCheckBoxInfo,
+  ListItemInput,
+  ListItemInputMethods,
+  ListItemStepper,
+} from 'components/atoms/List';
 import { EmptyView } from 'components/molecules/EmptyView';
 import {
   addDocument,
@@ -45,6 +54,7 @@ import { useUserProfile } from 'lib/auth';
 import { usePlayerStatusDecoration } from 'lib/player';
 import { useSelectedTeam } from 'lib/team';
 import { CircleMinus, EyeOff } from 'lucide-react-native';
+import { DateTime } from 'luxon';
 import { TournamentsNavigatorParamList } from 'types/navigation';
 import { Player } from 'types/player';
 import { Team } from 'types/team';
@@ -60,16 +70,21 @@ export type Props =
 // Order of fields for accessory view.
 enum Fields {
   name,
+  location,
 }
 
 type FormValues = {
   name: string;
+  date: ISODateString;
+  location: string;
+  numberOfCourts: number;
 };
 
 const TournamentEditorScreen = ({ navigation, route }: Props) => {
   const { tournamentId } = route.params || {};
 
   const theme = useTheme();
+  const s = useStyles();
   const event = useEvent();
   const playerStatusDecoration = usePlayerStatusDecoration();
   const userProfile = useUserProfile();
@@ -114,11 +129,19 @@ const TournamentEditorScreen = ({ navigation, route }: Props) => {
 
   const [initialValues, setInitialValues] = useState<FormValues>({
     name: '',
+    date: DateTime.now().toISO(),
+    location: '',
+    numberOfCourts: 1,
   });
 
   const schema = Yup.object().shape({
     name: Yup.string().required(),
+    date: Yup.string().required(),
+    location: Yup.string().required(),
+    numberOfCourts: Yup.number().min(1).required(),
   });
+
+  const [expandedDate, setExpandedDate] = useState(false);
 
   const formikRef = useRef<FormikProps<FormValues>>(null);
   const [formikCanSubmit, setFormikCanSubmit] = useState(false);
@@ -126,6 +149,7 @@ const TournamentEditorScreen = ({ navigation, route }: Props) => {
     KeyboardAccessoryMethods & KeyboardAccessory
   >(null);
   const nameFieldRef = useRef<ListItemInputMethods>(null);
+  const locationFieldRef = useRef<ListItemInputMethods>(null);
   const [resolvedRefs, setResolvedRefs] = useState<(InputMethods | null)[]>([]);
 
   const listEditorRef = useRef<ListEditorMethods>(null);
@@ -135,6 +159,9 @@ const TournamentEditorScreen = ({ navigation, route }: Props) => {
     if (tournament && !initialValues.name) {
       setInitialValues({
         name: tournament.name,
+        date: tournament.date,
+        location: tournament.location || '',
+        numberOfCourts: tournament.numberOfCourts,
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -166,20 +193,25 @@ const TournamentEditorScreen = ({ navigation, route }: Props) => {
   // Supports keyboard accessory view.
   // Ensures all refs are set.
   useEffect(() => {
-    setResolvedRefs([nameFieldRef.current].filter(Boolean));
+    setResolvedRefs(
+      [nameFieldRef.current, locationFieldRef.current].filter(Boolean),
+    );
   }, []);
 
   useEffect(() => {
     navigation.setOptions({
       headerLeft: () => {
-        return (
-          <Button
-            title={'Cancel'}
-            titleStyle={theme.styles.buttonScreenHeaderTitle}
-            buttonStyle={theme.styles.buttonScreenHeader}
-            onPress={navigation.goBack}
-          />
-        );
+        if (formikCanSubmit) {
+          return (
+            <Button
+              title={'Cancel'}
+              titleStyle={theme.styles.buttonScreenHeaderTitle}
+              buttonStyle={theme.styles.buttonScreenHeader}
+              onPress={() => formikRef.current?.resetForm()}
+            />
+          );
+        }
+        return null;
       },
       headerRight: () => {
         return (
@@ -208,6 +240,21 @@ const TournamentEditorScreen = ({ navigation, route }: Props) => {
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [listEditorState, formikCanSubmit, selectedPlayers]);
+
+  // useEffect(() => {
+  //   if (!tournament) return;
+  //   try {
+  //     const schedule = uniquePartnerDoubles(
+  //       selectedPlayers,
+  //       tournament.numberOfCourts,
+  //     );
+
+  //     console.log(schedule);
+  //   } catch (e) {
+  //     console.log(e);
+  //     //
+  //   }
+  // }, [selectedPlayers]);
 
   useEffect(() => {
     // Event handlers for EnumPicker
@@ -259,10 +306,16 @@ const TournamentEditorScreen = ({ navigation, route }: Props) => {
       updateDocument<Tournament>('Tournaments', {
         ...tournament,
         name: values.name,
+        date: values.date,
+        location: values.location,
+        numberOfCourts: values.numberOfCourts,
       });
     } else {
       const newTournament = await addDocument<Tournament>('Tournaments', {
         name: values.name,
+        date: values.date,
+        location: values.location,
+        numberOfCourts: values.numberOfCourts,
         owners: [userProfile!.id],
         players: selectedPlayers.map(p => p.id!),
       });
@@ -288,6 +341,15 @@ const TournamentEditorScreen = ({ navigation, route }: Props) => {
       eventName: 'change-players',
       mode: 'many-or-none',
     });
+  };
+
+  const onDateChange = (date?: Date) => {
+    if (date) {
+      formikRef.current?.setFieldValue(
+        'date',
+        DateTime.fromJSDate(date).toISO(),
+      );
+    }
   };
 
   const onFormikWatcherStateChange = (
@@ -366,78 +428,161 @@ const TournamentEditorScreen = ({ navigation, route }: Props) => {
   );
 
   return (
-    <>
-      <ScrollView
-        style={theme.styles.view}
-        showsVerticalScrollIndicator={false}
-        contentInsetAdjustmentBehavior={'automatic'}
-        contentContainerStyle={{ flexGrow: 1 }}>
-        <Divider text={'TYPE'} />
-        <ListItemCheckBox
-          title={'Unique Partner Round Robin'}
-          position={['first', 'last']}
-          checked={true}
-          onChange={() => null}
-        />
-        <Divider
-          note
-          light
-          text={
-            'Players are grouped into pairs. Each player partners with every other player exactly once. No pair repeats.'
-          }
-          subHeaderStyle={theme.text.medium}
-        />
-        <Divider text={'DETAILS'} />
-        <Formik
-          innerRef={formik => {
-            if (formik) {
-              formikRef.current = formik;
+    <View style={{ height: '100%' }}>
+      <View style={{ flex: 1 }}>
+        <ScrollView
+          style={theme.styles.view}
+          showsVerticalScrollIndicator={false}
+          contentInsetAdjustmentBehavior={'automatic'}
+          contentContainerStyle={{ flexGrow: 1 }}>
+          <Divider text={'TYPE'} />
+          <ListItemCheckBoxInfo
+            title={'Unique Partner Doubles'}
+            position={['first', 'last']}
+            checkRight
+            checked={true}
+            onPressInfo={
+              () => null
+              // navigation.navigate('TournamentNavigator', {
+              //   screen: 'TournamentSchedule',
+              //   params: {
+              //     tournamentId: tournamentId || 'Tournament',
+              //     screenTitle: tournament?.name || 'Tournament',
+              //   },
+              // })
             }
-          }}
-          initialValues={initialValues}
-          enableReinitialize
-          validationSchema={schema}
-          validateOnMount
-          onSubmit={onSubmit}>
-          {({ errors, handleChange, values }) => (
-            <View>
-              <FormikStateWatcher<FormValues>
-                onChange={onFormikWatcherStateChange}
-              />
-              <ListItemInput
-                ref={nameFieldRef}
-                position={['first', 'last']}
-                error={!!errors.name}
-                inputProps={{
-                  inputAccessoryViewID: 'keyboardAccessory',
-                  onChangeText: handleChange('name'),
-                  onFocus: () =>
-                    keyboardAccessory.current?.focusedField(Fields.name),
-                  value: values.name,
-                  label: 'Tournament Name',
-                  placeholder: 'Tournament Name',
-                  autoCapitalize: 'words',
-                }}
-              />
-            </View>
-          )}
-        </Formik>
-        <ListEditor ref={listEditorRef} onChangeState={setListEditorState}>
-          <FlatList
-            contentInsetAdjustmentBehavior={'automatic'}
-            data={selectedPlayers}
-            renderItem={renderPlayer}
-            keyExtractor={item => `${item.id}`}
-            scrollEnabled={false}
-            showsVerticalScrollIndicator={false}
-            ListHeaderComponent={
-              selectedPlayers.length ? renderPlayersHeader() : null
-            }
-            ListFooterComponent={<Divider />}
-            ListEmptyComponent={renderPlayersEmpty()}
           />
-        </ListEditor>
-      </ScrollView>
+          <Divider
+            note
+            light
+            text={
+              'Players are grouped into pairs. Each player partners with every other player exactly once. No pair repeats.'
+            }
+            subHeaderStyle={s.dividerText}
+          />
+          <Divider text={'DETAILS'} />
+          <Formik
+            innerRef={formik => {
+              if (formik) {
+                formikRef.current = formik;
+              }
+            }}
+            initialValues={initialValues}
+            enableReinitialize
+            validationSchema={schema}
+            validateOnMount
+            onSubmit={onSubmit}>
+            {({ errors, values, handleChange, setFieldValue }) => (
+              <View>
+                <FormikStateWatcher<FormValues>
+                  onChange={onFormikWatcherStateChange}
+                />
+                <ListItemInput
+                  ref={nameFieldRef}
+                  position={['first']}
+                  error={!!errors.name}
+                  inputProps={{
+                    inputAccessoryViewID: 'keyboardAccessory',
+                    onChangeText: handleChange('name'),
+                    onFocus: () =>
+                      keyboardAccessory.current?.focusedField(Fields.name),
+                    value: values.name,
+                    label: 'Tournament Name',
+                    placeholder: 'Tournament Name',
+                    autoCapitalize: 'words',
+                  }}
+                />
+                <ListItemDateTime
+                  title={'Date'}
+                  value={DateTime.fromISO(values.date).toFormat(
+                    "MMM d, yyyy 'at' h:mm a",
+                  )}
+                  minimumDate={DateTime.now().toJSDate()}
+                  maximumDate={DateTime.now().plus({ years: 100 }).toJSDate()}
+                  mode={'datetime'}
+                  pickerValue={values.date}
+                  expanded={expandedDate}
+                  accentColor={theme.colors.brandSecondary}
+                  onPress={() => setExpandedDate(!expandedDate)}
+                  onChange={onDateChange}
+                />
+                <ListItemInput
+                  ref={locationFieldRef}
+                  error={!!errors.location}
+                  inputProps={{
+                    inputAccessoryViewID: 'keyboardAccessory',
+                    onChangeText: handleChange('location'),
+                    onFocus: () =>
+                      keyboardAccessory.current?.focusedField(Fields.location),
+                    value: values.location,
+                    label: 'Location',
+                    placeholder: 'Location',
+                    autoCapitalize: 'words',
+                  }}
+                />
+                <ListItemStepper
+                  title={'Number of Courts'}
+                  position={['last']}
+                  initialValue={values.numberOfCourts}
+                  min={1}
+                  max={10}
+                  onChange={value => setFieldValue('numberOfCourts', value)}
+                />
+              </View>
+            )}
+          </Formik>
+          {selectedPlayers.length ? (
+            <Animated.View entering={FadeIn}>
+              <Divider />
+              <ListItem
+                title={'Schedule'}
+                subtitle={'Courts, Rounds, Pairings'}
+                position={['first', 'last']}
+                rightContent={'chevron-right'}
+                onPress={() =>
+                  navigation.navigate('TournamentSchedule', {
+                    tournamentId: tournamentId || 'Tournament',
+                    screenTitle: tournament?.name || 'Tournament',
+                  })
+                }
+              />
+              <ListEditor
+                ref={listEditorRef}
+                onChangeState={setListEditorState}>
+                <FlatList
+                  contentInsetAdjustmentBehavior={'automatic'}
+                  data={selectedPlayers}
+                  renderItem={renderPlayer}
+                  keyExtractor={item => `${item.id}`}
+                  scrollEnabled={false}
+                  showsVerticalScrollIndicator={false}
+                  ListHeaderComponent={
+                    selectedPlayers.length ? renderPlayersHeader() : null
+                  }
+                  ListFooterComponent={<Divider />}
+                  ListEmptyComponent={renderPlayersEmpty()}
+                />
+              </ListEditor>
+            </Animated.View>
+          ) : null}
+        </ScrollView>
+      </View>
+      <View
+        style={{
+          height: 80,
+          paddingVertical: 15,
+          borderTopWidth: 1,
+          borderTopColor: theme.colors.subtleGray,
+        }}>
+        <Button
+          title={'Begin Tournament'}
+          titleStyle={theme.styles.buttonTitle}
+          buttonStyle={theme.styles.button}
+          containerStyle={theme.styles.buttonContainer}
+          disabled={formikCanSubmit}
+          onPress={() => null}
+        />
+      </View>
       <KeyboardAccessory
         ref={keyboardAccessory}
         id={'keyboardAccessory'}
@@ -446,8 +591,15 @@ const TournamentEditorScreen = ({ navigation, route }: Props) => {
         disabledDone={!formikCanSubmit}
         onDone={Keyboard.dismiss}
       />
-    </>
+    </View>
   );
 };
+
+const useStyles = ThemeManager.createStyleSheet(({ theme }) => ({
+  dividerText: {
+    ...theme.text.medium,
+    marginBottom: -10,
+  },
+}));
 
 export default TournamentEditorScreen;

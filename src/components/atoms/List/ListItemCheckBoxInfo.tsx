@@ -12,6 +12,7 @@ import { Check, Square, SquareCheckBig } from 'lucide-react-native';
 interface ListItemCheckBoxInfo extends ListItemSwipeable {
   checked: boolean;
   checkBox?: boolean;
+  checkRight?: boolean;
   expanded?: boolean;
   ExpandableComponent?: React.ReactElement;
   onPressInfo?: () => void;
@@ -27,6 +28,7 @@ const ListItemCheckBoxInfo = React.forwardRef<
   const {
     checked,
     checkBox,
+    checkRight,
     expanded = false,
     ExpandableComponent,
     onPressInfo,
@@ -47,28 +49,35 @@ const ListItemCheckBoxInfo = React.forwardRef<
     liRef.current?.close();
   };
 
+  const renderCheckContent = () => {
+    return (
+      <>
+        {checkBox ? (
+          checked ? (
+            <SquareCheckBig color={theme.colors.listItemIcon} />
+          ) : (
+            <Square color={theme.colors.listItemIcon} />
+          )
+        ) : (
+          <Check
+            color={theme.colors.listItemIcon}
+            style={[checked ? {} : s.unchecked]}
+          />
+        )}
+      </>
+    );
+  };
+
   return (
     <>
       <ListItemSwipeable
         ref={liRef}
         {...rest}
-        leftContent={
-          <>
-            {checkBox ? (
-              checked ? (
-                <SquareCheckBig color={theme.colors.listItemIcon} />
-              ) : (
-                <Square color={theme.colors.listItemIcon} />
-              )
-            ) : (
-              <Check
-                color={theme.colors.listItemIcon}
-                style={[checked ? {} : s.unchecked]}
-              />
-            )}
-          </>
+        leftContent={checkRight ? undefined : renderCheckContent()}
+        value={checkRight ? renderCheckContent() : undefined}
+        rightContent={
+          hideInfo ? undefined : rest.rightContent ? rest.rightContent : 'info'
         }
-        rightContent={hideInfo ? undefined : 'info'}
         onPressRight={onPressInfo}
       />
       <CollapsibleView expanded={expanded}>

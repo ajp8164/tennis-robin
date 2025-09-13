@@ -36,6 +36,10 @@ export type TournamentsNavigatorParamList = {
     tournamentId: string;
     screenTitle: string;
   };
+  TournamentSchedule: {
+    tournamentId: string;
+    screenTitle: string;
+  };
 };
 
 export type HomeNavigatorParamList = {

@@ -5,6 +5,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import EnumPickerScreen from 'components/EnumPickerScreen';
 import PlayerScreen from 'components/PlayerScreen';
 import TournamentEditorScreen from 'components/TournamentEditorScreen';
+import TournamentScheduleScreen from 'components/TournamentScheduleScreen';
 import TournamentsScreen from 'components/TournamentsScreen';
 import { TournamentsNavigatorParamList } from 'types/navigation';
 
@@ -42,7 +43,6 @@ const TournamentsNavigator = () => {
         options={({ route }) => {
           return {
             title: route.params.screenTitle,
-            presentation: 'modal',
           };
         }}
       />
@@ -51,7 +51,6 @@ const TournamentsNavigator = () => {
         component={TournamentEditorScreen}
         options={{
           title: 'New Tournament',
-          presentation: 'modal',
         }}
       />
       <TournamentsStack.Screen
@@ -62,10 +61,20 @@ const TournamentsNavigator = () => {
         }}
       />
       <TournamentsStack.Screen
+        name="TournamentSchedule"
+        component={TournamentScheduleScreen}
+        options={({ route }) => {
+          return {
+            title: route.params.screenTitle,
+          };
+        }}
+      />
+      <TournamentsStack.Screen
         name="EnumPicker"
         component={EnumPickerScreen}
         options={{
           title: '',
+          presentation: 'modal',
         }}
       />
     </TournamentsStack.Navigator>
