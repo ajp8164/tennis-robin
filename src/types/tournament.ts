@@ -14,22 +14,11 @@ export type Tournament = {
   players: string[];
 };
 
-export type Pairing = {
-  player1: Player;
-  player2: Player;
-};
-
-export type Court = {
-  team1: Pairing;
-  team2: Pairing;
-};
-
-export type RoundPlayers = Player[][];
-
-export type Round = Court[];
+// Round, court, team, player
+export type Rounds = Player[][][][];
 
 export type Schedule = {
-  numberOfCourts: number;
   numberOfRounds: number;
-  rounds: Round[];
+  numberOfCourts: number;
+  rounds: Rounds;
 };

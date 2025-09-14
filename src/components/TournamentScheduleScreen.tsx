@@ -16,6 +16,13 @@ import { TournamentsNavigatorParamList } from 'types/navigation';
 import { Player } from 'types/player';
 import { Schedule, Tournament } from 'types/tournament';
 
+type PlayerPosition = {
+  r: number; // round
+  c: number; // court
+  t: number; // team
+  p: number; // player
+};
+
 export type Props = NativeStackScreenProps<
   TournamentsNavigatorParamList,
   'TournamentSchedule'
@@ -56,30 +63,22 @@ const TournamentScheduleScreen = ({ route }: Props) => {
 
   const [swapSelect, setSwapSelect] = useState<PlayerPosition>();
 
-  type PlayerPosition = {
-    r: number;
-    c: number;
-    t: number;
-    p: number;
-  };
-
   const setSwap = (position: PlayerPosition) => {
     if (!swapSelect) {
       setSwapSelect(position);
     } else {
-      // Swap players
+      // Get path in rounds to each player.
+      const player1Path = `[${swapSelect.r}][${swapSelect.c}][${swapSelect.t}][${swapSelect.p}]`;
+      const player2Path = `[${position.r}][${position.c}][${position.t}][${position.p}]`;
 
-      const position1 = `[${swapSelect.r}][${swapSelect.c}].team${swapSelect.t}.player${swapSelect.p}`;
-      const position2 = `[${position.r}][${position.c}].team${position.t}.player${position.p}`;
+      // Get each player at their round path.
+      const player1 = lodash.get(schedule?.rounds, player1Path);
+      const player2 = lodash.get(schedule?.rounds, player2Path);
 
-      console.log(lodash.get(schedule?.rounds, position1));
-      console.log(lodash.get(schedule?.rounds, position2));
+      // Set each player to the others value.
+      lodash.set(schedule!.rounds, player1Path, player2);
+      lodash.set(schedule!.rounds, player2Path, player1);
 
-      const p1 = lodash.get(schedule?.rounds, position1);
-      const p2 = lodash.get(schedule?.rounds, position2);
-
-      lodash.set(schedule!.rounds, position1, p2);
-      lodash.set(schedule!.rounds, position2, p1);
       // Clear swap select
       setSwapSelect(undefined);
     }
@@ -116,23 +115,23 @@ const TournamentScheduleScreen = ({ route }: Props) => {
                         <Text
                           style={[
                             s.player,
-                            lodash.isEqual(swapSelect, { r, c, t: 1, p: 1 })
+                            lodash.isEqual(swapSelect, { r, c, t: 0, p: 0 })
                               ? s.playerSelected
                               : {},
                           ]}
-                          onPress={() => setSwap({ r, c, t: 1, p: 1 })}>
-                          {`${court.team1.player1.firstName} ${court.team1.player1.lastName}` ||
+                          onPress={() => setSwap({ r, c, t: 0, p: 0 })}>
+                          {`${court[0][0].firstName} ${court[0][0].lastName}` ||
                             'bye'}
                         </Text>
                         <Text
                           style={[
                             s.player,
-                            lodash.isEqual(swapSelect, { r, c, t: 1, p: 2 })
+                            lodash.isEqual(swapSelect, { r, c, t: 0, p: 1 })
                               ? s.playerSelected
                               : {},
                           ]}
-                          onPress={() => setSwap({ r, c, t: 1, p: 2 })}>
-                          {`${court.team1.player2.firstName} ${court.team1.player2.lastName}` ||
+                          onPress={() => setSwap({ r, c, t: 0, p: 1 })}>
+                          {`${court[0][1].firstName} ${court[0][1].lastName}` ||
                             'bye'}
                         </Text>
                       </View>
@@ -141,23 +140,23 @@ const TournamentScheduleScreen = ({ route }: Props) => {
                         <Text
                           style={[
                             s.player,
-                            lodash.isEqual(swapSelect, { r, c, t: 2, p: 1 })
+                            lodash.isEqual(swapSelect, { r, c, t: 1, p: 0 })
                               ? s.playerSelected
                               : {},
                           ]}
-                          onPress={() => setSwap({ r, c, t: 2, p: 1 })}>
-                          {`${court.team2.player1.firstName} ${court.team2.player1.lastName}` ||
+                          onPress={() => setSwap({ r, c, t: 1, p: 0 })}>
+                          {`${court[1][0].firstName} ${court[1][0].lastName}` ||
                             'bye'}
                         </Text>
                         <Text
                           style={[
                             s.player,
-                            lodash.isEqual(swapSelect, { r, c, t: 2, p: 2 })
+                            lodash.isEqual(swapSelect, { r, c, t: 1, p: 1 })
                               ? s.playerSelected
                               : {},
                           ]}
-                          onPress={() => setSwap({ r, c, t: 2, p: 2 })}>
-                          {`${court.team2.player2.firstName} ${court.team2.player2.lastName}` ||
+                          onPress={() => setSwap({ r, c, t: 1, p: 1 })}>
+                          {`${court[1][1]?.firstName} ${court[1][1]?.lastName}` ||
                             'bye'}
                         </Text>
                       </View>
