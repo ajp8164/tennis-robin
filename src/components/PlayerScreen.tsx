@@ -5,11 +5,11 @@ import { Divider, useTheme } from '@react-native-hello/ui';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { getDocument } from 'firebase/firestore';
 import { usePlayerStatusDecoration } from 'lib/player';
-import { TournamentsNavigatorParamList } from 'types/navigation';
+import { SportEventsNavigatorParamList } from 'types/navigation';
 import { Player } from 'types/player';
 
 export type Props = NativeStackScreenProps<
-  TournamentsNavigatorParamList,
+  SportEventsNavigatorParamList,
   'Player'
 >;
 

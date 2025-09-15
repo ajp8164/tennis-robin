@@ -23,21 +23,21 @@ export type AuthenticationNavigatorParamList = {
   Tabs: NavigatorScreenParams<TabNavigatorParamList>;
 };
 
-export type TournamentsNavigatorParamList = {
+export type SportEventsNavigatorParamList = {
   EnumPicker: EnumPickerInterface;
-  NewTournament: {
-    tournamentId?: string;
+  NewSportEvent: {
+    sportEventId?: string;
   };
   Player: {
     playerId: string;
   };
-  Tournaments: undefined;
-  TournamentEditor: {
-    tournamentId: string;
+  SportEvents: undefined;
+  SportEventEditor: {
+    sportEventId: string;
     screenTitle: string;
   };
-  TournamentSchedule: {
-    tournamentId: string;
+  SportEventSchedule: {
+    sportEventId: string;
     screenTitle: string;
   };
 };
@@ -87,5 +87,5 @@ export type TabNavigatorParamList = {
     screen: string;
     params: object;
   };
-  TournamentsTab: undefined;
+  SportEventsTab: undefined;
 };

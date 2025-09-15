@@ -96,7 +96,7 @@ const TeamEditorScreen = ({ navigation, route }: Props) => {
         name: values.name,
         owners: [userProfile!.id],
         players: [myPlayer!.id!], // TODO handle error?
-        tournaments: [],
+        sportEvents: [],
         defaultTeam: false,
       });
     }

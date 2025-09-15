@@ -9,7 +9,7 @@ import { TabNavigatorParamList } from 'types/navigation';
 
 import HomeNavigator from './HomeNavigator';
 import SetupNavigator from './SetupNavigator';
-import TournamentsNavigator from './TournamentsNavigator';
+import SportEventsNavigator from './SportEventsNavigator';
 
 const Tab = createBottomTabNavigator<TabNavigatorParamList>();
 
@@ -56,8 +56,8 @@ const TabNavigator = () => {
         }}
       />
       <Tab.Screen
-        name="TournamentsTab"
-        component={TournamentsNavigator}
+        name="SportEventsTab"
+        component={SportEventsNavigator}
         options={{
           tabBarShowLabel: false,
           tabBarIcon: ({ color }) => <Trophy color={color} size={33} />,

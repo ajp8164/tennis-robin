@@ -1,5 +1,5 @@
 import { Player } from 'types/player';
-import { Rounds, Schedule } from 'types/tournament';
+import { Rounds, Schedule } from 'types/sportEvent';
 
 export const uniquePartnerDoubles = (
   players: Player[],

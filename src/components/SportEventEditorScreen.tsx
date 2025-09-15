@@ -55,17 +55,17 @@ import { usePlayerStatusDecoration } from 'lib/player';
 import { useSelectedTeam } from 'lib/team';
 import { CircleMinus, EyeOff } from 'lucide-react-native';
 import { DateTime } from 'luxon';
-import { TournamentsNavigatorParamList } from 'types/navigation';
+import { SportEventsNavigatorParamList } from 'types/navigation';
 import { Player } from 'types/player';
+import { SportEvent } from 'types/sportEvent';
 import { Team } from 'types/team';
-import { Tournament } from 'types/tournament';
 import * as Yup from 'yup';
 
-// CompositeScreenProps not working here since NewTournament is also in the SetupNavigator
+// CompositeScreenProps not working here since NewSportEvent is also in the SetupNavigator
 // just using a different presentation (didn't create a new navigator for a single screen).
 export type Props =
-  | NativeStackScreenProps<TournamentsNavigatorParamList, 'TournamentEditor'>
-  | NativeStackScreenProps<TournamentsNavigatorParamList, 'NewTournament'>;
+  | NativeStackScreenProps<SportEventsNavigatorParamList, 'SportEventEditor'>
+  | NativeStackScreenProps<SportEventsNavigatorParamList, 'NewSportEvent'>;
 
 // Order of fields for accessory view.
 enum Fields {
@@ -80,8 +80,8 @@ type FormValues = {
   numberOfCourts: number;
 };
 
-const TournamentEditorScreen = ({ navigation, route }: Props) => {
-  const { tournamentId } = route.params || {};
+const SportEventEditorScreen = ({ navigation, route }: Props) => {
+  const { sportEventId } = route.params || {};
 
   const theme = useTheme();
   const s = useStyles();
@@ -91,17 +91,17 @@ const TournamentEditorScreen = ({ navigation, route }: Props) => {
   const selectedTeam = useSelectedTeam();
   const [selectedPlayers, setSelectedPlayers] = useState<Player[]>([]);
 
-  const { doc: tournament } = useDocument<Tournament>(
-    'Tournaments',
-    tournamentId,
+  const { doc: sportEvent } = useDocument<SportEvent>(
+    'SportEvents',
+    sportEventId,
   );
 
-  const { docs: tournamentPlayers } = useCollection<Player>('Players', {
+  const { docs: sportEventPlayers } = useCollection<Player>('Players', {
     where: [
       {
         fieldPath: '__name__',
         opStr: 'in',
-        value: tournament?.players || [],
+        value: sportEvent?.players || [],
       },
     ],
     orderBy: [
@@ -156,23 +156,23 @@ const TournamentEditorScreen = ({ navigation, route }: Props) => {
   const [listEditorState, setListEditorState] = useState<ListEditorState>();
 
   useEffect(() => {
-    if (tournament && !initialValues.name) {
+    if (sportEvent && !initialValues.name) {
       setInitialValues({
-        name: tournament.name,
-        date: tournament.date,
-        location: tournament.location || '',
-        numberOfCourts: tournament.numberOfCourts,
+        name: sportEvent.name,
+        date: sportEvent.date,
+        location: sportEvent.location || '',
+        numberOfCourts: sportEvent.numberOfCourts,
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tournament]);
+  }, [sportEvent]);
 
   useEffect(() => {
-    setSelectedPlayers(tournamentPlayers);
+    setSelectedPlayers(sportEventPlayers);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tournamentPlayers]);
+  }, [sportEventPlayers]);
 
-  // Create an enumeration of players for selection into the tournament.
+  // Create an enumeration of players for selection into the sportEvent.
   useEffect(() => {
     const playerEnum = allPlayers.map<EnumPickerValue>(p => {
       return {
@@ -249,7 +249,7 @@ const TournamentEditorScreen = ({ navigation, route }: Props) => {
       event.removeListener('change-players', onChangePlayers);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tournament]);
+  }, [sportEvent]);
 
   const onChangePlayers = async (result: EnumPickerResult) => {
     const { result: players } = await getDocuments<Player>('Players', {
@@ -257,9 +257,9 @@ const TournamentEditorScreen = ({ navigation, route }: Props) => {
     });
 
     // Replace the player selections.
-    if (tournament) {
-      updateDocument<Tournament>('Tournaments', {
-        ...tournament,
+    if (sportEvent) {
+      updateDocument<SportEvent>('SportEvents', {
+        ...sportEvent,
         players: players.map(p => p.id!),
       });
     } else {
@@ -268,10 +268,10 @@ const TournamentEditorScreen = ({ navigation, route }: Props) => {
   };
 
   const removePlayer = async (playerId: string) => {
-    if (tournament) {
-      updateDocument<Tournament>('Tournaments', {
-        ...tournament,
-        players: tournament.players.filter(p => p !== playerId),
+    if (sportEvent) {
+      updateDocument<SportEvent>('SportEvents', {
+        ...sportEvent,
+        players: sportEvent.players.filter(p => p !== playerId),
       });
     } else {
       // Remove the player from our selections.
@@ -287,16 +287,16 @@ const TournamentEditorScreen = ({ navigation, route }: Props) => {
   };
 
   const onSubmit = async (values: FormValues) => {
-    if (tournament) {
-      updateDocument<Tournament>('Tournaments', {
-        ...tournament,
+    if (sportEvent) {
+      updateDocument<SportEvent>('SportEvents', {
+        ...sportEvent,
         name: values.name,
         date: values.date,
         location: values.location,
         numberOfCourts: values.numberOfCourts,
       });
     } else {
-      const newTournament = await addDocument<Tournament>('Tournaments', {
+      const newSportEvent = await addDocument<SportEvent>('SportEvents', {
         name: values.name,
         date: values.date,
         location: values.location,
@@ -305,12 +305,12 @@ const TournamentEditorScreen = ({ navigation, route }: Props) => {
         players: selectedPlayers.map(p => p.id!),
       });
 
-      // Associate the new tournament with my selected team.
-      if (selectedTeam && newTournament.id) {
+      // Associate the new sportEvent with my selected team.
+      if (selectedTeam && newSportEvent.id) {
         updateDocument<Team>('Teams', {
           ...selectedTeam,
-          tournaments: [
-            ...new Set([...selectedTeam.tournaments, newTournament.id]),
+          sportEvents: [
+            ...new Set([...selectedTeam.sportEvents, newSportEvent.id]),
           ],
         } as Team);
       }
@@ -386,7 +386,7 @@ const TournamentEditorScreen = ({ navigation, route }: Props) => {
 
   const renderPlayersHeader = () => (
     <Divider
-      text={`${tournament?.players.length || ''} PLAYER${tournament?.players.length !== 1 ? 'S' : ''}`}
+      text={`${sportEvent?.players.length || ''} PLAYER${sportEvent?.players.length !== 1 ? 'S' : ''}`}
       rightComponent={
         <Button
           title={'Choose Players'}
@@ -404,7 +404,7 @@ const TournamentEditorScreen = ({ navigation, route }: Props) => {
       <EmptyView
         type={'info'}
         message={'No Players'}
-        details={'Add Players to your Tournament.'}
+        details={'Add Players to your SportEvent.'}
         positionTop
         buttonTitle={'Choose Players'}
         onButtonPress={choosePlayers}
@@ -428,11 +428,11 @@ const TournamentEditorScreen = ({ navigation, route }: Props) => {
             checked={true}
             onPressInfo={
               () => null
-              // navigation.navigate('TournamentNavigator', {
-              //   screen: 'TournamentSchedule',
+              // navigation.navigate('SportEventNavigator', {
+              //   screen: 'SportEventSchedule',
               //   params: {
-              //     tournamentId: tournamentId || 'Tournament',
-              //     screenTitle: tournament?.name || 'Tournament',
+              //     sportEventId: sportEventId,
+              //     screenTitle: sportEvent?.name || 'Event',
               //   },
               // })
             }
@@ -472,8 +472,8 @@ const TournamentEditorScreen = ({ navigation, route }: Props) => {
                     onFocus: () =>
                       keyboardAccessory.current?.focusedField(Fields.name),
                     value: values.name,
-                    label: 'Tournament Name',
-                    placeholder: 'Tournament Name',
+                    label: 'SportEvent Name',
+                    placeholder: 'SportEvent Name',
                     autoCapitalize: 'words',
                   }}
                 />
@@ -524,9 +524,9 @@ const TournamentEditorScreen = ({ navigation, route }: Props) => {
               position={['first', 'last']}
               rightContent={'chevron-right'}
               onPress={() =>
-                navigation.navigate('TournamentSchedule', {
-                  tournamentId: tournamentId || 'Tournament',
-                  screenTitle: tournament?.name || 'Tournament',
+                navigation.navigate('SportEventSchedule', {
+                  sportEventId: sportEventId || '',
+                  screenTitle: sportEvent?.name || 'Event',
                 })
               }
             />
@@ -556,7 +556,7 @@ const TournamentEditorScreen = ({ navigation, route }: Props) => {
           borderTopColor: theme.colors.subtleGray,
         }}>
         <Button
-          title={'Begin Tournament'}
+          title={'Begin Event'}
           titleStyle={theme.styles.buttonTitle}
           buttonStyle={theme.styles.button}
           containerStyle={theme.styles.buttonContainer}
@@ -583,4 +583,4 @@ const useStyles = ThemeManager.createStyleSheet(({ theme }) => ({
   },
 }));
 
-export default TournamentEditorScreen;
+export default SportEventEditorScreen;

@@ -56,7 +56,7 @@ const initializeMyDefaultTeam = async (
       name: defaultTeamName,
       owners: [userProfile.id],
       players: [player.id!],
-      tournaments: [],
+      sportEvents: [],
       defaultTeam: true,
     });
 

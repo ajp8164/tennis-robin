@@ -4,19 +4,19 @@ import { useTheme } from '@react-native-hello/ui';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import EnumPickerScreen from 'components/EnumPickerScreen';
 import PlayerScreen from 'components/PlayerScreen';
-import TournamentEditorScreen from 'components/TournamentEditorScreen';
-import TournamentScheduleScreen from 'components/TournamentScheduleScreen';
-import TournamentsScreen from 'components/TournamentsScreen';
-import { TournamentsNavigatorParamList } from 'types/navigation';
+import SportEventEditorScreen from 'components/SportEventEditorScreen';
+import SportEventScheduleScreen from 'components/SportEventScheduleScreen';
+import SportEventsScreen from 'components/SportEventsScreen';
+import { SportEventsNavigatorParamList } from 'types/navigation';
 
-const TournamentsStack =
-  createNativeStackNavigator<TournamentsNavigatorParamList>();
+const SportEventsStack =
+  createNativeStackNavigator<SportEventsNavigatorParamList>();
 
-const TournamentsNavigator = () => {
+const SportEventsNavigator = () => {
   const theme = useTheme();
   return (
-    <TournamentsStack.Navigator
-      initialRouteName={'Tournaments'}
+    <SportEventsStack.Navigator
+      initialRouteName={'SportEvents'}
       screenOptions={{
         headerBackButtonDisplayMode: 'minimal',
         headerStyle: {
@@ -25,11 +25,12 @@ const TournamentsNavigator = () => {
         headerTitleStyle: { color: theme.colors.screenHeaderTitle },
         headerTintColor: theme.colors.screenHeaderButtonText,
       }}>
-      <TournamentsStack.Screen
-        name="Tournaments"
-        component={TournamentsScreen}
+      <SportEventsStack.Screen
+        name="SportEvents"
+        component={SportEventsScreen}
         options={{
           headerLeft: () => null,
+          title: 'Events',
           headerLargeTitle: true,
           headerLargeTitleShadowVisible: false,
           headerLargeStyle: {
@@ -37,39 +38,39 @@ const TournamentsNavigator = () => {
           },
         }}
       />
-      <TournamentsStack.Screen
-        name="TournamentEditor"
-        component={TournamentEditorScreen}
+      <SportEventsStack.Screen
+        name="SportEventEditor"
+        component={SportEventEditorScreen}
         options={({ route }) => {
           return {
             title: route.params.screenTitle,
           };
         }}
       />
-      <TournamentsStack.Screen
-        name="NewTournament"
-        component={TournamentEditorScreen}
+      <SportEventsStack.Screen
+        name="NewSportEvent"
+        component={SportEventEditorScreen}
         options={{
-          title: 'New Tournament',
+          title: 'New Event',
         }}
       />
-      <TournamentsStack.Screen
+      <SportEventsStack.Screen
         name="Player"
         component={PlayerScreen}
         options={{
           title: 'Player',
         }}
       />
-      <TournamentsStack.Screen
-        name="TournamentSchedule"
-        component={TournamentScheduleScreen}
+      <SportEventsStack.Screen
+        name="SportEventSchedule"
+        component={SportEventScheduleScreen}
         options={({ route }) => {
           return {
             title: route.params.screenTitle,
           };
         }}
       />
-      <TournamentsStack.Screen
+      <SportEventsStack.Screen
         name="EnumPicker"
         component={EnumPickerScreen}
         options={{
@@ -77,8 +78,8 @@ const TournamentsNavigator = () => {
           presentation: 'modal',
         }}
       />
-    </TournamentsStack.Navigator>
+    </SportEventsStack.Navigator>
   );
 };
 
-export default TournamentsNavigator;
+export default SportEventsNavigator;

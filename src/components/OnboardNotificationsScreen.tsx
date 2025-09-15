@@ -43,7 +43,7 @@ const OnboardNotificationsScreen = ({ navigation }: Props) => {
       </Text>
       <Text style={s.subtitle} allowFontScaling={false}>
         {
-          'Enable Push Notifications to receive tournament updates. You can turn this feature on or off at any time under Settings.'
+          'Enable Push Notifications to receive sportEvent updates. You can turn this feature on or off at any time under Settings.'
         }
       </Text>
       <View style={[theme.styles.buttonBottomContainer]}>

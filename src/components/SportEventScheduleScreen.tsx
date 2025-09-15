@@ -10,11 +10,11 @@ import {
 } from '@react-native-hello/ui';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useCollection, useDocument } from 'firebase/firestore';
-import { uniquePartnerDoubles } from 'lib/tournamentAlgorithms';
+import { uniquePartnerDoubles } from 'lib/sportEventAlgorithms';
 import lodash from 'lodash';
-import { TournamentsNavigatorParamList } from 'types/navigation';
+import { SportEventsNavigatorParamList } from 'types/navigation';
 import { Player } from 'types/player';
-import { Schedule, Tournament } from 'types/tournament';
+import { Schedule, SportEvent } from 'types/sportEvent';
 
 type PlayerPosition = {
   r: number; // round
@@ -24,19 +24,19 @@ type PlayerPosition = {
 };
 
 export type Props = NativeStackScreenProps<
-  TournamentsNavigatorParamList,
-  'TournamentSchedule'
+  SportEventsNavigatorParamList,
+  'SportEventSchedule'
 >;
 
-const TournamentScheduleScreen = ({ route }: Props) => {
-  const { tournamentId } = route.params || {};
+const SportEventScheduleScreen = ({ route }: Props) => {
+  const { sportEventId } = route.params || {};
 
   const theme = useTheme();
   const s = useStyles();
 
-  const { doc: tournament } = useDocument<Tournament>(
-    'Tournaments',
-    tournamentId,
+  const { doc: sportEvent } = useDocument<SportEvent>(
+    'SportEvents',
+    sportEventId,
   );
   const [schedule, setSchedule] = useState<Schedule>();
   const [swapSelection, setSwapSelection] = useState<PlayerPosition>();
@@ -46,21 +46,21 @@ const TournamentScheduleScreen = ({ route }: Props) => {
       {
         fieldPath: documentId(),
         opStr: 'in',
-        value: tournament?.players || [],
+        value: sportEvent?.players || [],
       },
     ],
   });
 
   useEffect(() => {
-    if (!tournament) return;
+    if (!sportEvent) return;
     try {
-      const schedule = uniquePartnerDoubles(players, tournament.numberOfCourts);
+      const schedule = uniquePartnerDoubles(players, sportEvent.numberOfCourts);
       setSchedule(schedule);
       console.log(schedule);
     } catch (e) {
       console.log(e);
     }
-  }, [players, tournament]);
+  }, [players, sportEvent]);
 
   const setSwap = (position: PlayerPosition) => {
     if (!swapSelection) {
@@ -352,4 +352,4 @@ const useStyles = ThemeManager.createStyleSheet(({ theme }) => ({
   },
 }));
 
-export default TournamentScheduleScreen;
+export default SportEventScheduleScreen;

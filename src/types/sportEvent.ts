@@ -1,7 +1,7 @@
 import { ISODateString } from '@react-native-hello/common';
 import { Player } from 'types/player';
 
-export type Tournament = {
+export type SportEvent = {
   id?: string;
   createdOn?: ISODateString;
   updatedOn?: ISODateString;

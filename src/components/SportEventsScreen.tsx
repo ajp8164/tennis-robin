@@ -29,32 +29,32 @@ import { useSelectedTeam } from 'lib/team';
 import { useConfirmAction } from 'lib/useConfirmAction';
 import { CircleMinus, Plus, Trash2 } from 'lucide-react-native';
 import { DateTime } from 'luxon';
-import { TournamentsNavigatorParamList } from 'types/navigation';
-import { Tournament } from 'types/tournament';
+import { SportEventsNavigatorParamList } from 'types/navigation';
+import { SportEvent } from 'types/sportEvent';
 
 type Section = {
   title?: string;
-  data: Tournament[];
+  data: SportEvent[];
 };
 
 export type Props = NativeStackScreenProps<
-  TournamentsNavigatorParamList,
-  'Tournaments'
+  SportEventsNavigatorParamList,
+  'SportEvents'
 >;
 
-const TournamentsScreen = ({ navigation }: Props) => {
+const SportEventsScreen = ({ navigation }: Props) => {
   const theme = useTheme();
   const headerHeight = useHeaderHeight();
   const confirmAction = useConfirmAction();
 
   const selectedTeam = useSelectedTeam();
 
-  const { docs: allTournaments } = useCollection<Tournament>('Tournaments', {
+  const { docs: allSportEvents } = useCollection<SportEvent>('SportEvents', {
     where: [
       {
         fieldPath: documentId(),
         opStr: 'in',
-        value: selectedTeam?.tournaments || [],
+        value: selectedTeam?.sportEvents || [],
       },
     ],
     orderBy: [{ fieldPath: 'name', directionStr: 'asc' }],
@@ -68,7 +68,7 @@ const TournamentsScreen = ({ navigation }: Props) => {
       headerLeft: () => {
         return (
           <>
-            {allTournaments.length ? (
+            {allSportEvents.length ? (
               <Button
                 title={listEditorState?.enabled ? 'Done' : 'Edit'}
                 titleStyle={theme.styles.buttonScreenHeaderTitle}
@@ -87,21 +87,21 @@ const TournamentsScreen = ({ navigation }: Props) => {
             icon={
               <Plus color={theme.colors.screenHeaderButtonText} size={28} />
             }
-            onPress={() => navigation.navigate('NewTournament', {})}
+            onPress={() => navigation.navigate('NewSportEvent', {})}
           />
         );
       },
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [listEditorState, allTournaments]);
+  }, [listEditorState, allSportEvents]);
 
-  const archiveTournament = async (tournament: Tournament) => {
+  const archiveSportEvent = async (sportEvent: SportEvent) => {
     try {
-      await archiveDocument('Tournaments', tournament);
+      await archiveDocument('SportEvents', sportEvent);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (e: any) {
       Alert.alert(
-        'Tournament Not Deleted',
+        'SportEvent Not Deleted',
         'Something went wrong. Please try again.',
         [{ text: 'OK' }],
         {
@@ -111,35 +111,35 @@ const TournamentsScreen = ({ navigation }: Props) => {
     }
   };
 
-  const groupTournaments = (
-    tournaments?: Tournament[],
-  ): SectionListData<Tournament, Section>[] => {
-    return groupItems<Tournament, Section>(tournaments || [], tournaments => {
-      const date = tournaments.date;
+  const groupSportEvents = (
+    sportEvents?: SportEvent[],
+  ): SectionListData<SportEvent, Section>[] => {
+    return groupItems<SportEvent, Section>(sportEvents || [], sportEvents => {
+      const date = sportEvents.date;
       return date
         ? DateTime.fromISO(date).toFormat('MMMM yyyy').toUpperCase()
         : '';
     });
   };
 
-  const renderTournament: ListRenderItem<Tournament> = ({
-    item: tournament,
+  const renderSportEvent: ListRenderItem<SportEvent> = ({
+    item: sportEvent,
     index,
   }) => {
     return (
       <ListItemSwipeable
-        key={tournament.id}
-        title={tournament.name}
-        subtitle={`${tournament.players.length} Player${tournament.players.length !== 1 ? 's' : ''}`}
-        value={`${tournament.location}\n${DateTime.fromISO(tournament.date).toFormat("M/d 'at' h:mm")}`}
+        key={sportEvent.id}
+        title={sportEvent.name}
+        subtitle={`${sportEvent.players.length} Player${sportEvent.players.length !== 1 ? 's' : ''}`}
+        value={`${sportEvent.location}\n${DateTime.fromISO(sportEvent.date).toFormat("M/d 'at' h:mm")}`}
         valueStyle={theme.text.medium}
-        position={listItemPosition(index, allTournaments.length)}
+        position={listItemPosition(index, allSportEvents.length)}
         rightContent={'chevron-right'}
         listEditor={listEditorRef.current}
         onPress={() =>
-          navigation.navigate('TournamentEditor', {
-            tournamentId: tournament.id || '',
-            screenTitle: tournament.name,
+          navigation.navigate('SportEventEditor', {
+            sportEventId: sportEvent.id || '',
+            screenTitle: sportEvent.name,
           })
         }
         showEditor={listEditorState?.show}
@@ -157,27 +157,27 @@ const TournamentsScreen = ({ navigation }: Props) => {
             confirmation: () => {
               listEditorRef.current?.reset();
               return confirmAction({
-                label: `Delete Tournament`,
+                label: `Delete SportEvent`,
                 title:
-                  'This action cannot be undone.\nAre you sure you want to delete this tournament?',
+                  'This action cannot be undone.\nAre you sure you want to delete this sportEvent?',
               });
             },
-            onPress: () => tournament.id && archiveTournament(tournament),
+            onPress: () => sportEvent.id && archiveSportEvent(sportEvent),
           },
         ]}
       />
     );
   };
-  const renderTournamentsEmpty = () => (
+  const renderSportEventsEmpty = () => (
     <>
       <Divider />
       <EmptyView
         type={'info'}
-        message={'No Tournaments'}
-        details={'Add a Tournament and go play!'}
+        message={'No Events'}
+        details={'Add an Event and go play!'}
         positionTop
-        buttonTitle={'Add Tournament'}
-        onButtonPress={() => navigation.navigate('NewTournament', {})}
+        buttonTitle={'Add Event'}
+        onButtonPress={() => navigation.navigate('NewSportEvent', {})}
       />
     </>
   );
@@ -199,20 +199,20 @@ const TournamentsScreen = ({ navigation }: Props) => {
           contentInsetAdjustmentBehavior={'automatic'}
           stickySectionHeadersEnabled={true}
           scrollEnabled={false}
-          sections={groupTournaments([...allTournaments].reverse())} // Most recent tournament at the top
+          sections={groupSportEvents([...allSportEvents].reverse())} // Most recent sportEvent at the top
           keyExtractor={(item, index) => `${index}${item.id}`}
-          renderItem={renderTournament}
+          renderItem={renderSportEvent}
           renderSectionHeader={({ section: { title } }) => (
             <View style={theme.styles.listSectionHeader}>
               <Divider text={title} />
             </View>
           )}
           ListFooterComponent={<Divider />}
-          ListEmptyComponent={renderTournamentsEmpty()}
+          ListEmptyComponent={renderSportEventsEmpty()}
         />
       </ListEditor>
     </ScrollView>
   );
 };
 
-export default TournamentsScreen;
+export default SportEventsScreen;
