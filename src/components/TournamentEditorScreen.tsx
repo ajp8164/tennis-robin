@@ -241,21 +241,6 @@ const TournamentEditorScreen = ({ navigation, route }: Props) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [listEditorState, formikCanSubmit, selectedPlayers]);
 
-  // useEffect(() => {
-  //   if (!tournament) return;
-  //   try {
-  //     const schedule = uniquePartnerDoubles(
-  //       selectedPlayers,
-  //       tournament.numberOfCourts,
-  //     );
-
-  //     console.log(schedule);
-  //   } catch (e) {
-  //     console.log(e);
-  //     //
-  //   }
-  // }, [selectedPlayers]);
-
   useEffect(() => {
     // Event handlers for EnumPicker
     event.on('change-players', onChangePlayers);
@@ -298,7 +283,7 @@ const TournamentEditorScreen = ({ navigation, route }: Props) => {
     formikRef.current?.handleSubmit();
     formikRef.current?.resetForm({ values: formikRef.current?.values });
     Keyboard.dismiss();
-    navigation.goBack();
+    // navigation.goBack();
   };
 
   const onSubmit = async (values: FormValues) => {
@@ -531,40 +516,36 @@ const TournamentEditorScreen = ({ navigation, route }: Props) => {
               </View>
             )}
           </Formik>
-          {selectedPlayers.length ? (
-            <Animated.View entering={FadeIn}>
-              <Divider />
-              <ListItem
-                title={'Schedule'}
-                subtitle={'Courts, Rounds, Pairings'}
-                position={['first', 'last']}
-                rightContent={'chevron-right'}
-                onPress={() =>
-                  navigation.navigate('TournamentSchedule', {
-                    tournamentId: tournamentId || 'Tournament',
-                    screenTitle: tournament?.name || 'Tournament',
-                  })
+          <Animated.View entering={FadeIn}>
+            <Divider />
+            <ListItem
+              title={'Schedule'}
+              subtitle={'Rounds, Courts, Assignments'}
+              position={['first', 'last']}
+              rightContent={'chevron-right'}
+              onPress={() =>
+                navigation.navigate('TournamentSchedule', {
+                  tournamentId: tournamentId || 'Tournament',
+                  screenTitle: tournament?.name || 'Tournament',
+                })
+              }
+            />
+            <ListEditor ref={listEditorRef} onChangeState={setListEditorState}>
+              <FlatList
+                contentInsetAdjustmentBehavior={'automatic'}
+                data={selectedPlayers}
+                renderItem={renderPlayer}
+                keyExtractor={item => `${item.id}`}
+                scrollEnabled={false}
+                showsVerticalScrollIndicator={false}
+                ListHeaderComponent={
+                  selectedPlayers.length ? renderPlayersHeader() : null
                 }
+                ListFooterComponent={<Divider />}
+                ListEmptyComponent={renderPlayersEmpty()}
               />
-              <ListEditor
-                ref={listEditorRef}
-                onChangeState={setListEditorState}>
-                <FlatList
-                  contentInsetAdjustmentBehavior={'automatic'}
-                  data={selectedPlayers}
-                  renderItem={renderPlayer}
-                  keyExtractor={item => `${item.id}`}
-                  scrollEnabled={false}
-                  showsVerticalScrollIndicator={false}
-                  ListHeaderComponent={
-                    selectedPlayers.length ? renderPlayersHeader() : null
-                  }
-                  ListFooterComponent={<Divider />}
-                  ListEmptyComponent={renderPlayersEmpty()}
-                />
-              </ListEditor>
-            </Animated.View>
-          ) : null}
+            </ListEditor>
+          </Animated.View>
         </ScrollView>
       </View>
       <View

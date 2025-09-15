@@ -8,7 +8,7 @@ export const uniquePartnerDoubles = (
   let n = players.length;
   if (courts <= 0) return;
 
-  // Add dummy player if odd count.
+  // Add dummy bye player if odd count.
   const byePlayer: Partial<Player> = { firstName: '(Bye)', lastName: '' };
   const balancedPlayers: Player[] =
     n % 2 === 0 ? [...players] : [...players, byePlayer as Player];
@@ -31,6 +31,7 @@ export const uniquePartnerDoubles = (
     }
     rounds.push(round);
   }
+  console.log('rounds', rounds);
 
   // Split into court-limited subrounds.
   const scheduleRounds: Rounds = [];
@@ -47,7 +48,7 @@ export const uniquePartnerDoubles = (
         playablePairs.push(pair);
       }
     }
-
+    console.log('xxxx', playablePairs, byePlayers);
     // Slice into courts
     for (let i = 0; i < playablePairs.length; i += courts * 2) {
       const subroundPairs = playablePairs.slice(i, i + courts * 2);
@@ -86,9 +87,47 @@ export const uniquePartnerDoubles = (
     }
   }
 
+  const resolved = resolveByesByRound(scheduleRounds);
+
   return {
-    numberOfRounds: scheduleRounds.length,
-    numberOfCourts: courts,
-    rounds: scheduleRounds,
+    kind: 'doubles',
+    numberOfRounds: resolved.playableSchedule.length,
+    numberOfCourts: resolved.maxCourtsUsed,
+    allRounds: scheduleRounds,
+    playableRounds: resolved.playableSchedule,
+    byes: resolved.byePlayers,
   };
+};
+
+const resolveByesByRound = (scheduleRounds: Rounds) => {
+  const byePlayers: Player[][] = [];
+  const playableSchedule: Rounds = [];
+
+  scheduleRounds.forEach((round, r) => {
+    round.forEach((court, c) => {
+      const courtPlayers = court.flat();
+
+      // If at least one bye-placeholder player exists on this court/round then all
+      // real players are bye for this round.
+      const byeIndex = courtPlayers.findIndex(p => p.firstName === '(Bye)');
+      if (byeIndex >= 0) {
+        // This court/round is not playable (not enough players).
+        // All real players on this court/round are bye for this round.
+        byePlayers[r] = [
+          ...(byePlayers[r] || []),
+          ...courtPlayers.filter(p => p.firstName !== '(Bye)'),
+        ];
+      } else {
+        // All real players, include this round/court in the schedule.
+        playableSchedule[r] = playableSchedule[r] || [];
+        playableSchedule[r][c] = scheduleRounds[r][c];
+      }
+    });
+  });
+
+  // We're reducing court usage by removing non-playable matches. Determine the maxiumum
+  // number of courts used - will always be <= to courts made available.
+  const maxCourtsUsed = Math.max(...playableSchedule.map(r => r.length));
+
+  return { byePlayers, playableSchedule: scheduleRounds, maxCourtsUsed };
 };

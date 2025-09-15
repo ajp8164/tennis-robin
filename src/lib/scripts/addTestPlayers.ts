@@ -7,6 +7,15 @@ export const addTestPlayers = async (teamId: string) => {
 
   players.push(
     await addDocument<Player>('Players', {
+      firstName: 'Andy',
+      lastName: 'Phillipson',
+      email: 'andyphillipson@gmail.com',
+      user: '1Eofw7OMH6TFqjqDaHiZf8g08zr2',
+      status: PlayerStatus.Active,
+    }),
+  );
+  players.push(
+    await addDocument<Player>('Players', {
       firstName: 'John',
       lastName: 'Appleseed',
       email: 'John-Appleseed@mac.com',
@@ -52,9 +61,27 @@ export const addTestPlayers = async (teamId: string) => {
   );
   players.push(
     await addDocument<Player>('Players', {
-      firstName: 'John',
-      lastName: 'Appleseed',
-      email: 'John-Appleseed@mac.com',
+      firstName: 'Pluto',
+      lastName: 'Dog',
+      email: 'pluto@wdw.com',
+      user: '',
+      status: PlayerStatus.Active,
+    }),
+  );
+  players.push(
+    await addDocument<Player>('Players', {
+      firstName: 'Mickey',
+      lastName: 'Mouse',
+      email: 'mickey@wdw.com',
+      user: '',
+      status: PlayerStatus.Active,
+    }),
+  );
+  players.push(
+    await addDocument<Player>('Players', {
+      firstName: 'Donald',
+      lastName: 'Duck',
+      email: 'donald@wdw.com',
       user: '',
       status: PlayerStatus.Active,
     }),
@@ -65,7 +92,8 @@ export const addTestPlayers = async (teamId: string) => {
   if (team) {
     await updateDocument<Team>('Teams', {
       ...team,
-      players: [...new Set([...team.players, ...players.map(p => p.id)])],
+      // players: [...new Set([...team.players, ...players.map(p => p.id)])],
+      players: [...new Set([...players.map(p => p.id)])],
     } as Team);
   }
 };
