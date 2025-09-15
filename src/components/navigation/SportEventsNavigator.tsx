@@ -9,6 +9,8 @@ import SportEventScheduleScreen from 'components/SportEventScheduleScreen';
 import SportEventsScreen from 'components/SportEventsScreen';
 import { SportEventsNavigatorParamList } from 'types/navigation';
 
+import SportEventSequenceNavigator from './SportEventSequenceNavigator';
+
 const SportEventsStack =
   createNativeStackNavigator<SportEventsNavigatorParamList>();
 
@@ -39,6 +41,14 @@ const SportEventsNavigator = () => {
         }}
       />
       <SportEventsStack.Screen
+        name="SportEventSequenceNavigator"
+        component={SportEventSequenceNavigator}
+        options={{
+          headerShown: false,
+          presentation: 'fullScreenModal',
+        }}
+      />
+      <SportEventsStack.Screen
         name="SportEventEditor"
         component={SportEventEditorScreen}
         options={({ route }) => {
@@ -52,6 +62,7 @@ const SportEventsNavigator = () => {
         component={SportEventEditorScreen}
         options={{
           title: 'New Event',
+          presentation: 'fullScreenModal',
         }}
       />
       <SportEventsStack.Screen

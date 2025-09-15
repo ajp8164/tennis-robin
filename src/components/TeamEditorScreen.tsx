@@ -116,7 +116,7 @@ const TeamEditorScreen = ({ navigation, route }: Props) => {
             title={'Cancel'}
             titleStyle={theme.styles.buttonScreenHeaderTitle}
             buttonStyle={theme.styles.buttonScreenHeader}
-            onPress={navigation.goBack}
+            onPress={() => navigation.goBack()}
           />
         );
       },

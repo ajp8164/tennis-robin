@@ -23,6 +23,17 @@ export type AuthenticationNavigatorParamList = {
   Tabs: NavigatorScreenParams<TabNavigatorParamList>;
 };
 
+export type SportEventSequenceNavigatorParamList = {
+  SportEventRounds: {
+    sportEventId: string;
+    screenTitle: string;
+  };
+  SportEventStart: {
+    sportEventId: string;
+    screenTitle: string;
+  };
+};
+
 export type SportEventsNavigatorParamList = {
   EnumPicker: EnumPickerInterface;
   NewSportEvent: {
@@ -31,6 +42,7 @@ export type SportEventsNavigatorParamList = {
   Player: {
     playerId: string;
   };
+  SportEventSequenceNavigator: NavigatorScreenParams<SportEventSequenceNavigatorParamList>;
   SportEvents: undefined;
   SportEventEditor: {
     sportEventId: string;

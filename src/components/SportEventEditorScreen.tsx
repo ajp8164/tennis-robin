@@ -52,12 +52,14 @@ import { Formik, FormikProps } from 'formik';
 import { appIcons } from 'lib/appIcons';
 import { useUserProfile } from 'lib/auth';
 import { usePlayerStatusDecoration } from 'lib/player';
+import { decodeSportEvent, encodeSportEvent } from 'lib/sportEvent';
+import { uniquePartnerDoubles } from 'lib/sportEvent/sportEventAlgorithms';
 import { useSelectedTeam } from 'lib/team';
 import { CircleMinus, EyeOff } from 'lucide-react-native';
 import { DateTime } from 'luxon';
 import { SportEventsNavigatorParamList } from 'types/navigation';
 import { Player } from 'types/player';
-import { SportEvent } from 'types/sportEvent';
+import { Schedule, SportEventEncoded } from 'types/sportEvent';
 import { Team } from 'types/team';
 import * as Yup from 'yup';
 
@@ -90,11 +92,13 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
   const userProfile = useUserProfile();
   const selectedTeam = useSelectedTeam();
   const [selectedPlayers, setSelectedPlayers] = useState<Player[]>([]);
+  const [schedule, setSchedule] = useState<Schedule>();
 
-  const { doc: sportEvent } = useDocument<SportEvent>(
+  const { doc: sportEventEncoded } = useDocument<SportEventEncoded>(
     'SportEvents',
     sportEventId,
   );
+  const sportEvent = decodeSportEvent(sportEventEncoded);
 
   const { docs: sportEventPlayers } = useCollection<Player>('Players', {
     where: [
@@ -155,6 +159,14 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
   const listEditorRef = useRef<ListEditorMethods>(null);
   const [listEditorState, setListEditorState] = useState<ListEditorState>();
 
+  // Supports keyboard accessory view.
+  // Ensures all refs are set.
+  useEffect(() => {
+    setResolvedRefs(
+      [nameFieldRef.current, locationFieldRef.current].filter(Boolean),
+    );
+  }, []);
+
   useEffect(() => {
     if (sportEvent && !initialValues.name) {
       setInitialValues({
@@ -190,28 +202,21 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allPlayers]);
 
-  // Supports keyboard accessory view.
-  // Ensures all refs are set.
-  useEffect(() => {
-    setResolvedRefs(
-      [nameFieldRef.current, locationFieldRef.current].filter(Boolean),
-    );
-  }, []);
-
   useEffect(() => {
     navigation.setOptions({
       headerLeft: () => {
-        if (formikCanSubmit) {
-          return (
-            <Button
-              title={'Cancel'}
-              titleStyle={theme.styles.buttonScreenHeaderTitle}
-              buttonStyle={theme.styles.buttonScreenHeader}
-              onPress={() => formikRef.current?.resetForm()}
-            />
-          );
-        }
-        return null;
+        // if (formikCanSubmit) {
+        return (
+          <Button
+            title={'Cancel'}
+            titleStyle={theme.styles.buttonScreenHeaderTitle}
+            buttonStyle={theme.styles.buttonScreenHeader}
+            // onPress={() => formikRef.current?.resetForm()}
+            onPress={() => navigation.goBack()}
+          />
+        );
+        // }
+        // return null;
       },
       headerRight: () => {
         return (
@@ -256,26 +261,22 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
       where: [{ fieldPath: documentId(), opStr: 'in', value: result.value }],
     });
 
+    // Update the schedule when player selections change.
+    const updatedSchedule = updateSchedule();
+
     // Replace the player selections.
     if (sportEvent) {
-      updateDocument<SportEvent>('SportEvents', {
-        ...sportEvent,
-        players: players.map(p => p.id!),
-      });
+      updateDocument<SportEventEncoded>(
+        'SportEvents',
+        encodeSportEvent({
+          ...sportEvent,
+          players: players.map(p => p.id!),
+          schedule: updatedSchedule,
+        }),
+      );
     } else {
       setSelectedPlayers(players);
-    }
-  };
-
-  const removePlayer = async (playerId: string) => {
-    if (sportEvent) {
-      updateDocument<SportEvent>('SportEvents', {
-        ...sportEvent,
-        players: sportEvent.players.filter(p => p !== playerId),
-      });
-    } else {
-      // Remove the player from our selections.
-      setSelectedPlayers(selectedPlayers.filter(p => p.id !== playerId));
+      setSchedule(updatedSchedule);
     }
   };
 
@@ -283,27 +284,44 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
     formikRef.current?.handleSubmit();
     formikRef.current?.resetForm({ values: formikRef.current?.values });
     Keyboard.dismiss();
-    // navigation.goBack();
+    navigation.goBack();
   };
 
   const onSubmit = async (values: FormValues) => {
+    // Update the schedule when the number of courts changes.
+    let updatedSchedule = Object.assign({}, schedule);
+    if (values.numberOfCourts !== sportEvent?.numberOfCourts) {
+      const u = updateSchedule();
+      if (u) {
+        updatedSchedule = u;
+      }
+    }
+
     if (sportEvent) {
-      updateDocument<SportEvent>('SportEvents', {
-        ...sportEvent,
-        name: values.name,
-        date: values.date,
-        location: values.location,
-        numberOfCourts: values.numberOfCourts,
-      });
+      updateDocument<SportEventEncoded>(
+        'SportEvents',
+        encodeSportEvent({
+          ...sportEvent,
+          name: values.name,
+          date: values.date,
+          location: values.location,
+          numberOfCourts: values.numberOfCourts,
+          schedule: updatedSchedule,
+        }),
+      );
     } else {
-      const newSportEvent = await addDocument<SportEvent>('SportEvents', {
-        name: values.name,
-        date: values.date,
-        location: values.location,
-        numberOfCourts: values.numberOfCourts,
-        owners: [userProfile!.id],
-        players: selectedPlayers.map(p => p.id!),
-      });
+      const newSportEvent = await addDocument<SportEventEncoded>(
+        'SportEvents',
+        encodeSportEvent({
+          name: values.name,
+          date: values.date,
+          location: values.location,
+          numberOfCourts: values.numberOfCourts,
+          owners: [userProfile!.id],
+          players: selectedPlayers.map(p => p.id!),
+          schedule: updatedSchedule,
+        }),
+      );
 
       // Associate the new sportEvent with my selected team.
       if (selectedTeam && newSportEvent.id) {
@@ -328,6 +346,21 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
     });
   };
 
+  const removePlayer = async (playerId: string) => {
+    if (sportEvent) {
+      updateDocument<SportEventEncoded>(
+        'SportEvents',
+        encodeSportEvent({
+          ...sportEvent,
+          players: sportEvent.players.filter(p => p !== playerId),
+        }),
+      );
+    } else {
+      // Remove the player from our selections.
+      setSelectedPlayers(selectedPlayers.filter(p => p.id !== playerId));
+    }
+  };
+
   const onDateChange = (date?: Date) => {
     if (date) {
       formikRef.current?.setFieldValue(
@@ -335,6 +368,14 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
         DateTime.fromJSDate(date).toISO(),
       );
     }
+  };
+
+  const updateSchedule = () => {
+    // TODO need to choose proper algorithm...
+    return uniquePartnerDoubles(
+      selectedPlayers,
+      formikRef.current?.values.numberOfCourts || 1,
+    );
   };
 
   const onFormikWatcherStateChange = (
@@ -404,7 +445,7 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
       <EmptyView
         type={'info'}
         message={'No Players'}
-        details={'Add Players to your SportEvent.'}
+        details={'Add Players to your Event.'}
         positionTop
         buttonTitle={'Choose Players'}
         onButtonPress={choosePlayers}
@@ -472,8 +513,8 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
                     onFocus: () =>
                       keyboardAccessory.current?.focusedField(Fields.name),
                     value: values.name,
-                    label: 'SportEvent Name',
-                    placeholder: 'SportEvent Name',
+                    label: 'Event Name',
+                    placeholder: 'Event Name',
                     autoCapitalize: 'words',
                   }}
                 />
@@ -517,19 +558,23 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
             )}
           </Formik>
           <Animated.View entering={FadeIn}>
-            <Divider />
-            <ListItem
-              title={'Schedule'}
-              subtitle={'Rounds, Courts, Assignments'}
-              position={['first', 'last']}
-              rightContent={'chevron-right'}
-              onPress={() =>
-                navigation.navigate('SportEventSchedule', {
-                  sportEventId: sportEventId || '',
-                  screenTitle: sportEvent?.name || 'Event',
-                })
-              }
-            />
+            {selectedPlayers.length ? (
+              <>
+                <Divider />
+                <ListItem
+                  title={'Schedule'}
+                  subtitle={'Rounds, Courts, Assignments'}
+                  position={['first', 'last']}
+                  rightContent={'chevron-right'}
+                  onPress={() =>
+                    navigation.navigate('SportEventSchedule', {
+                      sportEventId: sportEventId || '',
+                      screenTitle: sportEvent?.name || 'Event',
+                    })
+                  }
+                />
+              </>
+            ) : null}
             <ListEditor ref={listEditorRef} onChangeState={setListEditorState}>
               <FlatList
                 contentInsetAdjustmentBehavior={'automatic'}
@@ -548,7 +593,7 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
           </Animated.View>
         </ScrollView>
       </View>
-      <View
+      {/* <View
         style={{
           height: 80,
           paddingVertical: 15,
@@ -563,7 +608,7 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
           disabled={formikCanSubmit}
           onPress={() => null}
         />
-      </View>
+      </View> */}
       <KeyboardAccessory
         ref={keyboardAccessory}
         id={'keyboardAccessory'}

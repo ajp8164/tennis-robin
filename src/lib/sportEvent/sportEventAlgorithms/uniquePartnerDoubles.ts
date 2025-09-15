@@ -31,7 +31,6 @@ export const uniquePartnerDoubles = (
     }
     rounds.push(round);
   }
-  console.log('rounds', rounds);
 
   // Split into court-limited subrounds.
   const scheduleRounds: Rounds = [];
@@ -48,7 +47,7 @@ export const uniquePartnerDoubles = (
         playablePairs.push(pair);
       }
     }
-    console.log('xxxx', playablePairs, byePlayers);
+
     // Slice into courts
     for (let i = 0; i < playablePairs.length; i += courts * 2) {
       const subroundPairs = playablePairs.slice(i, i + courts * 2);

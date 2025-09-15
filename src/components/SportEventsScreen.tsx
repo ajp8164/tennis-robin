@@ -25,12 +25,13 @@ import { Button } from 'components/atoms/Button';
 import { EmptyView } from 'components/molecules/EmptyView';
 import { archiveDocument, useCollection } from 'firebase/firestore';
 import { groupItems } from 'lib/sectionList';
+import { decodeSportEvent } from 'lib/sportEvent';
 import { useSelectedTeam } from 'lib/team';
 import { useConfirmAction } from 'lib/useConfirmAction';
 import { CircleMinus, Plus, Trash2 } from 'lucide-react-native';
 import { DateTime } from 'luxon';
 import { SportEventsNavigatorParamList } from 'types/navigation';
-import { SportEvent } from 'types/sportEvent';
+import { SportEvent, SportEventEncoded } from 'types/sportEvent';
 
 type Section = {
   title?: string;
@@ -49,16 +50,20 @@ const SportEventsScreen = ({ navigation }: Props) => {
 
   const selectedTeam = useSelectedTeam();
 
-  const { docs: allSportEvents } = useCollection<SportEvent>('SportEvents', {
-    where: [
-      {
-        fieldPath: documentId(),
-        opStr: 'in',
-        value: selectedTeam?.sportEvents || [],
-      },
-    ],
-    orderBy: [{ fieldPath: 'name', directionStr: 'asc' }],
-  });
+  const { docs: allSportEventsEncoded } = useCollection<SportEventEncoded>(
+    'SportEvents',
+    {
+      where: [
+        {
+          fieldPath: documentId(),
+          opStr: 'in',
+          value: selectedTeam?.sportEvents || [],
+        },
+      ],
+      orderBy: [{ fieldPath: 'name', directionStr: 'asc' }],
+    },
+  );
+  const allSportEvents = allSportEventsEncoded.map(se => decodeSportEvent(se));
 
   const listEditorRef = useRef<ListEditorMethods>(null);
   const [listEditorState, setListEditorState] = useState<ListEditorState>();
@@ -134,12 +139,21 @@ const SportEventsScreen = ({ navigation }: Props) => {
         value={`${sportEvent.location}\n${DateTime.fromISO(sportEvent.date).toFormat("M/d 'at' h:mm")}`}
         valueStyle={theme.text.medium}
         position={listItemPosition(index, allSportEvents.length)}
-        rightContent={'chevron-right'}
+        rightContent={'info'}
         listEditor={listEditorRef.current}
-        onPress={() =>
+        onPressRight={() =>
           navigation.navigate('SportEventEditor', {
             sportEventId: sportEvent.id || '',
             screenTitle: sportEvent.name,
+          })
+        }
+        onPress={() =>
+          navigation.navigate('SportEventSequenceNavigator', {
+            screen: 'SportEventStart',
+            params: {
+              sportEventId: sportEvent.id || '',
+              screenTitle: sportEvent.name,
+            },
           })
         }
         showEditor={listEditorState?.show}
