@@ -47,7 +47,7 @@ const SportEventScheduleScreen = ({ route }: Props) => {
             <ScheduleRoundView
               key={`round-${r + 1}`}
               r={r}
-              schedule={sportEvent.schedule!}
+              sportEventId={sportEvent.id || ''}
             />
           ))
         : null}

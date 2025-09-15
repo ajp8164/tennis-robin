@@ -3313,6 +3313,8 @@ PODS:
     - ReactCommon/turbomodule/core
     - SocketRocket
     - Yoga
+  - react-native-segmented-control (2.5.7):
+    - React-Core
   - react-native-version-number (0.3.6):
     - React
   - React-NativeModulesApple (0.80.2):
@@ -4445,6 +4447,7 @@ DEPENDENCIES:
   - react-native-maps/Google (from `../node_modules/react-native-maps`)
   - "react-native-netinfo (from `../node_modules/@react-native-community/netinfo`)"
   - react-native-safe-area-context (from `../node_modules/react-native-safe-area-context`)
+  - "react-native-segmented-control (from `../node_modules/@react-native-segmented-control/segmented-control`)"
   - react-native-version-number (from `../node_modules/react-native-version-number`)
   - React-NativeModulesApple (from `../node_modules/react-native/ReactCommon/react/nativemodule/core/platform/ios`)
   - React-oscompat (from `../node_modules/react-native/ReactCommon/oscompat`)
@@ -4641,6 +4644,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/@react-native-community/netinfo"
   react-native-safe-area-context:
     :path: "../node_modules/react-native-safe-area-context"
+  react-native-segmented-control:
+    :path: "../node_modules/@react-native-segmented-control/segmented-control"
   react-native-version-number:
     :path: "../node_modules/react-native-version-number"
   React-NativeModulesApple:
@@ -4835,6 +4840,7 @@ SPEC CHECKSUMS:
   react-native-maps: 4da70e76976cca888b6493ebb7a205074d19871a
   react-native-netinfo: cec9c4e86083cb5b6aba0e0711f563e2fbbff187
   react-native-safe-area-context: 4df6c897ab5bd841a5bba6f734785c0c9ef4c206
+  react-native-segmented-control: bf6e0032726727498e18dd437ae88afcdbc18e99
   react-native-version-number: 3d74b5224ca4e1032b1593937d86d3f3c94bf95c
   React-NativeModulesApple: 342e280bb9fc2aa5f61f6c257b309a86b995e12d
   React-oscompat: 56d6de59f9ae95cd006a1c40be2cde83bc06a4e1
@@ -4897,4 +4903,4 @@ SPEC CHECKSUMS:
 
 PODFILE CHECKSUM: c12f61b74dbfe608d798db4a0023e65ddaa81008
 
-COCOAPODS: 1.16.2
+COCOAPODS: 1.15.2

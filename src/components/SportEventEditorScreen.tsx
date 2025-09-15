@@ -21,6 +21,7 @@ import {
   ListEditorState,
   ListItem,
   ListItemDateTime,
+  ListItemSegmented,
   ListItemSwipeable,
   ThemeManager,
   listItemPosition,
@@ -59,7 +60,12 @@ import { CircleMinus, EyeOff } from 'lucide-react-native';
 import { DateTime } from 'luxon';
 import { SportEventsNavigatorParamList } from 'types/navigation';
 import { Player } from 'types/player';
-import { Schedule, SportEventEncoded } from 'types/sportEvent';
+import {
+  MatchGender,
+  MatchKind,
+  Schedule,
+  SportEventEncoded,
+} from 'types/sportEvent';
 import { Team } from 'types/team';
 import * as Yup from 'yup';
 
@@ -80,6 +86,8 @@ type FormValues = {
   date: ISODateString;
   location: string;
   numberOfCourts: number;
+  gender: MatchGender;
+  typeOfMatch: MatchKind;
 };
 
 const SportEventEditorScreen = ({ navigation, route }: Props) => {
@@ -103,7 +111,7 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
   const { docs: sportEventPlayers } = useCollection<Player>('Players', {
     where: [
       {
-        fieldPath: '__name__',
+        fieldPath: documentId(),
         opStr: 'in',
         value: sportEvent?.players || [],
       },
@@ -136,6 +144,8 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
     date: DateTime.now().toISO(),
     location: '',
     numberOfCourts: 1,
+    gender: 'mens',
+    typeOfMatch: 'singles',
   });
 
   const schema = Yup.object().shape({
@@ -143,6 +153,8 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
     date: Yup.string().required(),
     location: Yup.string().required(),
     numberOfCourts: Yup.number().min(1).required(),
+    gender: Yup.string().required(),
+    typeOfMatch: Yup.string().required(),
   });
 
   const [expandedDate, setExpandedDate] = useState(false);
@@ -174,6 +186,8 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
         date: sportEvent.date,
         location: sportEvent.location || '',
         numberOfCourts: sportEvent.numberOfCourts,
+        gender: sportEvent.gender || 'mens',
+        typeOfMatch: sportEvent.typeOfMatch || 'singles',
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -306,6 +320,8 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
           date: values.date,
           location: values.location,
           numberOfCourts: values.numberOfCourts,
+          gender: values.gender,
+          typeOfMatch: values.typeOfMatch,
           schedule: updatedSchedule,
         }),
       );
@@ -317,6 +333,8 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
           date: values.date,
           location: values.location,
           numberOfCourts: values.numberOfCourts,
+          gender: values.gender,
+          typeOfMatch: values.typeOfMatch,
           owners: [userProfile!.id],
           players: selectedPlayers.map(p => p.id!),
           schedule: updatedSchedule,
@@ -368,6 +386,17 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
         DateTime.fromJSDate(date).toISO(),
       );
     }
+  };
+
+  const onGenderSelect = (index: number) => {
+    formikRef.current?.setFieldValue('gender', index === 0 ? 'mens' : 'womens');
+  };
+
+  const onTypeOfMatchSelect = (index: number) => {
+    formikRef.current?.setFieldValue(
+      'typeOfMatch',
+      index === 0 ? 'singles' : 'doubles',
+    );
   };
 
   const updateSchedule = () => {
@@ -553,6 +582,20 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
                   min={1}
                   max={10}
                   onChange={value => setFieldValue('numberOfCourts', value)}
+                />
+                <ListItemSegmented
+                  title={'Gender'}
+                  segmentWidth={80}
+                  index={values.gender === 'mens' ? 0 : 1}
+                  onChangeIndex={onGenderSelect}
+                  segments={['Mens', 'Womens']}
+                />
+                <ListItemSegmented
+                  title={'Type of Match'}
+                  segmentWidth={80}
+                  index={values.typeOfMatch === 'singles' ? 0 : 1}
+                  onChangeIndex={onTypeOfMatchSelect}
+                  segments={['Singles', 'Doubles']}
                 />
               </View>
             )}

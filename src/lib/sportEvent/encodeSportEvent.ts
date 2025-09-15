@@ -10,6 +10,7 @@ export const encodeSportEvent = (sportEvent: SportEvent) => {
       allRounds: JSON.stringify(sportEvent.schedule?.allRounds || []),
       playableRounds: JSON.stringify(sportEvent.schedule?.playableRounds || []),
       byes: JSON.stringify(sportEvent.schedule?.byes || []),
+      scores: JSON.stringify(sportEvent.schedule?.scores || []),
     },
   };
 

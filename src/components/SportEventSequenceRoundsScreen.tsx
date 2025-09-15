@@ -12,6 +12,7 @@ import {
 } from '@react-native-hello/ui';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Button } from 'components/atoms/Button';
+import { EmptyView } from 'components/molecules/EmptyView';
 import ScheduleRoundView from 'components/molecules/ScheduleRoundView';
 import { useDocument } from 'firebase/firestore';
 import { decodeSportEvent } from 'lib/sportEvent';
@@ -74,30 +75,28 @@ const SportEventRoundsScreen = ({ navigation, route }: Props) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  if (!sportEvent?.schedule) {
-    return null;
-  }
-
-  const pages = sportEvent.schedule.allRounds.map((_round, r) => {
-    return (
-      <>
-        <View style={s.carouselPage}>
-          <Divider text={`ROUND ${r + 1}`} />
-        </View>
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          style={s.carouselPageTop}>
-          <ScheduleRoundView
-            r={r}
-            schedule={sportEvent.schedule!}
-            roundLabel={false}
-            containerStyle={s.roundViewContainer}
-          />
-        </ScrollView>
-        <View style={s.carouselFooter} />
-      </>
-    );
-  });
+  const pages =
+    sportEvent?.schedule?.allRounds.map((_round, r) => {
+      return (
+        <>
+          <View style={s.carouselPage}>
+            <Divider text={`ROUND ${r + 1}`} />
+          </View>
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            style={s.carouselPageTop}>
+            <ScheduleRoundView
+              r={r}
+              sportEventId={sportEvent.id || ''}
+              roundLabel={false}
+              showScores
+              containerStyle={s.roundViewContainer}
+            />
+          </ScrollView>
+          <View style={s.carouselFooter} />
+        </>
+      );
+    }) || [];
 
   const renderPagination = () => {
     return (
@@ -129,6 +128,16 @@ const SportEventRoundsScreen = ({ navigation, route }: Props) => {
       </View>
     );
   };
+
+  if (!sportEvent?.schedule?.allRounds.length) {
+    return (
+      <EmptyView
+        type={'info'}
+        message={'No Rounds Scheduled'}
+        details={'This event likely has no players.'}
+      />
+    );
+  }
 
   return (
     <Animated.View

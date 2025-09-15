@@ -3,13 +3,16 @@ import { Alert, StyleProp, Text, View, ViewStyle } from 'react-native';
 
 import {
   Divider,
+  Input,
   ListItem,
   ThemeManager,
   useTheme,
 } from '@react-native-hello/ui';
+import { updateDocument, useDocument } from 'firebase/firestore';
+import { decodeSportEvent, encodeSportEvent } from 'lib/sportEvent';
 import lodash from 'lodash';
 import { Player } from 'types/player';
-import { Schedule } from 'types/sportEvent';
+import { SportEventEncoded, TeamName } from 'types/sportEvent';
 
 type PlayerPosition = {
   r: number; // round
@@ -22,16 +25,36 @@ export interface Props {
   containerStyle?: StyleProp<ViewStyle>;
   r: number;
   roundLabel?: boolean;
-  schedule: Schedule;
+  showScores?: boolean;
+  sportEventId: string;
 }
 
 const ScheduleRoundView = (props: Props) => {
-  const { containerStyle, r, roundLabel = true, schedule } = props;
+  const {
+    containerStyle,
+    r,
+    roundLabel = true,
+    showScores,
+    sportEventId,
+  } = props;
 
   const theme = useTheme();
   const s = useStyles();
 
+  const { doc: sportEventEncoded } = useDocument<SportEventEncoded>(
+    'SportEvents',
+    sportEventId,
+  );
+  const sportEvent = decodeSportEvent(sportEventEncoded);
+
+  // Player swap first selection.
   const [swapSelection, setSwapSelection] = useState<PlayerPosition>();
+
+  const schedule = sportEvent?.schedule;
+  const numberOfScores =
+    sportEvent?.gender === 'mens'
+      ? new Array(5).fill('')
+      : new Array(3).fill('');
 
   const setSwap = (position: PlayerPosition) => {
     if (!swapSelection) {
@@ -81,20 +104,70 @@ const ScheduleRoundView = (props: Props) => {
     }
   };
 
+  const updateScore = (
+    r: number,
+    c: number,
+    set: number,
+    team: TeamName,
+    value: number,
+  ) => {
+    const updated = [...(sportEvent.schedule?.scores || [])];
+    updated[r] = updated[r] || [];
+    updated[r][c] = updated[r][c] || [];
+    updated[r][c][set] = (updated[r][c][set] || []) as number[];
+    updated[r][c][set][team] = (updated[r][c][set][team] || []) as TeamName;
+    updated[r][c][set][team] = value;
+
+    updateDocument<SportEventEncoded>(
+      'SportEvents',
+      encodeSportEvent({
+        ...sportEvent,
+        schedule: {
+          ...sportEvent.schedule!,
+          scores: updated,
+        },
+      }),
+    );
+  };
+
+  const isWin = (team: TeamName, scores?: number[]) => {
+    if (!scores) return false;
+
+    // Must win by 2 or in a tie breaker (7-6).
+    if (
+      team === TeamName.Home &&
+      ((scores[TeamName.Home] > 5 &&
+        scores[TeamName.Home] - scores[TeamName.Away] >= 2) ||
+        scores[TeamName.Home] === 7)
+    ) {
+      return true;
+    }
+    if (
+      team === TeamName.Away &&
+      ((scores[TeamName.Away] > 5 &&
+        scores[TeamName.Away] - scores[TeamName.Home] >= 2) ||
+        scores[TeamName.Away] === 7)
+    ) {
+      return true;
+    }
+    return false;
+  };
+
   const renderCourt = (r: number, c: number, court: Player[][]) => {
     return (
       <View key={`court-${c + 1}]`}>
         <ListItem
           position={['first', 'last']}
           containerStyle={s.courtItem}
+          headerContent={
+            <View style={s.header}>
+              <Text style={s.homeAway}>{'Home'}</Text>
+              <Text style={s.courtLabel}>{`Court ${c + 1}`}</Text>
+              <Text style={s.homeAway}>{'Away'}</Text>
+            </View>
+          }
           mainContent={
             <View style={s.courtContainer}>
-              {/* Top */}
-              {/* Court label */}
-              <View style={s.courtHeader}>
-                <Text style={s.courtLabel}>{`Court ${c + 1}`}</Text>
-              </View>
-              {/* Bottom */}
               <View style={s.court}>
                 {/* Net vs */}
                 <View style={s.net} />
@@ -114,7 +187,7 @@ const ScheduleRoundView = (props: Props) => {
                     {`${court[0][0].firstName} ${court[0][0].lastName}` ||
                       'bye'}
                   </Text>
-                  {schedule?.kind === 'doubles' ? (
+                  {sportEvent.typeOfMatch === 'doubles' ? (
                     <Text
                       style={[
                         s.player,
@@ -141,7 +214,7 @@ const ScheduleRoundView = (props: Props) => {
                     {`${court[1][0].firstName} ${court[1][0].lastName}` ||
                       'bye'}
                   </Text>
-                  {schedule?.kind === 'doubles' ? (
+                  {sportEvent.typeOfMatch === 'doubles' ? (
                     <Text
                       style={[
                         s.player,
@@ -159,6 +232,7 @@ const ScheduleRoundView = (props: Props) => {
             </View>
           }
           mainContentStyle={s.mainContainer}
+          footerContent={showScores ? renderScores(r, c) : <></>}
         />
         {c === schedule!.numberOfCourts - 1 ? null : <Divider />}
       </View>
@@ -198,6 +272,66 @@ const ScheduleRoundView = (props: Props) => {
     );
   };
 
+  // Scores - Rounds, court, set, team
+  const renderScores = (r: number, c: number) => {
+    return (
+      <View style={s.scoresContainer}>
+        {/* Home */}
+        <View style={s.scoresRow}>
+          {numberOfScores.map((_set, set) => (
+            <Input
+              key={`${set}`}
+              caretHidden
+              selectTextOnFocus
+              selectionColor={theme.colors.brandSecondary}
+              inputStyle={{
+                ...s.scoreInput,
+                ...(isWin(TeamName.Home, schedule?.scores[r]?.[c]?.[set])
+                  ? {
+                      backgroundColor: theme.colors.brandSecondary,
+                      color: theme.colors.stickyWhite,
+                    }
+                  : {}),
+              }}
+              value={(
+                schedule?.scores[r]?.[c]?.[set]?.[TeamName.Home] || 0
+              ).toFixed(0)}
+              onChangeText={value =>
+                updateScore(r, c, set, TeamName.Home, parseInt(value))
+              }
+            />
+          ))}
+        </View>
+        {/* Away */}
+        <View style={s.scoresRow}>
+          {numberOfScores.map((_set, set) => (
+            <Input
+              key={`${set}`}
+              caretHidden
+              selectTextOnFocus
+              selectionColor={theme.colors.brandSecondary}
+              inputStyle={{
+                ...s.scoreInput,
+                ...(isWin(TeamName.Away, schedule?.scores[r]?.[c]?.[set])
+                  ? {
+                      backgroundColor: theme.colors.brandSecondary,
+                      color: theme.colors.stickyWhite,
+                    }
+                  : {}),
+              }}
+              value={(
+                schedule?.scores[r]?.[c]?.[set]?.[TeamName.Away] || 0
+              ).toFixed(0)}
+              onChangeText={value =>
+                updateScore(r, c, set, TeamName.Away, parseInt(value))
+              }
+            />
+          ))}
+        </View>
+      </View>
+    );
+  };
+
   return (
     <View style={[s.roundContainer, containerStyle]}>
       {roundLabel ? (
@@ -205,7 +339,7 @@ const ScheduleRoundView = (props: Props) => {
       ) : (
         <View style={s.noRoundLabel} />
       )}
-      {schedule.allRounds[r].map((court, c) =>
+      {schedule?.allRounds[r].map((court, c) =>
         // Courts with bye placeholders are not playable matches. Render court for
         // playable matches with the list of bye players.
         court.flat().findIndex(p => p.firstName === '(Bye)') >= 0
@@ -244,7 +378,7 @@ const useStyles = ThemeManager.createStyleSheet(({ theme }) => ({
   courtHeader: {
     alignItems: 'center',
     width: '100%',
-    paddingBottom: 5,
+    paddingVertical: 5,
   },
   courtItem: {
     borderColor: theme.colors.lightGray,
@@ -253,6 +387,15 @@ const useStyles = ThemeManager.createStyleSheet(({ theme }) => ({
   courtLabel: {
     ...theme.text.normal,
     backgroundColor: theme.colors.listItem,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 15,
+  },
+  homeAway: {
+    ...theme.text.small,
+    color: theme.colors.lightGray,
   },
   mainContainer: {
     justifyContent: 'center',
@@ -294,6 +437,30 @@ const useStyles = ThemeManager.createStyleSheet(({ theme }) => ({
   },
   roundLabel: {
     marginTop: -10,
+  },
+  scoreInput: {
+    ...theme.text.h2,
+    width: 30,
+    height: 30,
+    paddingHorizontal: 0,
+    paddingVertical: 0,
+    margin: 0,
+    lineHeight: 0,
+    textAlign: 'center',
+    borderRadius: 5,
+    borderWidth: 1,
+    borderColor: theme.colors.brandSecondary,
+  },
+  scoresContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingTop: 15,
+  },
+  scoresRow: {
+    flexDirection: 'row',
+    marginBottom: 10,
+    flex: 1,
+    justifyContent: 'space-evenly',
   },
   team1: {
     alignItems: 'flex-start',

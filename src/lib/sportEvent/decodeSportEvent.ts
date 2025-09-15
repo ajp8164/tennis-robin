@@ -12,6 +12,7 @@ export const decodeSportEvent = (sportEventEncoded?: SportEventEncoded) => {
         sportEventEncoded.schedule?.playableRounds || '[]',
       ),
       byes: JSON.parse(sportEventEncoded.schedule?.byes || '[]'),
+      scores: JSON.parse(sportEventEncoded.schedule?.scores || '[]'),
     },
   };
 
