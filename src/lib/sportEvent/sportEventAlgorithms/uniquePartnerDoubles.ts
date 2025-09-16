@@ -89,12 +89,15 @@ export const uniquePartnerDoubles = (
   const resolved = resolveByesByRound(scheduleRounds);
 
   return {
-    kind: 'doubles',
+    name: 'Unique Partner Doubles',
+    description:
+      'Players are grouped into pairs. Each player partners with every other player exactly once. No pair repeats.',
     numberOfRounds: resolved.playableSchedule.length,
     numberOfCourts: resolved.maxCourtsUsed,
     allRounds: scheduleRounds,
     playableRounds: resolved.playableSchedule,
     byes: resolved.byePlayers,
+    scores: [],
   };
 };
 

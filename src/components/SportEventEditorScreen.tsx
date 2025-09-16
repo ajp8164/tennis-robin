@@ -62,7 +62,7 @@ import { SportEventsNavigatorParamList } from 'types/navigation';
 import { Player } from 'types/player';
 import {
   MatchGender,
-  MatchKind,
+  MatchType,
   Schedule,
   SportEventEncoded,
 } from 'types/sportEvent';
@@ -87,7 +87,7 @@ type FormValues = {
   location: string;
   numberOfCourts: number;
   gender: MatchGender;
-  typeOfMatch: MatchKind;
+  typeOfMatch: MatchType;
 };
 
 const SportEventEditorScreen = ({ navigation, route }: Props) => {
@@ -144,8 +144,8 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
     date: DateTime.now().toISO(),
     location: '',
     numberOfCourts: 1,
-    gender: 'mens',
-    typeOfMatch: 'singles',
+    gender: MatchGender.Mens,
+    typeOfMatch: MatchType.Singles,
   });
 
   const schema = Yup.object().shape({
@@ -186,8 +186,8 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
         date: sportEvent.date,
         location: sportEvent.location || '',
         numberOfCourts: sportEvent.numberOfCourts,
-        gender: sportEvent.gender || 'mens',
-        typeOfMatch: sportEvent.typeOfMatch || 'singles',
+        gender: sportEvent.gender || MatchGender.Mens,
+        typeOfMatch: sportEvent.typeOfMatch || MatchType.Singles,
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -386,14 +386,18 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
   const onGenderSelect = (index: number) => {
     formikRef.current?.setFieldValue(
       'gender',
-      index === 0 ? 'mens' : index === 1 ? 'womens' : 'mixed',
+      index === 0
+        ? MatchGender.Mens
+        : index === 1
+          ? MatchGender.Womens
+          : MatchGender.Mixed,
     );
   };
 
   const onTypeOfMatchSelect = (index: number) => {
     formikRef.current?.setFieldValue(
       'typeOfMatch',
-      index === 0 ? 'singles' : 'doubles',
+      index === 0 ? MatchType.Singles : MatchType.Doubles,
     );
   };
 
@@ -490,7 +494,11 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
           contentContainerStyle={{ flexGrow: 1 }}>
           <Divider text={'TYPE'} />
           <ListItemCheckBoxInfo
-            title={'Unique Partner Doubles'}
+            title={sportEvent?.schedule?.name}
+            subtitle={sportEvent?.schedule?.description}
+            subtitleLines={5}
+            containerStyle={{ flexGrow: 1, flex: 1, height: 'auto' }}
+            disableRemoveableRow // Removal not needed, disabling allows text to grow li height
             position={['first', 'last']}
             checkRight
             checked={true}
@@ -504,14 +512,6 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
               //   },
               // })
             }
-          />
-          <Divider
-            note
-            light
-            text={
-              'Players are grouped into pairs. Each player partners with every other player exactly once. No pair repeats.'
-            }
-            subHeaderStyle={s.dividerText}
           />
           <Divider text={'DETAILS'} />
           <Formik
@@ -563,9 +563,9 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
                   title={'Gender'}
                   segmentWidth={80}
                   index={
-                    values.gender === 'mens'
+                    values.gender === MatchGender.Mens
                       ? 0
-                      : values.gender === 'womens'
+                      : values.gender === MatchGender.Womens
                         ? 1
                         : 2
                   }
@@ -575,7 +575,7 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
                 <ListItemSegmented
                   title={'Type of Match'}
                   segmentWidth={80}
-                  index={values.typeOfMatch === 'singles' ? 0 : 1}
+                  index={values.typeOfMatch === MatchType.Singles ? 0 : 1}
                   onChangeIndex={onTypeOfMatchSelect}
                   segments={['Singles', 'Doubles']}
                 />
@@ -668,11 +668,6 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
   );
 };
 
-const useStyles = ThemeManager.createStyleSheet(({ theme }) => ({
-  dividerText: {
-    ...theme.text.medium,
-    marginBottom: -10,
-  },
-}));
+const useStyles = ThemeManager.createStyleSheet(() => ({}));
 
 export default SportEventEditorScreen;

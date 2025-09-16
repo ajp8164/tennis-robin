@@ -17,7 +17,12 @@ import {
 } from 'lib/sportEvent';
 import lodash from 'lodash';
 import { Player } from 'types/player';
-import { SportEventEncoded, TeamName } from 'types/sportEvent';
+import {
+  MatchGender,
+  MatchType,
+  SportEventEncoded,
+  TeamName,
+} from 'types/sportEvent';
 
 export interface Props {
   containerStyle?: StyleProp<ViewStyle>;
@@ -55,7 +60,7 @@ const ScheduleRoundView = (props: Props) => {
   const { swapSelection, setSwapSelection } = useContext(PlayerSwapContext);
 
   const numberOfScores =
-    sportEvent?.gender === 'mens'
+    sportEvent?.gender === MatchGender.Mens
       ? new Array(5).fill('') // 5 set match
       : new Array(3).fill(''); // 3 set match
 
@@ -200,7 +205,7 @@ const ScheduleRoundView = (props: Props) => {
                     {`${court[0][0].firstName} ${court[0][0].lastName}` ||
                       'bye'}
                   </Text>
-                  {sportEvent.typeOfMatch === 'doubles' ? (
+                  {sportEvent.typeOfMatch === MatchType.Doubles ? (
                     <Text
                       style={[
                         s.player,
@@ -227,7 +232,7 @@ const ScheduleRoundView = (props: Props) => {
                     {`${court[1][0].firstName} ${court[1][0].lastName}` ||
                       'bye'}
                   </Text>
-                  {sportEvent.typeOfMatch === 'doubles' ? (
+                  {sportEvent.typeOfMatch === MatchType.Doubles ? (
                     <Text
                       style={[
                         s.player,

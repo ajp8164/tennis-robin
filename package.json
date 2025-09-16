@@ -35,7 +35,7 @@
     "@react-native-google-signin/google-signin": "^14.0.1",
     "@react-native-hello/common": "^0.0.16",
     "@react-native-hello/core": "^0.0.19",
-    "@react-native-hello/ui": "^0.0.160",
+    "@react-native-hello/ui": "^0.0.162",
     "@react-native-segmented-control/segmented-control": "^2.5.7",
     "@react-navigation/native": "^7.1.14",
     "@react-navigation/native-stack": "^7.3.20",

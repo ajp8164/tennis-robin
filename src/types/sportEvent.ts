@@ -10,15 +10,24 @@ export type SportEvent = {
   date: string;
   location: string;
   numberOfCourts: number;
-  typeOfMatch: MatchKind;
+  typeOfMatch: MatchType;
   gender: MatchGender;
   owners: string[];
   players: string[];
   schedule?: Schedule;
 };
 
-export type MatchKind = 'singles' | 'doubles';
-export type MatchGender = 'mens' | 'womens' | 'mixed';
+export enum MatchGender {
+  Mens = 'Mens',
+  Womens = 'Womens',
+  Mixed = 'Mixed',
+}
+
+export enum MatchType {
+  Singles = 'Singles',
+  Doubles = 'Doubles',
+}
+
 export enum TeamName {
   Home = 0,
   Away = 1,
@@ -28,6 +37,8 @@ export type Rounds = Player[][][][]; // Round, court, team, player
 export type Scores = number[][][][]; // Round, court, set, team (see enum TeamName for value)
 
 export type Schedule = {
+  name: string;
+  description: string;
   numberOfRounds: number;
   numberOfCourts: number;
   // allRounds is important for player swap ui.
@@ -49,7 +60,7 @@ export type SportEventEncoded = {
   date: string;
   location: string;
   numberOfCourts: number;
-  typeOfMatch: MatchKind;
+  typeOfMatch: MatchType;
   gender: MatchGender;
   owners: string[];
   players: string[];
@@ -57,6 +68,8 @@ export type SportEventEncoded = {
 };
 
 export type ScheduleEncoded = {
+  name: string;
+  description: string;
   numberOfRounds: number;
   numberOfCourts: number;
   allRounds: string; // Stringified

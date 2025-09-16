@@ -131,11 +131,15 @@ const SportEventsScreen = ({ navigation }: Props) => {
     item: sportEvent,
     index,
   }) => {
+    const gender = `${sportEvent.gender}`;
+    const matchType = `${sportEvent.typeOfMatch}`;
+    const playerCount = `${sportEvent.players.length} Player${sportEvent.players.length !== 1 ? 's' : ''}`;
+
     return (
       <ListItemSwipeable
         key={sportEvent.id}
         title={sportEvent.name}
-        subtitle={`${sportEvent.players.length} Player${sportEvent.players.length !== 1 ? 's' : ''}`}
+        subtitle={`${gender} ${matchType}, ${playerCount}`}
         value={`${sportEvent.location}\n${DateTime.fromISO(sportEvent.date).toFormat("M/d 'at' h:mm")}`}
         valueStyle={theme.text.medium}
         position={listItemPosition(index, allSportEvents.length)}
