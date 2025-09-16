@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useContext } from 'react';
 import { Alert, StyleProp, Text, View, ViewStyle } from 'react-native';
 
 import {
@@ -9,17 +9,15 @@ import {
   useTheme,
 } from '@react-native-hello/ui';
 import { updateDocument, useDocument } from 'firebase/firestore';
-import { decodeSportEvent, encodeSportEvent } from 'lib/sportEvent';
+import {
+  PlayerPosition,
+  PlayerSwapContext,
+  decodeSportEvent,
+  encodeSportEvent,
+} from 'lib/sportEvent';
 import lodash from 'lodash';
 import { Player } from 'types/player';
 import { SportEventEncoded, TeamName } from 'types/sportEvent';
-
-type PlayerPosition = {
-  r: number; // round
-  c: number; // court
-  t: number; // team
-  p: number; // player
-};
 
 export interface Props {
   containerStyle?: StyleProp<ViewStyle>;
@@ -46,15 +44,20 @@ const ScheduleRoundView = (props: Props) => {
     sportEventId,
   );
   const sportEvent = decodeSportEvent(sportEventEncoded);
+  const schedule = sportEvent?.schedule
+    ? Object.assign({}, sportEvent.schedule)
+    : undefined;
 
   // Player swap first selection.
-  const [swapSelection, setSwapSelection] = useState<PlayerPosition>();
+  // Not all users of this component may require the swap player swap feature.
+  // If not then this context won't be used (no provider is wrapping the use of
+  // this component).
+  const { swapSelection, setSwapSelection } = useContext(PlayerSwapContext);
 
-  const schedule = sportEvent?.schedule;
   const numberOfScores =
     sportEvent?.gender === 'mens'
-      ? new Array(5).fill('')
-      : new Array(3).fill('');
+      ? new Array(5).fill('') // 5 set match
+      : new Array(3).fill(''); // 3 set match
 
   const setSwap = (position: PlayerPosition) => {
     if (!swapSelection) {
@@ -90,6 +93,16 @@ const ScheduleRoundView = (props: Props) => {
         // Set each player to the others value.
         lodash.set(schedule!.allRounds, player1Path, player2);
         lodash.set(schedule!.allRounds, player2Path, player1);
+
+        updateDocument<SportEventEncoded>(
+          'SportEvents',
+          encodeSportEvent({
+            ...sportEvent,
+            schedule: {
+              ...sportEvent.schedule!,
+            },
+          }),
+        );
       } else {
         Alert.alert(
           'Illegal Assignment',

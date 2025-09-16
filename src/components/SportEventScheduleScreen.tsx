@@ -6,7 +6,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { EmptyView } from 'components/molecules/EmptyView';
 import ScheduleRoundView from 'components/molecules/ScheduleRoundView';
 import { useDocument } from 'firebase/firestore';
-import { decodeSportEvent } from 'lib/sportEvent';
+import { PlayerSwapProvider, decodeSportEvent } from 'lib/sportEvent';
 import { SportEventsNavigatorParamList } from 'types/navigation';
 import { SportEventEncoded } from 'types/sportEvent';
 
@@ -42,15 +42,18 @@ const SportEventScheduleScreen = ({ route }: Props) => {
       showsVerticalScrollIndicator={false}
       contentInsetAdjustmentBehavior={'automatic'}>
       <Divider />
-      {sportEvent?.schedule
-        ? sportEvent.schedule?.allRounds.map((_round, r) => (
-            <ScheduleRoundView
-              key={`round-${r + 1}`}
-              r={r}
-              sportEventId={sportEvent.id || ''}
-            />
-          ))
-        : null}
+      <PlayerSwapProvider>
+        {sportEvent?.schedule
+          ? sportEvent.schedule?.allRounds.map((_round, r) => (
+              <ScheduleRoundView
+                key={`round-${r + 1}`}
+                r={r}
+                sportEventId={sportEvent.id || ''}
+              />
+            ))
+          : null}
+      </PlayerSwapProvider>
+
       <Divider />
     </ScrollView>
   );
