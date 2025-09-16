@@ -219,18 +219,14 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
   useEffect(() => {
     navigation.setOptions({
       headerLeft: () => {
-        // if (formikCanSubmit) {
         return (
           <Button
             title={'Cancel'}
             titleStyle={theme.styles.buttonScreenHeaderTitle}
             buttonStyle={theme.styles.buttonScreenHeader}
-            // onPress={() => formikRef.current?.resetForm()}
             onPress={() => navigation.goBack()}
           />
         );
-        // }
-        // return null;
       },
       headerRight: () => {
         return (
@@ -298,7 +294,6 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
     formikRef.current?.handleSubmit();
     formikRef.current?.resetForm({ values: formikRef.current?.values });
     Keyboard.dismiss();
-    navigation.goBack();
   };
 
   const onSubmit = async (values: FormValues) => {
@@ -389,7 +384,10 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
   };
 
   const onGenderSelect = (index: number) => {
-    formikRef.current?.setFieldValue('gender', index === 0 ? 'mens' : 'womens');
+    formikRef.current?.setFieldValue(
+      'gender',
+      index === 0 ? 'mens' : index === 1 ? 'womens' : 'mixed',
+    );
   };
 
   const onTypeOfMatchSelect = (index: number) => {
@@ -561,6 +559,26 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
                   onPress={() => setExpandedDate(!expandedDate)}
                   onChange={onDateChange}
                 />
+                <ListItemSegmented
+                  title={'Gender'}
+                  segmentWidth={80}
+                  index={
+                    values.gender === 'mens'
+                      ? 0
+                      : values.gender === 'womens'
+                        ? 1
+                        : 2
+                  }
+                  onChangeIndex={onGenderSelect}
+                  segments={['Mens', 'Womens', 'Mixed']}
+                />
+                <ListItemSegmented
+                  title={'Type of Match'}
+                  segmentWidth={80}
+                  index={values.typeOfMatch === 'singles' ? 0 : 1}
+                  onChangeIndex={onTypeOfMatchSelect}
+                  segments={['Singles', 'Doubles']}
+                />
                 <ListItemInput
                   ref={locationFieldRef}
                   error={!!errors.location}
@@ -582,20 +600,6 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
                   min={1}
                   max={10}
                   onChange={value => setFieldValue('numberOfCourts', value)}
-                />
-                <ListItemSegmented
-                  title={'Gender'}
-                  segmentWidth={80}
-                  index={values.gender === 'mens' ? 0 : 1}
-                  onChangeIndex={onGenderSelect}
-                  segments={['Mens', 'Womens']}
-                />
-                <ListItemSegmented
-                  title={'Type of Match'}
-                  segmentWidth={80}
-                  index={values.typeOfMatch === 'singles' ? 0 : 1}
-                  onChangeIndex={onTypeOfMatchSelect}
-                  segments={['Singles', 'Doubles']}
                 />
               </View>
             )}

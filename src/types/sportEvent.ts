@@ -18,7 +18,7 @@ export type SportEvent = {
 };
 
 export type MatchKind = 'singles' | 'doubles';
-export type MatchGender = 'mens' | 'womens';
+export type MatchGender = 'mens' | 'womens' | 'mixed';
 export enum TeamName {
   Home = 0,
   Away = 1,
