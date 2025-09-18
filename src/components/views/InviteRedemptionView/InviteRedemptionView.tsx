@@ -105,10 +105,9 @@ export const InviteRedemptionView = (props: InviteRedemptionViewInterface) => {
     return (
       <View style={theme.styles.viewAlt}>
         <EmptyView
-          type={'info'}
+          type={'loading'}
           message={'Loading'}
           details={"We're getting your invitation ready..."}
-          isLoading
           style={s.empty}
         />
         <View style={s.buttons}>

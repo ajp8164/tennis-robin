@@ -179,15 +179,15 @@ const SportEventsScreen = ({ navigation }: Props) => {
         swipeableActionsRight={[
           {
             text: 'Delete',
-            color: theme.colors.assertive,
+            color: theme.colors.warning,
             ButtonComponent: <Trash2 color={theme.colors.stickyWhite} />,
             op: 'remove',
             confirmation: () => {
               listEditorRef.current?.reset();
               return confirmAction({
-                label: `Delete SportEvent`,
+                label: `Archive SportEvent`,
                 title:
-                  'This action cannot be undone.\nAre you sure you want to delete this sportEvent?',
+                  'Archived sport events can be retrieved later by changing your settings.\nAre you sure you want to archive this sportEvent?',
               });
             },
             onPress: () => sportEvent.id && archiveSportEvent(sportEvent),

@@ -89,7 +89,7 @@ export const uniquePartnerDoubles = (
   const resolved = resolveByesByRound(scheduleRounds);
 
   return {
-    id: 'unique-partner-doubles',
+    schedulerId: 'unique-partner-doubles',
     numberOfRounds: scheduleRounds.length,
     numberOfCourtsUsed: resolved.maxCourtsUsed,
     allRounds: scheduleRounds,

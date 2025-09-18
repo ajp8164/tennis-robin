@@ -42,6 +42,7 @@ export type EnumPickerInterface = {
   values: EnumPickerValue[];
   selected?: string[]; // Array of enum id, values[].id
   eventName: string;
+  closeOnSelect?: boolean;
 };
 
 export type EnumPickerResult = {
@@ -64,6 +65,7 @@ const EnumPickerScreen = ({ route, navigation }: Props) => {
     values,
     selected,
     eventName,
+    closeOnSelect,
   } = route.params;
 
   const theme = useTheme();
@@ -127,6 +129,10 @@ const EnumPickerScreen = ({ route, navigation }: Props) => {
       event.emit(eventName, {
         value: value ? [value.id] : [],
       } as EnumPickerResult);
+    }
+
+    if (closeOnSelect) {
+      navigation.goBack();
     }
   };
 

@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useContext, useMemo } from 'react';
 import { ScrollView } from 'react-native';
 
 import { Divider, useTheme } from '@react-native-hello/ui';
@@ -6,7 +6,11 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { EmptyView } from 'components/molecules/EmptyView';
 import ScheduleRoundView from 'components/molecules/ScheduleRoundView';
 import { useDocument } from 'firebase/firestore';
-import { PlayerSwapProvider, decodeSportEvent } from 'lib/sportEvent';
+import {
+  PlayerSwapProvider,
+  SportEventEditorContext,
+  decodeSportEvent,
+} from 'lib/sportEvent';
 import { SportEventsNavigatorParamList } from 'types/navigation';
 import { SportEventEncoded } from 'types/sportEvent';
 
@@ -19,16 +23,16 @@ const SportEventScheduleScreen = ({ route }: Props) => {
   const { sportEventId } = route.params || {};
 
   const theme = useTheme();
+  const workingState = useContext(SportEventEditorContext);
 
   const { doc: sportEventEncoded } = useDocument<SportEventEncoded>(
     'SportEvents',
     sportEventId,
   );
 
-  const sportEvent = useMemo(
-    () => decodeSportEvent(sportEventEncoded),
-    [sportEventEncoded],
-  );
+  const sportEvent =
+    useMemo(() => decodeSportEvent(sportEventEncoded), [sportEventEncoded]) ||
+    workingState.sportEvent;
 
   if (!sportEvent) {
     return (

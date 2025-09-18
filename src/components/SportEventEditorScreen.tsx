@@ -1,9 +1,10 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import {
   FlatList,
   Keyboard,
   ListRenderItem,
   ScrollView,
+  Text,
   View,
 } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
@@ -23,6 +24,7 @@ import {
   ListItemDateTime,
   ListItemSegmented,
   ListItemSwipeable,
+  ThemeManager,
   listItemPosition,
   useTheme,
 } from '@react-native-hello/ui';
@@ -54,6 +56,7 @@ import { useUserProfile } from 'lib/auth';
 import { usePlayerStatusDecoration } from 'lib/player';
 import {
   Scheduler,
+  SportEventEditorContext,
   decodeSportEvent,
   encodeSportEvent,
   schedulers,
@@ -101,32 +104,19 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
   const { sportEventId } = route.params || {};
 
   const theme = useTheme();
+  const s = useStyles();
   const event = useEvent();
+
   const playerStatusDecoration = usePlayerStatusDecoration();
   const { doc: userProfile } = useUserProfile();
   const { doc: selectedTeam } = useSelectedTeam();
-  const now = DateTime.now().toISO();
 
-  const [workingSportEvent, setWorkingSportEvent] = useState<SportEvent>({
-    // id: sportEventId,
-    createdOn: now,
-    updatedOn: now,
-    // archivedOn: undefined,
-    name: '',
-    date: now,
-    location: '',
-    numberOfCourts: 1,
-    typeOfMatch: MatchType.Singles,
-    gender: MatchGender.Mens,
-    owners: [],
-    players: [],
-    // schedule: undefined,
-  });
+  const workingState = useContext(SportEventEditorContext);
 
   // The sportEvent holds only ids. Use this state to load player objects.
-  const [workingSportEventPlayers, setWorkingSportEventPlayers] = useState<
-    Player[]
-  >([]);
+  // const [workingSportEventPlayers, setWorkingSportEventPlayers] = useState<
+  //   Player[]
+  // >([]);
 
   const [scheduler, setScheduler] = useState<Scheduler>();
 
@@ -177,13 +167,13 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
 
   const [initialValues, setInitialValues] = useState<FormValues>({
     schedulerId: '',
-    name: workingSportEvent.name,
-    date: workingSportEvent.date,
-    location: workingSportEvent.location,
-    numberOfCourts: workingSportEvent.numberOfCourts,
-    gender: workingSportEvent.gender,
-    typeOfMatch: workingSportEvent.typeOfMatch,
-    players: workingSportEvent.players,
+    name: workingState.sportEvent.name,
+    date: workingState.sportEvent.date,
+    location: workingState.sportEvent.location,
+    numberOfCourts: workingState.sportEvent.numberOfCourts,
+    gender: workingState.sportEvent.gender,
+    typeOfMatch: workingState.sportEvent.typeOfMatch,
+    players: workingState.sportEvent.players,
   });
 
   const schema = Yup.object().shape({
@@ -222,11 +212,12 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
   useEffect(() => {
     if (!sportEventLoading) {
       if (sportEvent) {
-        setWorkingSportEvent(sportEvent);
+        workingState.sportEvent = sportEvent;
 
-        // Reinitialize the form with a loaded sportEvent.
+        // Reinitialize state with a loaded sportEvent.
+        const schedulerId = sportEvent.schedule?.schedulerId || '';
         setInitialValues({
-          schedulerId: sportEvent.schedule!.id, // id should always be set
+          schedulerId,
           name: sportEvent.name,
           date: sportEvent.date,
           location: sportEvent.location,
@@ -235,15 +226,21 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
           typeOfMatch: sportEvent.typeOfMatch,
           players: sportEvent.players,
         });
+
+        const scheduler = schedulers.find(s => s.id === schedulerId);
+        setScheduler(scheduler);
       }
     }
-  }, [sportEvent, sportEventLoading]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sportEvent, sportEventLoading]); // Do not want workingState here
 
   useEffect(() => {
     if (!sportEventPlayersLoading) {
-      setWorkingSportEventPlayers(sportEventPlayers);
+      workingState.players = sportEventPlayers;
+      // setWorkingSportEventPlayers(sportEventPlayers);
     }
-  }, [sportEventPlayers, sportEventPlayersLoading]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sportEventPlayers, sportEventPlayersLoading]); // Do not want workingState here
 
   // Create an enumeration of players for selection into the sportEvent.
   useEffect(() => {
@@ -272,11 +269,7 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
               title={'Cancel'}
               titleStyle={theme.styles.buttonScreenHeaderTitle}
               buttonStyle={theme.styles.buttonScreenHeader}
-              onPress={() => {
-                !sportEventId
-                  ? navigation.goBack()
-                  : formikRef.current?.resetForm();
-              }}
+              onPress={cancel}
             />
           );
         }
@@ -284,17 +277,15 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
       headerRight: () => {
         return (
           <>
-            {/* {workingSportEvent.players.length ? ( */}
             <Button
               title={listEditorState?.enabled ? 'Done' : 'Edit'}
               titleStyle={theme.styles.buttonScreenHeaderTitle}
               buttonStyle={theme.styles.buttonScreenHeader}
               disabledTitleStyle={theme.styles.buttonScreenHeaderTitle}
               disabledStyle={theme.styles.buttonScreenHeaderDisabled}
-              disabled={!workingSportEventPlayers.length}
+              disabled={!workingState.players.length}
               onPress={() => listEditorRef.current?.onToggleEditMode()}
             />
-            {/* ) : null} */}
             <Button
               title={'Save'}
               titleStyle={theme.styles.buttonScreenHeaderTitle}
@@ -313,7 +304,7 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
       },
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [listEditorState, formikCanSubmit, workingSportEventPlayers]);
+  }, [listEditorState, formikCanSubmit, workingState.players]);
 
   useEffect(() => {
     // Event handlers for EnumPicker
@@ -325,7 +316,7 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
       event.removeListener('change-scheduler', onChangeScheduler);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [workingSportEvent]);
+  }, [workingState.sportEvent]);
 
   const onChangePlayers = async (result: EnumPickerResult) => {
     const { result: players } = await getDocuments<Player>('Players', {
@@ -333,12 +324,15 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
     });
 
     // Set the array of ids on the form, set the populated player objects and update
-    // our working schedule.
+    // our working state.
     formikRef.current?.setFieldValue(
       'players',
       players.map(p => p.id),
     );
-    setWorkingSportEventPlayers(players);
+
+    workingState.sportEvent.players = formikRef.current?.values.players || [];
+    workingState.players = players;
+
     updateSchedule({ players });
   };
 
@@ -349,6 +343,12 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
 
     const scheduler = schedulers.find(s => s.id === schedulerId);
     setScheduler(scheduler);
+  };
+
+  const cancel = () => {
+    // Clear our working state.
+    workingState.sportEvent = {} as SportEvent;
+    !sportEventId ? navigation.goBack() : formikRef.current?.resetForm();
   };
 
   const save = () => {
@@ -362,7 +362,7 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
       updateDocument<SportEventEncoded>(
         'SportEvents',
         encodeSportEvent({
-          ...workingSportEvent,
+          ...workingState.sportEvent,
           name: values.name,
           date: values.date,
           location: values.location,
@@ -376,7 +376,7 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
       const newSportEvent = await addDocument<SportEventEncoded>(
         'SportEvents',
         encodeSportEvent({
-          ...workingSportEvent,
+          ...workingState.sportEvent,
           name: values.name,
           date: values.date,
           location: values.location,
@@ -398,13 +398,16 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
         } as Team);
       }
     }
+
+    // Clear our working state.
+    workingState.sportEvent = {} as SportEvent;
   };
 
   const choosePlayers = () => {
     navigation.navigate('EnumPicker', {
       title: 'Players',
       values: playerEnum,
-      selected: workingSportEventPlayers.map(p => p.id!),
+      selected: workingState.players.map(p => p.id!),
       itemPlural: 'Players',
       eventName: 'change-players',
       mode: 'many-or-none',
@@ -413,16 +416,17 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
 
   const removePlayer = async (playerId: string) => {
     // Remove the populated player.
-    const index = workingSportEventPlayers.findIndex(p => p.id === playerId);
+    const index = workingState.players.findIndex(p => p.id === playerId);
     if (index >= 0) {
-      const wsep = [...workingSportEventPlayers];
+      const wsep = [...workingState.players];
       wsep.splice(index, 1);
-      setWorkingSportEventPlayers(wsep);
+      workingState.players = wsep;
 
       formikRef.current?.setFieldValue(
         'players',
         wsep.map(p => p.id!),
       );
+      workingState.sportEvent.players = formikRef.current?.values.players || [];
     }
   };
 
@@ -463,21 +467,16 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
     schedulerId?: string;
   } = {}) => {
     // Get the schedular details.
-    const id = schedulerId || workingSportEvent.schedule?.id;
+    const id = schedulerId || workingState.sportEvent.schedule?.schedulerId;
     const scheduler = schedulers.find(s => s.id === id);
 
     // Run the scheduler function.
     const updated = scheduler?.fn(
-      players || workingSportEventPlayers,
-      numberOfCourts || workingSportEvent.numberOfCourts,
+      players || workingState.players,
+      numberOfCourts || workingState.sportEvent.numberOfCourts,
     );
 
-    const wse = Object.assign({}, workingSportEvent);
-    if (updated) {
-      wse.schedule = updated;
-    }
-
-    setWorkingSportEvent(wse);
+    workingState.sportEvent.schedule = updated;
   };
 
   const onFormikWatcherStateChange = (
@@ -495,7 +494,7 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
         ],
       }).then(({ result: players }) => {
         // Set the players and update the schedule.
-        setWorkingSportEventPlayers(players);
+        workingState.players = players;
         updateSchedule({ players });
       });
     }
@@ -513,7 +512,7 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
             color={playerStatusDecoration[player.status].color}
           />
         }
-        position={listItemPosition(index, workingSportEventPlayers.length)}
+        position={listItemPosition(index, workingState.players.length)}
         rightContent={'chevron-right'}
         listEditor={listEditorRef.current}
         onPress={() =>
@@ -542,7 +541,7 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
 
   const renderPlayersHeader = () => (
     <Divider
-      text={`${workingSportEventPlayers.length || ''} PLAYER${workingSportEventPlayers.length !== 1 ? 'S' : ''}`}
+      text={`${workingState.players.length || ''} PLAYER${workingState.players.length !== 1 ? 'S' : ''}`}
       rightComponent={
         <Button
           title={'Choose Players'}
@@ -569,195 +568,220 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
   );
 
   return (
-    <View style={{ height: '100%' }}>
-      <View style={{ flex: 1 }}>
-        <ScrollView
-          style={theme.styles.view}
-          showsVerticalScrollIndicator={false}
-          contentInsetAdjustmentBehavior={'automatic'}
-          contentContainerStyle={{ flexGrow: 1 }}>
-          <Formik
-            innerRef={formik => {
-              if (formik) {
-                formikRef.current = formik;
-              }
-            }}
-            initialValues={initialValues}
-            enableReinitialize
-            validationSchema={schema}
-            validateOnMount
-            onSubmit={onSubmit}>
-            {({ errors, values, handleChange, setFieldValue }) => (
-              <View>
-                <FormikStateWatcher<FormValues>
-                  onChange={onFormikWatcherStateChange}
-                />
-                <Divider text={'SCHEDULER'} />
-                <ListItem
-                  title={scheduler?.name || 'Choose Your Match Scheduler'}
-                  subtitle={
-                    scheduler?.description ||
-                    'The scheduler calculates all match round, court, and player assignments. If desired, you can make manual chnages later.'
-                  }
-                  subtitleLines={5}
-                  position={['first', 'last']}
-                  rightContent={'chevron-right'}
-                  onPress={() =>
-                    navigation.navigate('EnumPicker', {
-                      title: 'Match Schedulers',
-                      values: schedulers.map(s => {
-                        return {
-                          id: s.id,
-                          title: s.name,
-                          subtitle: s.description,
-                          leftIcon: { icon: s.icon },
-                        };
-                      }) as EnumPickerValue[],
-                      selected: [values.schedulerId],
-                      eventName: 'change-scheduler',
-                      mode: 'one',
-                    })
-                  }
-                />
-                <Divider text={'DETAILS'} />
-                <ListItemInput
-                  ref={nameFieldRef}
-                  position={['first']}
-                  error={!!errors.name}
-                  inputProps={{
-                    inputAccessoryViewID: 'keyboardAccessory',
-                    onChangeText: handleChange('name'),
-                    onFocus: () =>
-                      keyboardAccessory.current?.focusedField(Fields.name),
-                    value: values.name,
-                    label: 'Event Name',
-                    placeholder: 'Event Name',
-                    autoCapitalize: 'words',
-                  }}
-                />
-                <ListItemDateTime
-                  title={'Date'}
-                  value={DateTime.fromISO(values.date).toFormat(
-                    "MMM d, yyyy 'at' h:mm a",
-                  )}
-                  minimumDate={DateTime.now().toJSDate()}
-                  maximumDate={DateTime.now().plus({ years: 100 }).toJSDate()}
-                  mode={'datetime'}
-                  pickerValue={values.date}
-                  expanded={expandedDate}
-                  accentColor={theme.colors.brandSecondary}
-                  onPress={() => setExpandedDate(!expandedDate)}
-                  onChange={onDateChange}
-                />
-                <ListItemSegmented
-                  title={'Gender'}
-                  segmentWidth={80}
-                  index={
-                    values.gender === MatchGender.Mens
-                      ? 0
-                      : values.gender === MatchGender.Womens
-                        ? 1
-                        : 2
-                  }
-                  onChangeIndex={onGenderSelect}
-                  segments={['Mens', 'Womens', 'Mixed']}
-                />
-                <ListItemSegmented
-                  title={'Type of Match'}
-                  segmentWidth={80}
-                  index={values.typeOfMatch === MatchType.Singles ? 0 : 1}
-                  onChangeIndex={onTypeOfMatchSelect}
-                  segments={['Singles', 'Doubles']}
-                />
-                <ListItemInput
-                  ref={locationFieldRef}
-                  error={!!errors.location}
-                  inputProps={{
-                    inputAccessoryViewID: 'keyboardAccessory',
-                    onChangeText: handleChange('location'),
-                    onFocus: () =>
-                      keyboardAccessory.current?.focusedField(Fields.location),
-                    value: values.location,
-                    label: 'Location',
-                    placeholder: 'Location',
-                    autoCapitalize: 'words',
-                  }}
-                />
-                <ListItemStepper
-                  title={'Number of Courts'}
-                  position={['last']}
-                  initialValue={values.numberOfCourts}
-                  min={1}
-                  max={10}
-                  onChange={value => {
-                    setFieldValue('numberOfCourts', value);
-                    updateSchedule({ numberOfCourts: value });
-                  }}
-                />
-              </View>
-            )}
-          </Formik>
-          <Animated.View entering={FadeIn}>
-            {workingSportEvent.id && workingSportEventPlayers.length ? (
-              <>
-                <Divider />
-                <ListItem
-                  title={'Schedule'}
-                  subtitle={`${workingSportEvent.schedule?.numberOfRounds} Round${workingSportEvent.schedule?.numberOfRounds !== 1 ? 's' : ''} on ${workingSportEvent.schedule?.numberOfCourtsUsed} Court${workingSportEvent.schedule?.numberOfCourtsUsed !== 1 ? 's' : ''}`}
-                  position={['first', 'last']}
-                  rightContent={'chevron-right'}
-                  onPress={() => {
-                    navigation.navigate('SportEventSchedule', {
-                      sportEventId: workingSportEvent.id!,
-                      screenTitle: sportEvent.name,
-                    });
-                  }}
-                />
-                {sportEvent?.numberOfCourts !==
-                sportEvent?.schedule?.numberOfCourtsUsed ? (
-                  <Divider
-                    note
-                    light
-                    text={
-                      'The number of courts required by the schedule is less than the number of courts available. Not all courts can be used for match play.'
-                    }
-                    subHeaderStyle={theme.text.medium}
-                  />
-                ) : null}
-              </>
-            ) : null}
-            <ListEditor
-              ref={listEditorRef}
-              onChangeState={v => {
-                setListEditorState(v);
-              }}>
-              <FlatList
-                contentInsetAdjustmentBehavior={'automatic'}
-                data={workingSportEventPlayers}
-                renderItem={renderPlayer}
-                keyExtractor={item => `${item.id}`}
-                scrollEnabled={false}
-                showsVerticalScrollIndicator={false}
-                ListHeaderComponent={
-                  workingSportEventPlayers.length ? renderPlayersHeader() : null
+    <EmptyView
+      type={'loading'}
+      waitFor={sportEventId ? sportEvent : true}
+      fadeIn>
+      <View style={{ height: '100%' }}>
+        <View style={{ flex: 1 }}>
+          <ScrollView
+            style={theme.styles.view}
+            showsVerticalScrollIndicator={false}
+            contentInsetAdjustmentBehavior={'automatic'}
+            contentContainerStyle={{ flexGrow: 1 }}>
+            <Formik
+              innerRef={formik => {
+                if (formik) {
+                  formikRef.current = formik;
                 }
-                ListFooterComponent={<Divider />}
-                ListEmptyComponent={renderPlayersEmpty()}
-              />
-            </ListEditor>
-          </Animated.View>
-        </ScrollView>
+              }}
+              initialValues={initialValues}
+              enableReinitialize
+              validationSchema={schema}
+              validateOnMount
+              onSubmit={onSubmit}>
+              {({ errors, values, handleChange, setFieldValue }) => (
+                <View>
+                  <FormikStateWatcher<FormValues>
+                    onChange={onFormikWatcherStateChange}
+                  />
+                  <Divider text={'SCHEDULER'} />
+                  <ListItem
+                    title={scheduler?.name || 'Choose Your Match Scheduler'}
+                    subtitle={
+                      scheduler?.description ||
+                      'The scheduler calculates all match round, court, and player assignments. If desired, you can make manual chnages later.'
+                    }
+                    subtitleLines={5}
+                    position={['first', 'last']}
+                    rightContent={'chevron-right'}
+                    footerContent={
+                      !values.schedulerId ? (
+                        <Text style={s.requiredText}>
+                          {'Selection required'}
+                        </Text>
+                      ) : (
+                        <></>
+                      )
+                    }
+                    onPress={() =>
+                      navigation.navigate('EnumPicker', {
+                        title: 'Match Schedulers',
+                        values: schedulers.map(s => {
+                          return {
+                            id: s.id,
+                            title: s.name,
+                            subtitle: s.description,
+                            leftIcon: { icon: s.icon },
+                          };
+                        }) as EnumPickerValue[],
+                        selected: [values.schedulerId],
+                        eventName: 'change-scheduler',
+                        mode: 'one',
+                        closeOnSelect: true,
+                      })
+                    }
+                  />
+                  <Divider text={'DETAILS'} />
+                  <ListItemInput
+                    ref={nameFieldRef}
+                    position={['first']}
+                    error={!!errors.name}
+                    inputProps={{
+                      inputAccessoryViewID: 'keyboardAccessory',
+                      onChangeText: handleChange('name'),
+                      onFocus: () =>
+                        keyboardAccessory.current?.focusedField(Fields.name),
+                      value: values.name,
+                      label: 'Event Name',
+                      placeholder: 'Event Name',
+                      autoCapitalize: 'words',
+                    }}
+                  />
+                  <ListItemDateTime
+                    title={'Date'}
+                    value={DateTime.fromISO(values.date).toFormat(
+                      "MMM d, yyyy 'at' h:mm a",
+                    )}
+                    minimumDate={DateTime.now().toJSDate()}
+                    maximumDate={DateTime.now().plus({ years: 100 }).toJSDate()}
+                    mode={'datetime'}
+                    pickerValue={values.date}
+                    expanded={expandedDate}
+                    accentColor={theme.colors.brandSecondary}
+                    onPress={() => setExpandedDate(!expandedDate)}
+                    onChange={onDateChange}
+                  />
+                  <ListItemSegmented
+                    title={'Gender'}
+                    segmentWidth={80}
+                    index={
+                      values.gender === MatchGender.Mens
+                        ? 0
+                        : values.gender === MatchGender.Womens
+                          ? 1
+                          : 2
+                    }
+                    onChangeIndex={onGenderSelect}
+                    segments={['Mens', 'Womens', 'Mixed']}
+                  />
+                  <ListItemSegmented
+                    title={'Type of Match'}
+                    segmentWidth={80}
+                    index={values.typeOfMatch === MatchType.Singles ? 0 : 1}
+                    onChangeIndex={onTypeOfMatchSelect}
+                    segments={['Singles', 'Doubles']}
+                  />
+                  <ListItemInput
+                    ref={locationFieldRef}
+                    error={!!errors.location}
+                    inputProps={{
+                      inputAccessoryViewID: 'keyboardAccessory',
+                      onChangeText: handleChange('location'),
+                      onFocus: () =>
+                        keyboardAccessory.current?.focusedField(
+                          Fields.location,
+                        ),
+                      value: values.location,
+                      label: 'Location',
+                      placeholder: 'Location',
+                      autoCapitalize: 'words',
+                    }}
+                  />
+                  <ListItemStepper
+                    title={'Number of Courts'}
+                    position={['last']}
+                    initialValue={values.numberOfCourts}
+                    min={1}
+                    max={10}
+                    onChange={value => {
+                      setFieldValue('numberOfCourts', value);
+                      updateSchedule({ numberOfCourts: value });
+                    }}
+                  />
+                </View>
+              )}
+            </Formik>
+            <Animated.View entering={FadeIn}>
+              {workingState.players.length ? (
+                <>
+                  <Divider />
+                  <ListItem
+                    title={'Schedule'}
+                    subtitle={`${workingState.sportEvent.schedule?.numberOfRounds} Round${workingState.sportEvent.schedule?.numberOfRounds !== 1 ? 's' : ''} on ${workingState.sportEvent.schedule?.numberOfCourtsUsed} Court${workingState.sportEvent.schedule?.numberOfCourtsUsed !== 1 ? 's' : ''}`}
+                    position={['first', 'last']}
+                    rightContent={'chevron-right'}
+                    onPress={() => {
+                      navigation.navigate('SportEventSchedule', {
+                        sportEventId: workingState.sportEvent.id!,
+                        screenTitle: workingState.sportEvent.name || 'Event',
+                      });
+                    }}
+                  />
+                  {sportEvent?.numberOfCourts !==
+                  sportEvent?.schedule?.numberOfCourtsUsed ? (
+                    <Divider
+                      note
+                      light
+                      text={
+                        'The number of courts required by the schedule is less than the number of courts available. Not all courts can be used for match play.'
+                      }
+                      subHeaderStyle={theme.text.medium}
+                    />
+                  ) : null}
+                </>
+              ) : null}
+              <ListEditor
+                ref={listEditorRef}
+                onChangeState={v => {
+                  setListEditorState(v);
+                }}>
+                <FlatList
+                  contentInsetAdjustmentBehavior={'automatic'}
+                  data={workingState.players}
+                  renderItem={renderPlayer}
+                  keyExtractor={item => `${item.id}`}
+                  scrollEnabled={false}
+                  showsVerticalScrollIndicator={false}
+                  ListHeaderComponent={
+                    workingState.players.length ? renderPlayersHeader() : null
+                  }
+                  ListFooterComponent={<Divider />}
+                  ListEmptyComponent={renderPlayersEmpty()}
+                />
+              </ListEditor>
+            </Animated.View>
+          </ScrollView>
+        </View>
+        <KeyboardAccessory
+          ref={keyboardAccessory}
+          id={'keyboardAccessory'}
+          fieldRefs={resolvedRefs}
+          doneText={'Done'}
+          disabledDone={!formikCanSubmit}
+          onDone={Keyboard.dismiss}
+        />
       </View>
-      <KeyboardAccessory
-        ref={keyboardAccessory}
-        id={'keyboardAccessory'}
-        fieldRefs={resolvedRefs}
-        doneText={'Done'}
-        disabledDone={!formikCanSubmit}
-        onDone={Keyboard.dismiss}
-      />
-    </View>
+    </EmptyView>
   );
 };
+
+const useStyles = ThemeManager.createStyleSheet(({ theme }) => ({
+  requiredText: {
+    ...theme.text.small,
+    color: theme.colors.assertive,
+    marginLeft: 15,
+  },
+}));
 
 export default SportEventEditorScreen;

@@ -37,7 +37,7 @@ export type Rounds = Player[][][][]; // Round, court, team, player
 export type Scores = number[][][][]; // Round, court, set, team (see enum TeamName for value)
 
 export type Schedule = {
-  id: string;
+  schedulerId: string;
   numberOfRounds: number;
   numberOfCourtsUsed: number;
   allRounds: Rounds; // Includes all player and bye-placeholder assignments on all courts.
@@ -64,7 +64,7 @@ export type SportEventEncoded = {
 };
 
 export type ScheduleEncoded = {
-  id: string;
+  schedulerId: string;
   numberOfRounds: number;
   numberOfCourtsUsed: number;
   allRounds: string; // Stringified
