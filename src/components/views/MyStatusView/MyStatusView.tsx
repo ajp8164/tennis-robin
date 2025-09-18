@@ -24,7 +24,7 @@ export const MyStatusView = (props: MyStatusViewInterface) => {
   const s = useStyles();
 
   const playerStatusDecoration = usePlayerStatusDecoration();
-  const myPlayer = useMyPlayer();
+  const { doc: myPlayer } = useMyPlayer();
 
   const setStatus = (status: PlayerStatus) => {
     if (myPlayer) {

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
@@ -36,7 +36,11 @@ const SportEventRoundsScreen = ({ navigation, route }: Props) => {
     'SportEvents',
     sportEventId,
   );
-  const sportEvent = decodeSportEvent(sportEventEncoded);
+
+  const sportEvent = useMemo(
+    () => decodeSportEvent(sportEventEncoded),
+    [sportEventEncoded],
+  );
 
   const carouselRef = useRef<CarouselMethods>(null);
   const [activeSlide, setActiveSlide] = useState(0);

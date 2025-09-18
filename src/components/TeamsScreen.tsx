@@ -35,7 +35,7 @@ const TeamsScreen = ({ navigation }: Props) => {
   const theme = useTheme();
   const dispatch = useDispatch();
   const confirmAction = useConfirmAction();
-  const userProfile = useUserProfile();
+  const { doc: userProfile } = useUserProfile();
 
   const { docs: allTeams } = useCollection<Team>('Teams', {
     where: [

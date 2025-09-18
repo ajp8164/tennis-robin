@@ -46,7 +46,7 @@ const PlayersScreen = ({ navigation }: Props) => {
   const confirmAction = useConfirmAction();
   const playerStatusDecoration = usePlayerStatusDecoration();
 
-  const selectedTeam = useSelectedTeam();
+  const { doc: selectedTeam } = useSelectedTeam();
   const [items, setItems] = useState<Item[]>([]);
 
   const { docs: players } = useCollection<Player>('Players', {

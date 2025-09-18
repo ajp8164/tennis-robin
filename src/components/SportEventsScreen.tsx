@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
   ListRenderItem,
@@ -48,7 +48,7 @@ const SportEventsScreen = ({ navigation }: Props) => {
   const headerHeight = useHeaderHeight();
   const confirmAction = useConfirmAction();
 
-  const selectedTeam = useSelectedTeam();
+  const { doc: selectedTeam } = useSelectedTeam();
 
   const { docs: allSportEventsEncoded } = useCollection<SportEventEncoded>(
     'SportEvents',
@@ -63,7 +63,11 @@ const SportEventsScreen = ({ navigation }: Props) => {
       orderBy: [{ fieldPath: 'name', directionStr: 'asc' }],
     },
   );
-  const allSportEvents = allSportEventsEncoded.map(se => decodeSportEvent(se));
+
+  const allSportEvents = useMemo(
+    () => allSportEventsEncoded.map(se => decodeSportEvent(se)),
+    [allSportEventsEncoded],
+  );
 
   const listEditorRef = useRef<ListEditorMethods>(null);
   const [listEditorState, setListEditorState] = useState<ListEditorState>();
@@ -92,7 +96,13 @@ const SportEventsScreen = ({ navigation }: Props) => {
             icon={
               <Plus color={theme.colors.screenHeaderButtonText} size={28} />
             }
-            onPress={() => navigation.navigate('NewSportEvent', {})}
+            // onPress={() => navigation.navigate('NewSportEvent', {})}
+            onPress={() =>
+              navigation.navigate('NewSportEventNavigator', {
+                screen: 'NewSportEvent',
+                params: { sportEventId: undefined },
+              })
+            }
           />
         );
       },
@@ -195,7 +205,12 @@ const SportEventsScreen = ({ navigation }: Props) => {
         details={'Add an Event and go play!'}
         positionTop
         buttonTitle={'Add Event'}
-        onButtonPress={() => navigation.navigate('NewSportEvent', {})}
+        onButtonPress={() =>
+          navigation.navigate('NewSportEventNavigator', {
+            screen: 'NewSportEvent',
+            params: { sportEventId: undefined },
+          })
+        }
       />
     </>
   );

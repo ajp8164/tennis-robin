@@ -55,7 +55,7 @@ const UserProfileEditorScreen = ({ navigation }: Props) => {
   const theme = useTheme();
   const s = useStyles();
 
-  const userProfile = useUserProfile();
+  const { doc: userProfile } = useUserProfile();
 
   const [photoUrl, setPhotoUrl] = useState(userProfile?.photoUrl || '');
 

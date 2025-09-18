@@ -9,6 +9,7 @@ import SportEventScheduleScreen from 'components/SportEventScheduleScreen';
 import SportEventsScreen from 'components/SportEventsScreen';
 import { SportEventsNavigatorParamList } from 'types/navigation';
 
+import NewSportEventNavigator from './NewSportEventNavigator';
 import SportEventSequenceNavigator from './SportEventSequenceNavigator';
 
 const SportEventsStack =
@@ -58,10 +59,10 @@ const SportEventsNavigator = () => {
         }}
       />
       <SportEventsStack.Screen
-        name="NewSportEvent"
-        component={SportEventEditorScreen}
+        name="NewSportEventNavigator"
+        component={NewSportEventNavigator}
         options={{
-          title: 'New Event',
+          headerShown: false,
           presentation: 'fullScreenModal',
         }}
       />
@@ -77,7 +78,7 @@ const SportEventsNavigator = () => {
         component={SportEventScheduleScreen}
         options={({ route }) => {
           return {
-            title: route.params.screenTitle,
+            title: route.params.screenTitle ?? 'hello',
           };
         }}
       />

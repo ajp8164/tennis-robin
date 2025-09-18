@@ -12,12 +12,19 @@ export const useCollection = <T extends FirebaseFirestoreTypes.DocumentData>(
   opts?: CollectionChangeListenerOptions,
 ) => {
   const [documents, setDocuments] = useState<T[]>([]);
+  const [loading, setLoading] = useState(true);
   const optsStr = JSON.stringify(opts);
 
   useEffect(() => {
+    // If the query options change we need to reload on the new query.
+    setLoading(true);
+
     const unsubscribe = collectionChangeListener<T>(
       collectionPath,
-      documents => setDocuments(documents),
+      documents => {
+        setDocuments(documents);
+        setLoading(false);
+      },
       opts,
     );
 
@@ -29,5 +36,6 @@ export const useCollection = <T extends FirebaseFirestoreTypes.DocumentData>(
 
   return {
     docs: documents,
+    loading,
   };
 };

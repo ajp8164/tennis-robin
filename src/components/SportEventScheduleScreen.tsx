@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { ScrollView } from 'react-native';
 
 import { Divider, useTheme } from '@react-native-hello/ui';
@@ -24,7 +24,11 @@ const SportEventScheduleScreen = ({ route }: Props) => {
     'SportEvents',
     sportEventId,
   );
-  const sportEvent = decodeSportEvent(sportEventEncoded);
+
+  const sportEvent = useMemo(
+    () => decodeSportEvent(sportEventEncoded),
+    [sportEventEncoded],
+  );
 
   if (!sportEvent) {
     return (

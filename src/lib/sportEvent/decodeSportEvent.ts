@@ -8,9 +8,6 @@ export const decodeSportEvent = (sportEventEncoded?: SportEventEncoded) => {
     schedule: {
       ...sportEventEncoded.schedule,
       allRounds: JSON.parse(sportEventEncoded.schedule?.allRounds || '[]'),
-      playableRounds: JSON.parse(
-        sportEventEncoded.schedule?.playableRounds || '[]',
-      ),
       byes: JSON.parse(sportEventEncoded.schedule?.byes || '[]'),
       scores: JSON.parse(sportEventEncoded.schedule?.scores || '[]'),
     },

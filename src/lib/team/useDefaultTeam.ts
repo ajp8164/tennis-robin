@@ -8,8 +8,8 @@ import { Team } from 'types/team';
 export const defaultTeamName = 'Default Team';
 
 export const useDefaultTeam = () => {
-  const userProfile = useUserProfile();
-  const myPlayer = useMyPlayer();
+  const { doc: userProfile } = useUserProfile();
+  const { doc: myPlayer } = useMyPlayer();
 
   const [defaultTeam, setDefaultTeam] = useState<Team>();
 

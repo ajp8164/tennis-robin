@@ -5,11 +5,11 @@ import { useUserProfile } from 'lib/auth';
 import { Player } from 'types/player';
 
 export const useMyPlayer = () => {
-  const userProfile = useUserProfile();
+  const { doc: userProfile } = useUserProfile();
   const [playerId, setPlayerId] = useState<string>();
 
   // Watch changes to my player.
-  const { doc: player } = useDocument<Player>('Players', playerId);
+  const { doc: player, loading } = useDocument<Player>('Players', playerId);
 
   // Get my player when my user profile is knowm.
   useEffect(() => {
@@ -28,5 +28,5 @@ export const useMyPlayer = () => {
     })();
   }, [userProfile, userProfile?.id]);
 
-  return player;
+  return { doc: player, loading };
 };

@@ -5,13 +5,19 @@ import { Divider, useTheme } from '@react-native-hello/ui';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { getDocument } from 'firebase/firestore';
 import { usePlayerStatusDecoration } from 'lib/player';
-import { SportEventsNavigatorParamList } from 'types/navigation';
+import {
+  NewSportEventNavigatorParamList,
+  SportEventsNavigatorParamList,
+} from 'types/navigation';
 import { Player } from 'types/player';
 
 export type Props = NativeStackScreenProps<
-  SportEventsNavigatorParamList,
+  SportEventsNavigatorParamList | NewSportEventNavigatorParamList,
   'Player'
 >;
+// export type Props =
+//   | NativeStackScreenProps<SportEventsNavigatorParamList, 'Player'>
+//   | NativeStackScreenProps<NewSportEventNavigatorParamList, 'Player'>;
 
 const PlayerScreen = ({ route }: Props) => {
   const { playerId } = route.params || {};

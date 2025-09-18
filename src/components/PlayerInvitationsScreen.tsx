@@ -38,8 +38,8 @@ const PlayerInvitationsScreen = ({ navigation }: Props) => {
   const s = useStyles();
   const playerStatusDecoration = usePlayerStatusDecoration();
 
-  const userProfile = useUserProfile();
-  const selectedTeam = useSelectedTeam();
+  const { doc: userProfile } = useUserProfile();
+  const { doc: selectedTeam } = useSelectedTeam();
 
   const [contactsPermission, setContactsPermission] = useState<
     'undefined' | 'authorized' | 'denied'
@@ -179,8 +179,8 @@ const PlayerInvitationsScreen = ({ navigation }: Props) => {
               firstName: contact.firstName,
               lastName: contact.lastName,
               email: contact.email,
-              teamId: selectedTeam.id,
-              inviterUserId: userProfile.id,
+              teamId: selectedTeam?.id,
+              inviterUserId: userProfile?.id,
             },
             { id: code },
           );

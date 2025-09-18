@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import React, { useContext, useMemo } from 'react';
 import { Alert, StyleProp, Text, View, ViewStyle } from 'react-native';
 
 import {
@@ -48,7 +48,12 @@ const ScheduleRoundView = (props: Props) => {
     'SportEvents',
     sportEventId,
   );
-  const sportEvent = decodeSportEvent(sportEventEncoded);
+
+  const sportEvent = useMemo(
+    () => decodeSportEvent(sportEventEncoded),
+    [sportEventEncoded],
+  );
+
   const schedule = sportEvent?.schedule
     ? Object.assign({}, sportEvent.schedule)
     : undefined;
@@ -252,7 +257,7 @@ const ScheduleRoundView = (props: Props) => {
           mainContentStyle={s.mainContainer}
           footerContent={showScores ? renderScores(r, c) : <></>}
         />
-        {c === schedule!.numberOfCourts - 1 ? null : <Divider />}
+        {c === schedule!.numberOfCourtsUsed - 1 ? null : <Divider />}
       </View>
     );
   };

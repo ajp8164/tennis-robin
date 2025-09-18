@@ -34,7 +34,7 @@ export const InviteRedemptionView = (props: InviteRedemptionViewInterface) => {
   const theme = useTheme();
   const s = useStyles();
 
-  const myPlayer = useMyPlayer();
+  const { doc: myPlayer } = useMyPlayer();
   const [team, setTeam] = useState<Team>();
   const [invitedBy, setInvitedBy] = useState<UserProfile>();
   const [enteredTokenId, setEnteredTokenId] = useState<string>('');

@@ -32,9 +32,9 @@ const SetupScreen = ({ navigation, route }: Props) => {
   const headerHeight = useHeaderHeight();
   const playerStatusDecoration = usePlayerStatusDecoration();
 
-  const myPlayer = useMyPlayer();
-  const userProfile = useUserProfile();
-  const selectedTeam = useSelectedTeam();
+  const { doc: myPlayer } = useMyPlayer();
+  const { doc: userProfile } = useUserProfile();
+  const { doc: selectedTeam } = useSelectedTeam();
 
   const myStatusModalRef = useRef<MyStatusModalMethods>(null);
 

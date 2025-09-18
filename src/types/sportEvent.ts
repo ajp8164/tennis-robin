@@ -37,14 +37,10 @@ export type Rounds = Player[][][][]; // Round, court, team, player
 export type Scores = number[][][][]; // Round, court, set, team (see enum TeamName for value)
 
 export type Schedule = {
-  name: string;
-  description: string;
+  id: string;
   numberOfRounds: number;
-  numberOfCourts: number;
-  // allRounds is important for player swap ui.
+  numberOfCourtsUsed: number;
   allRounds: Rounds; // Includes all player and bye-placeholder assignments on all courts.
-  // playableRounds is simpler to render if the player swap ui is needed.
-  playableRounds: Rounds; // Excludes courts having bye-placeholder assignments.
   byes: Player[][]; // Round, player
   scores: Scores;
 };
@@ -68,12 +64,10 @@ export type SportEventEncoded = {
 };
 
 export type ScheduleEncoded = {
-  name: string;
-  description: string;
+  id: string;
   numberOfRounds: number;
-  numberOfCourts: number;
+  numberOfCourtsUsed: number;
   allRounds: string; // Stringified
-  playableRounds: string; // Stringified
   byes: string; // Stringified
   scores: string; // Stringified
 };

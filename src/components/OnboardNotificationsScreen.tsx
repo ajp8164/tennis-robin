@@ -18,7 +18,7 @@ const OnboardNotificationsScreen = ({ navigation }: Props) => {
   const theme = useTheme();
   const s = useStyles();
 
-  const userProfile = useUserProfile();
+  const { doc: userProfile } = useUserProfile();
 
   const skipNotifications = () => {
     advance();

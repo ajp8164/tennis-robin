@@ -32,7 +32,7 @@ const UserAccountScreen = ({ navigation }: Props) => {
   const theme = useTheme();
   const s = useStyles();
 
-  const userProfile = useUserProfile();
+  const { doc: userProfile } = useUserProfile();
   const { credentials } = useSelector(selectUser);
 
   // Detect removal of credentials for navigation to auth.
@@ -81,11 +81,11 @@ const UserAccountScreen = ({ navigation }: Props) => {
           size={'giant'}
           avatarStyle={s.avatar}
         />
-        <Text style={s.title}>{userProfile.name || userProfile.email}</Text>
-        {userProfile.name.length ? (
-          <Text style={s.subtitle}>{userProfile.email}</Text>
+        <Text style={s.title}>{userProfile?.name || userProfile?.email}</Text>
+        {userProfile?.name.length ? (
+          <Text style={s.subtitle}>{userProfile?.email}</Text>
         ) : null}
-        {userProfile.createdOn ? (
+        {userProfile?.createdOn ? (
           <Text style={s.subtitle}>
             {`Since ${DateTime.fromISO(userProfile.createdOn).toFormat('MMMM yyyy')}`}
           </Text>

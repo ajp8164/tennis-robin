@@ -42,9 +42,8 @@ const TeamEditorScreen = ({ navigation, route }: Props) => {
   const { teamId } = route.params || {};
 
   const theme = useTheme();
-  const userProfile = useUserProfile();
-  const myPlayer = useMyPlayer();
-
+  const { doc: userProfile } = useUserProfile();
+  const { doc: myPlayer } = useMyPlayer();
   const { doc: team } = useDocument<Team>('Teams', teamId);
 
   const [initialValues, setInitialValues] = useState<FormValues>({

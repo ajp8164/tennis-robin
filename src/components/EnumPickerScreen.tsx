@@ -147,6 +147,8 @@ const EnumPickerScreen = ({ route, navigation }: Props) => {
         key={`${value}${index}`}
         title={value.title}
         subtitle={value.subtitle}
+        subtitleLines={5}
+        rightContentStyle={s.checkSpace}
         leftContent={
           value.leftIcon ? (
             <DynamicIcon
@@ -252,6 +254,9 @@ const EnumPickerScreen = ({ route, navigation }: Props) => {
 };
 
 const useStyles = ThemeManager.createStyleSheet(() => ({
+  checkSpace: {
+    minWidth: 60,
+  },
   divider: {
     marginBottom: 15,
   },

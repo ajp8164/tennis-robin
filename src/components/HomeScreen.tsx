@@ -31,8 +31,8 @@ const HomeScreen = () => {
   const dispatch = useDispatch();
 
   const firstLaunch = useSelector(selectFirstLaunch);
-  const userProfile = useUserProfile();
-  const selectedTeam = useSelectedTeam();
+  const { doc: userProfile } = useUserProfile();
+  const { doc: selectedTeam } = useSelectedTeam();
   const [acceptedInvitation, setAcceptedInvitation] = useState<{
     teamName: string;
   }>();
@@ -106,7 +106,7 @@ const HomeScreen = () => {
             alignSelf: 'center',
           }}
           onPress={() =>
-            selectedTeam ? addTestPlayers(selectedTeam.id) : null
+            selectedTeam ? addTestPlayers(selectedTeam?.id) : null
           }
         />
       </View>

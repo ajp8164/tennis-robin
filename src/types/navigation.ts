@@ -23,37 +23,6 @@ export type AuthenticationNavigatorParamList = {
   Tabs: NavigatorScreenParams<TabNavigatorParamList>;
 };
 
-export type SportEventSequenceNavigatorParamList = {
-  SportEventRounds: {
-    sportEventId: string;
-    screenTitle: string;
-  };
-  SportEventStart: {
-    sportEventId: string;
-    screenTitle: string;
-  };
-};
-
-export type SportEventsNavigatorParamList = {
-  EnumPicker: EnumPickerInterface;
-  NewSportEvent: {
-    sportEventId?: string;
-  };
-  Player: {
-    playerId: string;
-  };
-  SportEventSequenceNavigator: NavigatorScreenParams<SportEventSequenceNavigatorParamList>;
-  SportEvents: undefined;
-  SportEventEditor: {
-    sportEventId: string;
-    screenTitle: string;
-  };
-  SportEventSchedule: {
-    sportEventId: string;
-    screenTitle: string;
-  };
-};
-
 export type HomeNavigatorParamList = {
   Home: undefined;
 };
@@ -61,6 +30,21 @@ export type HomeNavigatorParamList = {
 export type MainNavigatorParamList = {
   Authentication: NavigatorScreenParams<AuthenticationNavigatorParamList>;
   Tabs: NavigatorScreenParams<TabNavigatorParamList>;
+};
+
+export type NewSportEventNavigatorParamList = {
+  EnumPicker: EnumPickerInterface;
+  NewSportEvent: {
+    sportEventId?: string;
+    screenTitle?: string;
+  };
+  Player: {
+    playerId: string;
+  };
+  SportEventSchedule: {
+    sportEventId: string;
+    screenTitle: string;
+  };
 };
 
 export type SetupNavigatorParamList = {
@@ -91,6 +75,35 @@ export type SetupNavigatorParamList = {
   };
   UserAccount: undefined;
   UserProfileEditor: undefined;
+};
+
+export type SportEventSequenceNavigatorParamList = {
+  SportEventRounds: {
+    sportEventId: string;
+    screenTitle: string;
+  };
+  SportEventStart: {
+    sportEventId: string;
+    screenTitle: string;
+  };
+};
+
+export type SportEventsNavigatorParamList = {
+  EnumPicker: EnumPickerInterface;
+  NewSportEventNavigator: NavigatorScreenParams<NewSportEventNavigatorParamList>;
+  Player: {
+    playerId: string;
+  };
+  SportEventSequenceNavigator: NavigatorScreenParams<SportEventSequenceNavigatorParamList>;
+  SportEvents: undefined;
+  SportEventEditor: {
+    sportEventId?: string;
+    screenTitle?: string;
+  };
+  SportEventSchedule: {
+    sportEventId: string;
+    screenTitle: string;
+  };
 };
 
 export type TabNavigatorParamList = {

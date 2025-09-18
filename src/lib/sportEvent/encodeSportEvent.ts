@@ -8,7 +8,6 @@ export const encodeSportEvent = (sportEvent: SportEvent) => {
     schedule: {
       ...sportEvent.schedule,
       allRounds: JSON.stringify(sportEvent.schedule?.allRounds || []),
-      playableRounds: JSON.stringify(sportEvent.schedule?.playableRounds || []),
       byes: JSON.stringify(sportEvent.schedule?.byes || []),
       scores: JSON.stringify(sportEvent.schedule?.scores || []),
     },

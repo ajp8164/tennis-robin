@@ -6,6 +6,5 @@ import { UserProfile } from 'types/user';
 
 export const useUserProfile = () => {
   const { credentials } = useSelector(selectUser);
-  const { doc } = useDocument<UserProfile>('Users', credentials?.uid || '');
-  return doc;
+  return useDocument<UserProfile>('Users', credentials?.uid || '');
 };

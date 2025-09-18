@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { ScrollView, View } from 'react-native';
 
 import { Divider, ThemeManager, useTheme } from '@react-native-hello/ui';
@@ -24,7 +24,11 @@ const SportEventStartScreen = ({ navigation, route }: Props) => {
     'SportEvents',
     sportEventId,
   );
-  const sportEvent = decodeSportEvent(sportEventEncoded);
+
+  const sportEvent = useMemo(
+    () => decodeSportEvent(sportEventEncoded),
+    [sportEventEncoded],
+  );
 
   useEffect(() => {
     navigation.setOptions({
@@ -39,6 +43,7 @@ const SportEventStartScreen = ({ navigation, route }: Props) => {
         );
       },
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (

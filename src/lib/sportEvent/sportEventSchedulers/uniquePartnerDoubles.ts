@@ -89,13 +89,10 @@ export const uniquePartnerDoubles = (
   const resolved = resolveByesByRound(scheduleRounds);
 
   return {
-    name: 'Unique Partner Doubles',
-    description:
-      'Players are grouped into pairs. Each player partners with every other player exactly once. No pair repeats.',
-    numberOfRounds: resolved.playableSchedule.length,
-    numberOfCourts: resolved.maxCourtsUsed,
+    id: 'unique-partner-doubles',
+    numberOfRounds: scheduleRounds.length,
+    numberOfCourtsUsed: resolved.maxCourtsUsed,
     allRounds: scheduleRounds,
-    playableRounds: resolved.playableSchedule,
     byes: resolved.byePlayers,
     scores: [],
   };
@@ -103,10 +100,11 @@ export const uniquePartnerDoubles = (
 
 const resolveByesByRound = (scheduleRounds: Rounds) => {
   const byePlayers: Player[][] = [];
-  const playableSchedule: Rounds = [];
+  let maxCourtsUsed = 0;
 
   scheduleRounds.forEach((round, r) => {
-    round.forEach((court, c) => {
+    let thisRoundCourtsUsed = 0;
+    round.forEach((court, _c) => {
       const courtPlayers = court.flat();
 
       // If at least one bye-placeholder player exists on this court/round then all
@@ -120,16 +118,12 @@ const resolveByesByRound = (scheduleRounds: Rounds) => {
           ...courtPlayers.filter(p => p.firstName !== '(Bye)'),
         ];
       } else {
-        // All real players, include this round/court in the schedule.
-        playableSchedule[r] = playableSchedule[r] || [];
-        playableSchedule[r][c] = scheduleRounds[r][c];
+        thisRoundCourtsUsed++;
       }
     });
+
+    maxCourtsUsed = Math.max(thisRoundCourtsUsed, maxCourtsUsed);
   });
 
-  // We're reducing court usage by removing non-playable matches. Determine the maxiumum
-  // number of courts used - will always be <= to courts made available.
-  const maxCourtsUsed = Math.max(...playableSchedule.map(r => r.length));
-
-  return { byePlayers, playableSchedule: scheduleRounds, maxCourtsUsed };
+  return { byePlayers, maxCourtsUsed };
 };
