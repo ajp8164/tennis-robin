@@ -1,38 +1,21 @@
-import React, { useContext, useMemo } from 'react';
+import React from 'react';
 import { ScrollView } from 'react-native';
 
 import { Divider, useTheme } from '@react-native-hello/ui';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { EmptyView } from 'components/molecules/EmptyView';
 import ScheduleRoundView from 'components/molecules/ScheduleRoundView';
-import { useDocument } from 'firebase/firestore';
-import {
-  PlayerSwapProvider,
-  SportEventEditorContext,
-  decodeSportEvent,
-} from 'lib/sportEvent';
+import { useSportEvent } from 'lib/sportEvent';
 import { SportEventsNavigatorParamList } from 'types/navigation';
-import { SportEventEncoded } from 'types/sportEvent';
 
 export type Props = NativeStackScreenProps<
   SportEventsNavigatorParamList,
   'SportEventSchedule'
 >;
 
-const SportEventScheduleScreen = ({ route }: Props) => {
-  const { sportEventId } = route.params || {};
-
+const SportEventScheduleScreen = () => {
   const theme = useTheme();
-  const workingState = useContext(SportEventEditorContext);
-
-  const { doc: sportEventEncoded } = useDocument<SportEventEncoded>(
-    'SportEvents',
-    sportEventId,
-  );
-
-  const sportEvent =
-    useMemo(() => decodeSportEvent(sportEventEncoded), [sportEventEncoded]) ||
-    workingState.sportEvent;
+  const { sportEvent } = useSportEvent();
 
   if (!sportEvent) {
     return (
@@ -50,17 +33,15 @@ const SportEventScheduleScreen = ({ route }: Props) => {
       showsVerticalScrollIndicator={false}
       contentInsetAdjustmentBehavior={'automatic'}>
       <Divider />
-      <PlayerSwapProvider>
-        {sportEvent?.schedule
-          ? sportEvent.schedule?.allRounds.map((_round, r) => (
-              <ScheduleRoundView
-                key={`round-${r + 1}`}
-                r={r}
-                sportEventId={sportEvent.id || ''}
-              />
-            ))
-          : null}
-      </PlayerSwapProvider>
+      {sportEvent.schedule
+        ? sportEvent.schedule.allRounds?.map((_round, r) => (
+            <ScheduleRoundView
+              key={`round-${r + 1}`}
+              r={r}
+              sportEventId={sportEvent.id || ''}
+            />
+          ))
+        : null}
 
       <Divider />
     </ScrollView>

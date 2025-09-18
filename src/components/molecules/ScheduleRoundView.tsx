@@ -1,4 +1,4 @@
-import React, { useContext, useMemo } from 'react';
+import React from 'react';
 import { Alert, StyleProp, Text, View, ViewStyle } from 'react-native';
 
 import {
@@ -8,12 +8,11 @@ import {
   ThemeManager,
   useTheme,
 } from '@react-native-hello/ui';
-import { updateDocument, useDocument } from 'firebase/firestore';
+import { updateDocument } from 'firebase/firestore';
 import {
-  PlayerPosition,
-  PlayerSwapContext,
-  decodeSportEvent,
+  PlayerSwapPosition,
   encodeSportEvent,
+  useSportEvent,
 } from 'lib/sportEvent';
 import lodash from 'lodash';
 import { Player } from 'types/player';
@@ -33,28 +32,18 @@ export interface Props {
 }
 
 const ScheduleRoundView = (props: Props) => {
-  const {
-    containerStyle,
-    r,
-    roundLabel = true,
-    showScores,
-    sportEventId,
-  } = props;
+  const { containerStyle, r, roundLabel = true, showScores } = props;
 
   const theme = useTheme();
   const s = useStyles();
+  const {
+    playerSwapPosition,
+    sportEvent,
+    updatePlayerSwapPosition,
+    updateScheduleRounds,
+  } = useSportEvent();
 
-  const { doc: sportEventEncoded } = useDocument<SportEventEncoded>(
-    'SportEvents',
-    sportEventId,
-  );
-
-  const sportEvent = useMemo(
-    () => decodeSportEvent(sportEventEncoded),
-    [sportEventEncoded],
-  );
-
-  const schedule = sportEvent?.schedule
+  const schedule = sportEvent.schedule
     ? Object.assign({}, sportEvent.schedule)
     : undefined;
 
@@ -62,19 +51,19 @@ const ScheduleRoundView = (props: Props) => {
   // Not all users of this component may require the swap player swap feature.
   // If not then this context won't be used (no provider is wrapping the use of
   // this component).
-  const { swapSelection, setSwapSelection } = useContext(PlayerSwapContext);
+  // const { swapSelection, setSwapSelection } = useContext(PlayerSwapContext);
 
   const numberOfScores =
-    sportEvent?.gender === MatchGender.Mens
+    sportEvent.gender === MatchGender.Mens
       ? new Array(5).fill('') // 5 set match
       : new Array(3).fill(''); // 3 set match
 
-  const setSwap = (position: PlayerPosition) => {
-    if (!swapSelection) {
-      setSwapSelection(position);
+  const setSwap = (position: PlayerSwapPosition) => {
+    if (!playerSwapPosition) {
+      updatePlayerSwapPosition(position);
     } else {
       // Get path in rounds to each player.
-      const player1Path = `[${swapSelection.r}][${swapSelection.c}][${swapSelection.t}][${swapSelection.p}]`;
+      const player1Path = `[${playerSwapPosition.r}][${playerSwapPosition.c}][${playerSwapPosition.t}][${playerSwapPosition.p}]`;
       const player2Path = `[${position.r}][${position.c}][${position.t}][${position.p}]`;
 
       // Get each player at their round path.
@@ -83,7 +72,7 @@ const ScheduleRoundView = (props: Props) => {
 
       // Check validity of the requested assignments.
       // No player may be present in a round more than once.
-      const player1RoundPath = `[${swapSelection.r}]`;
+      const player1RoundPath = `[${playerSwapPosition.r}]`;
       const player2RoundPath = `[${position.r}]`;
 
       const player1RoundPlayers: Player[] = lodash
@@ -101,18 +90,27 @@ const ScheduleRoundView = (props: Props) => {
         (player1RoundPath !== player2RoundPath && p1Index < 0 && p2Index < 0)
       ) {
         // Set each player to the others value.
-        lodash.set(schedule!.allRounds, player1Path, player2);
-        lodash.set(schedule!.allRounds, player2Path, player1);
+        // lodash.set(schedule!.allRounds, player1Path, player2);
+        // lodash.set(schedule!.allRounds, player2Path, player1);
 
-        updateDocument<SportEventEncoded>(
-          'SportEvents',
-          encodeSportEvent({
-            ...sportEvent,
-            schedule: {
-              ...sportEvent.schedule!,
-            },
-          }),
-        );
+        updateScheduleRounds({
+          ...sportEvent.schedule!.allRounds,
+          ...lodash.set(sportEvent.schedule!.allRounds, player1Path, player2),
+        });
+        updateScheduleRounds({
+          ...sportEvent.schedule!.allRounds,
+          ...lodash.set(sportEvent.schedule!.allRounds, player2Path, player1),
+        });
+
+        // updateDocument<SportEventEncoded>(
+        //   'SportEvents',
+        //   encodeSportEvent({
+        //     ...sportEvent,
+        //     schedule: {
+        //       ...sportEvent.schedule!,
+        //     },
+        //   }),
+        // );
       } else {
         Alert.alert(
           'Illegal Assignment',
@@ -123,7 +121,7 @@ const ScheduleRoundView = (props: Props) => {
       }
 
       // Clear swap selection.
-      setSwapSelection(undefined);
+      updatePlayerSwapPosition(undefined);
     }
   };
 
@@ -202,7 +200,7 @@ const ScheduleRoundView = (props: Props) => {
                   <Text
                     style={[
                       s.player,
-                      lodash.isEqual(swapSelection, { r, c, t: 0, p: 0 })
+                      lodash.isEqual(playerSwapPosition, { r, c, t: 0, p: 0 })
                         ? s.playerSelected
                         : {},
                     ]}
@@ -214,7 +212,7 @@ const ScheduleRoundView = (props: Props) => {
                     <Text
                       style={[
                         s.player,
-                        lodash.isEqual(swapSelection, { r, c, t: 0, p: 1 })
+                        lodash.isEqual(playerSwapPosition, { r, c, t: 0, p: 1 })
                           ? s.playerSelected
                           : {},
                       ]}
@@ -229,7 +227,7 @@ const ScheduleRoundView = (props: Props) => {
                   <Text
                     style={[
                       s.player,
-                      lodash.isEqual(swapSelection, { r, c, t: 1, p: 0 })
+                      lodash.isEqual(playerSwapPosition, { r, c, t: 1, p: 0 })
                         ? s.playerSelected
                         : {},
                     ]}
@@ -241,7 +239,7 @@ const ScheduleRoundView = (props: Props) => {
                     <Text
                       style={[
                         s.player,
-                        lodash.isEqual(swapSelection, { r, c, t: 1, p: 1 })
+                        lodash.isEqual(playerSwapPosition, { r, c, t: 1, p: 1 })
                           ? s.playerSelected
                           : {},
                       ]}
@@ -274,10 +272,11 @@ const ScheduleRoundView = (props: Props) => {
               if (court[t][p].firstName !== '(Bye)') {
                 return (
                   <Text
+                    key={`byes-${c + 1}]`}
                     style={[
                       s.player,
                       s.byePlayer,
-                      lodash.isEqual(swapSelection, { r, c, t, p })
+                      lodash.isEqual(playerSwapPosition, { r, c, t, p })
                         ? s.playerSelected
                         : {},
                     ]}
@@ -298,12 +297,12 @@ const ScheduleRoundView = (props: Props) => {
   // Scores - Rounds, court, set, team
   const renderScores = (r: number, c: number) => {
     return (
-      <View style={s.scoresContainer}>
+      <View key={`scores-${r}-${c}`} style={s.scoresContainer}>
         {/* Home */}
         <View style={s.scoresRow}>
           {numberOfScores.map((_set, set) => (
             <Input
-              key={`${set}`}
+              key={`scores-home-${set}`}
               caretHidden
               selectTextOnFocus
               selectionColor={theme.colors.brandSecondary}
@@ -329,7 +328,7 @@ const ScheduleRoundView = (props: Props) => {
         <View style={s.scoresRow}>
           {numberOfScores.map((_set, set) => (
             <Input
-              key={`${set}`}
+              key={`scores-away-${set}`}
               caretHidden
               selectTextOnFocus
               selectionColor={theme.colors.brandSecondary}

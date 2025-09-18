@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   FlatList,
   Keyboard,
@@ -56,10 +56,10 @@ import { useUserProfile } from 'lib/auth';
 import { usePlayerStatusDecoration } from 'lib/player';
 import {
   Scheduler,
-  SportEventEditorContext,
   decodeSportEvent,
   encodeSportEvent,
   schedulers,
+  useSportEvent,
 } from 'lib/sportEvent';
 import { useSelectedTeam } from 'lib/team';
 import { CircleMinus, EyeOff } from 'lucide-react-native';
@@ -69,12 +69,7 @@ import {
   SportEventsNavigatorParamList,
 } from 'types/navigation';
 import { Player } from 'types/player';
-import {
-  MatchGender,
-  MatchType,
-  SportEvent,
-  SportEventEncoded,
-} from 'types/sportEvent';
+import { MatchGender, MatchType, SportEventEncoded } from 'types/sportEvent';
 import { Team } from 'types/team';
 import * as Yup from 'yup';
 
@@ -111,12 +106,7 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
   const { doc: userProfile } = useUserProfile();
   const { doc: selectedTeam } = useSelectedTeam();
 
-  const workingState = useContext(SportEventEditorContext);
-
-  // The sportEvent holds only ids. Use this state to load player objects.
-  // const [workingSportEventPlayers, setWorkingSportEventPlayers] = useState<
-  //   Player[]
-  // >([]);
+  const workingState = useSportEvent();
 
   const [scheduler, setScheduler] = useState<Scheduler>();
 
@@ -212,7 +202,7 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
   useEffect(() => {
     if (!sportEventLoading) {
       if (sportEvent) {
-        workingState.sportEvent = sportEvent;
+        workingState.updateSportEvent(sportEvent);
 
         // Reinitialize state with a loaded sportEvent.
         const schedulerId = sportEvent.schedule?.schedulerId || '';
@@ -235,9 +225,12 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
   }, [sportEvent, sportEventLoading]); // Do not want workingState here
 
   useEffect(() => {
+    console.log('SCHEDULE CHANGE');
+  }, [workingState]);
+
+  useEffect(() => {
     if (!sportEventPlayersLoading) {
-      workingState.players = sportEventPlayers;
-      // setWorkingSportEventPlayers(sportEventPlayers);
+      workingState.updatePlayers(sportEventPlayers);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sportEventPlayers, sportEventPlayersLoading]); // Do not want workingState here
@@ -316,7 +309,7 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
       event.removeListener('change-scheduler', onChangeScheduler);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [workingState.sportEvent]);
+  }, []);
 
   const onChangePlayers = async (result: EnumPickerResult) => {
     const { result: players } = await getDocuments<Player>('Players', {
@@ -330,9 +323,12 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
       players.map(p => p.id),
     );
 
-    workingState.sportEvent.players = formikRef.current?.values.players || [];
-    workingState.players = players;
+    workingState.updateSportEvent({
+      ...workingState.sportEvent,
+      players: formikRef.current?.values.players || [],
+    });
 
+    workingState.updatePlayers(players);
     updateSchedule({ players });
   };
 
@@ -347,7 +343,7 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
 
   const cancel = () => {
     // Clear our working state.
-    workingState.sportEvent = {} as SportEvent;
+    workingState.resetSportEvent();
     !sportEventId ? navigation.goBack() : formikRef.current?.resetForm();
   };
 
@@ -400,7 +396,7 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
     }
 
     // Clear our working state.
-    workingState.sportEvent = {} as SportEvent;
+    workingState.resetSportEvent();
   };
 
   const choosePlayers = () => {
@@ -420,13 +416,18 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
     if (index >= 0) {
       const wsep = [...workingState.players];
       wsep.splice(index, 1);
-      workingState.players = wsep;
+
+      workingState.updatePlayers(wsep);
 
       formikRef.current?.setFieldValue(
         'players',
         wsep.map(p => p.id!),
       );
-      workingState.sportEvent.players = formikRef.current?.values.players || [];
+
+      workingState.updateSportEvent({
+        ...workingState.sportEvent,
+        players: formikRef.current?.values.players || [],
+      });
     }
   };
 
@@ -494,7 +495,7 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
         ],
       }).then(({ result: players }) => {
         // Set the players and update the schedule.
-        workingState.players = players;
+        workingState.updatePlayers(players);
         updateSchedule({ players });
       });
     }
@@ -723,7 +724,6 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
                     rightContent={'chevron-right'}
                     onPress={() => {
                       navigation.navigate('SportEventSchedule', {
-                        sportEventId: workingState.sportEvent.id!,
                         screenTitle: workingState.sportEvent.name || 'Event',
                       });
                     }}

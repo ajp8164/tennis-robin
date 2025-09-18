@@ -42,7 +42,6 @@ export type NewSportEventNavigatorParamList = {
     playerId: string;
   };
   SportEventSchedule: {
-    sportEventId: string;
     screenTitle: string;
   };
 };
@@ -101,7 +100,6 @@ export type SportEventsNavigatorParamList = {
     screenTitle?: string;
   };
   SportEventSchedule: {
-    sportEventId: string;
     screenTitle: string;
   };
 };
