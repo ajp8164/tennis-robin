@@ -264,7 +264,7 @@ const ScheduleRoundView = (props: Props) => {
     // Return real bye players for the specified round (r) and court (c).
     // A bye player is a player not having the bye-placeholder in their name.
     return (
-      <View style={s.byesContainer}>
+      <View key={`byes-${c + 1}]`} style={s.byesContainer}>
         <Text style={{ ...theme.text.medium }}>{'Byes'}</Text>
         <View style={s.byes}>
           {court.map((team, t) => {
@@ -272,7 +272,7 @@ const ScheduleRoundView = (props: Props) => {
               if (court[t][p].firstName !== '(Bye)') {
                 return (
                   <Text
-                    key={`byes-${c + 1}]`}
+                    key={`bye-player-${c + 1}]`}
                     style={[
                       s.player,
                       s.byePlayer,
