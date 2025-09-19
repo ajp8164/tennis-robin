@@ -11,6 +11,7 @@ type SportEventStore = {
   scheduleRoundsVersion: number;
   sportEvent: SportEvent;
   sportEventInitialValue: SportEvent;
+  clear: () => void;
   initializePlayers: (players: Player[]) => void;
   initializeSportEvent: (sportEvent: SportEvent) => void;
   reset: () => void;
@@ -51,6 +52,11 @@ const initialState = {
 
 export const useSportEvent = create<SportEventStore>(set => ({
   ...initialState,
+  clear: () =>
+    set(_state => ({
+      ...initialState,
+    })),
+
   initializePlayers: players =>
     set({
       players,

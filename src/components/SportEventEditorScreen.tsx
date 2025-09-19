@@ -156,12 +156,12 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
 
   const [initialValues, setInitialValues] = useState<FormValues>({
     schedulerId: '',
-    name: workingState.sportEvent.name,
-    date: workingState.sportEvent.date,
-    location: workingState.sportEvent.location,
-    numberOfCourts: workingState.sportEvent.numberOfCourts,
-    gender: workingState.sportEvent.gender,
-    players: workingState.sportEvent.players,
+    name: '',
+    date: DateTime.now().toISO(),
+    location: '',
+    numberOfCourts: 1,
+    gender: MatchGender.Mens,
+    players: [],
     scheduleRoundsVersion: 0,
   });
 
@@ -189,6 +189,12 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
 
   const listEditorRef = useRef<ListEditorMethods>(null);
   const [listEditorState, setListEditorState] = useState<ListEditorState>();
+
+  useEffect(() => {
+    // Clear all of working state on unmount.
+    return () => workingState.clear();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Supports keyboard accessory view.
   // Ensures all refs are set.
@@ -224,6 +230,7 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
   }, [sportEvent, sportEventLoading]); // Do not want workingState here
 
   useEffect(() => {
+    // Tell the form we've changed so the schedule updates.
     formikRef.current?.setFieldValue(
       'scheduleRoundsVersion',
       workingState.scheduleRoundsVersion,
@@ -345,7 +352,6 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
 
   const save = () => {
     formikRef.current?.handleSubmit();
-    formikRef.current?.resetForm({ values: formikRef.current?.values });
     Keyboard.dismiss();
     if (!sportEventId) navigation.goBack();
   };
