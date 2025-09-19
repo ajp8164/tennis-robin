@@ -10,16 +10,15 @@ export type SportEvent = {
   date: string;
   location: string;
   numberOfCourts: number;
-  gender: MatchGender;
+  numberOfSets: number;
   owners: string[];
   players: string[];
   schedule?: Schedule;
 };
 
-export enum MatchGender {
-  Mens = 'Mens',
-  Womens = 'Womens',
-  Mixed = 'Mixed',
+export enum EventCategory {
+  Match = 'Match',
+  RoundRobin = 'Round Robin',
 }
 
 export enum MatchType {
@@ -55,7 +54,7 @@ export type SportEventEncoded = {
   date: string;
   location: string;
   numberOfCourts: number;
-  gender: MatchGender;
+  numberOfSets: number;
   owners: string[];
   players: string[];
   schedule?: ScheduleEncoded;

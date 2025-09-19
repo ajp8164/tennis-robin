@@ -22,7 +22,6 @@ import {
   ListEditorState,
   ListItem,
   ListItemDateTime,
-  ListItemSegmented,
   ListItemSwipeable,
   ThemeManager,
   listItemPosition,
@@ -69,7 +68,7 @@ import {
   SportEventsNavigatorParamList,
 } from 'types/navigation';
 import { Player } from 'types/player';
-import { MatchGender, SportEventEncoded } from 'types/sportEvent';
+import { SportEventEncoded } from 'types/sportEvent';
 import { Team } from 'types/team';
 import * as Yup from 'yup';
 
@@ -90,7 +89,7 @@ type FormValues = {
   date: ISODateString;
   location: string;
   numberOfCourts: number;
-  gender: MatchGender;
+  numberOfSets: number;
   players: string[];
   scheduleRoundsVersion: number;
 };
@@ -157,10 +156,13 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
   const [initialValues, setInitialValues] = useState<FormValues>({
     schedulerId: '',
     name: '',
-    date: DateTime.now().toISO(),
+    date: DateTime.now()
+      .plus({ day: 1 })
+      .set({ hour: 9, minute: 0, second: 0, millisecond: 0 })
+      .toISO(),
     location: '',
     numberOfCourts: 1,
-    gender: MatchGender.Mens,
+    numberOfSets: 3,
     players: [],
     scheduleRoundsVersion: 0,
   });
@@ -171,7 +173,7 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
     date: Yup.string().required(),
     location: Yup.string(),
     numberOfCourts: Yup.number().min(1).required(),
-    gender: Yup.string().required(),
+    numberOfSets: Yup.number().min(2).required(),
     players: Yup.array().of(Yup.string()),
     scheduleRoundsVersion: Yup.number(),
   });
@@ -217,7 +219,7 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
           date: sportEvent.date,
           location: sportEvent.location,
           numberOfCourts: sportEvent.numberOfCourts,
-          gender: sportEvent.gender,
+          numberOfSets: sportEvent.numberOfSets,
           players: sportEvent.players,
           scheduleRoundsVersion: 0,
         });
@@ -367,7 +369,7 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
           owners: [],
           location: values.location,
           numberOfCourts: values.numberOfCourts,
-          gender: values.gender,
+          numberOfSets: values.numberOfSets,
           players: values.players,
         }),
       );
@@ -380,7 +382,7 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
           date: values.date,
           location: values.location,
           numberOfCourts: values.numberOfCourts,
-          gender: values.gender,
+          numberOfSets: values.numberOfSets,
           owners: userProfile ? [userProfile.id!] : [], // Should always be an id
           players: values.players,
         }),
@@ -433,17 +435,6 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
     }
   };
 
-  const onGenderSelect = (index: number) => {
-    formikRef.current?.setFieldValue(
-      'gender',
-      index === 0
-        ? MatchGender.Mens
-        : index === 1
-          ? MatchGender.Womens
-          : MatchGender.Mixed,
-    );
-  };
-
   const onFormikWatcherStateChange = (
     state: FormikWatcherState<FormValues>,
   ) => {
@@ -459,7 +450,7 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
       date: next.values.date,
       location: next.values.location,
       numberOfCourts: next.values.numberOfCourts,
-      gender: next.values.gender,
+      numberOfSets: next.values.numberOfSets,
       players: next.values.players,
     };
 
@@ -581,7 +572,7 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
                     title={scheduler?.name || 'Choose Your Match Scheduler'}
                     subtitle={
                       scheduler?.description ||
-                      'The scheduler calculates all match round, court, and player assignments. If desired, you can make manual chnages later.'
+                      'The scheduler calculates all match round, court, and player assignments. You can also make manual player assignments.'
                     }
                     subtitleLines={5}
                     position={['first', 'last']}
@@ -601,8 +592,8 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
                         values: schedulers.map(s => {
                           return {
                             id: s.id,
-                            title: s.name,
-                            subtitle: s.description,
+                            title: s.eventCategory,
+                            subtitle: `${s.name}\n${s.description}`,
                             leftIcon: { icon: s.icon },
                           };
                         }) as EnumPickerValue[],
@@ -631,9 +622,12 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
                   />
                   <ListItemDateTime
                     title={'Date'}
-                    value={DateTime.fromISO(values.date).toFormat(
-                      "MMM d, yyyy 'at' h:mm a",
-                    )}
+                    subtitle={`${DateTime.fromISO(values.date).toFormat(
+                      'MMM d',
+                    )}${DateTime.fromISO(values.date)
+                      .toFormat(" 'at' h:mma")
+                      .toLowerCase()}`}
+                    value={DateTime.fromISO(values.date).toRelativeCalendar()}
                     minimumDate={DateTime.now().toJSDate()}
                     maximumDate={DateTime.now().plus({ years: 100 }).toJSDate()}
                     mode={'datetime'}
@@ -642,19 +636,6 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
                     accentColor={theme.colors.brandSecondary}
                     onPress={() => setExpandedDate(!expandedDate)}
                     onChange={onDateChange}
-                  />
-                  <ListItemSegmented
-                    title={'Gender'}
-                    segmentWidth={80}
-                    index={
-                      values.gender === MatchGender.Mens
-                        ? 0
-                        : values.gender === MatchGender.Womens
-                          ? 1
-                          : 2
-                    }
-                    onChangeIndex={onGenderSelect}
-                    segments={['Mens', 'Womens', 'Mixed']}
                   />
                   <ListItemInput
                     ref={locationFieldRef}
@@ -671,6 +652,13 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
                       placeholder: 'Location',
                       autoCapitalize: 'words',
                     }}
+                  />
+                  <ListItemStepper
+                    title={'Number of Sets'}
+                    initialValue={values.numberOfSets}
+                    min={2}
+                    max={10}
+                    onChange={value => setFieldValue('numberOfSets', value)}
                   />
                   <ListItemStepper
                     title={'Number of Courts'}

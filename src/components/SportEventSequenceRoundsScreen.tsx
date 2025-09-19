@@ -15,7 +15,7 @@ import { Button } from 'components/atoms/Button';
 import { EmptyView } from 'components/molecules/EmptyView';
 import ScheduleRoundView from 'components/molecules/ScheduleRoundView';
 import { useDocument } from 'firebase/firestore';
-import { decodeSportEvent } from 'lib/sportEvent';
+import { decodeSportEvent, useSportEvent } from 'lib/sportEvent';
 import { ChevronRight } from 'lucide-react-native';
 import { SportEventSequenceNavigatorParamList } from 'types/navigation';
 import { SportEventEncoded } from 'types/sportEvent';
@@ -32,18 +32,27 @@ const SportEventRoundsScreen = ({ navigation, route }: Props) => {
   const s = useStyles();
   const device = useDevice();
 
-  const { doc: sportEventEncoded } = useDocument<SportEventEncoded>(
-    'SportEvents',
-    sportEventId,
-  );
+  const { sportEvent, initializeSportEvent } = useSportEvent();
 
-  const sportEvent = useMemo(
+  const { doc: sportEventEncoded, loading: sportEventLoading } =
+    useDocument<SportEventEncoded>('SportEvents', sportEventId);
+
+  const sportEventDecoded = useMemo(
     () => decodeSportEvent(sportEventEncoded),
     [sportEventEncoded],
   );
 
   const carouselRef = useRef<CarouselMethods>(null);
   const [activeSlide, setActiveSlide] = useState(0);
+
+  useEffect(() => {
+    if (!sportEventLoading) {
+      if (sportEventDecoded) {
+        initializeSportEvent(sportEventDecoded);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sportEventDecoded, sportEventLoading]); // Do not want workingState here
 
   useEffect(() => {
     navigation.setOptions({
@@ -91,7 +100,6 @@ const SportEventRoundsScreen = ({ navigation, route }: Props) => {
             style={s.carouselPageTop}>
             <ScheduleRoundView
               r={r}
-              sportEventId={sportEvent.id || ''}
               roundLabel={false}
               showScores
               containerStyle={s.roundViewContainer}

@@ -1,7 +1,7 @@
 import lodash from 'lodash';
 import { DateTime } from 'luxon';
 import { Player } from 'types/player';
-import { MatchGender, SportEvent } from 'types/sportEvent';
+import { SportEvent } from 'types/sportEvent';
 import { create } from 'zustand';
 
 type SportEventStore = {
@@ -36,7 +36,7 @@ const defaultSportEvent: SportEvent = {
   date: now,
   location: '',
   numberOfCourts: 1,
-  gender: MatchGender.Mens,
+  numberOfSets: 2,
   owners: [],
   players: [],
 };

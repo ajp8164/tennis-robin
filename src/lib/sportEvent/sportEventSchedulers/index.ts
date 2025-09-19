@@ -1,5 +1,5 @@
 import { Player } from 'types/player';
-import { MatchType, Schedule } from 'types/sportEvent';
+import { EventCategory, MatchType, Schedule } from 'types/sportEvent';
 
 import { uniquePartnerDoubles } from './uniquePartnerDoubles';
 
@@ -10,6 +10,7 @@ export type Scheduler = {
   name: string;
   description: string;
   typeOfMatch: MatchType;
+  eventCategory: EventCategory;
   icon: string;
   fn: (players: Player[], courts: number) => Schedule | undefined;
 };
@@ -20,6 +21,7 @@ export const schedulers: Scheduler[] = [
     name: 'Singles',
     description: 'One player each team.',
     typeOfMatch: MatchType.Singles,
+    eventCategory: EventCategory.Match,
     icon: 'Users',
     fn: uniquePartnerDoubles,
   },
@@ -29,6 +31,7 @@ export const schedulers: Scheduler[] = [
     description:
       'Players are grouped into pairs. Each player partners with every other player exactly once. No pair repeats.',
     typeOfMatch: MatchType.Doubles,
+    eventCategory: EventCategory.RoundRobin,
     icon: 'Users',
     fn: uniquePartnerDoubles,
   },

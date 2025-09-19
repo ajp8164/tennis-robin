@@ -142,7 +142,11 @@ const SportEventsScreen = ({ navigation }: Props) => {
     index,
   }) => {
     const playerCount = `${sportEvent.players.length} Player${sportEvent.players.length !== 1 ? 's' : ''}`;
-    const locationTime = `${sportEvent.location ? sportEvent.location + '\n' : ''}${DateTime.fromISO(sportEvent.date).toFormat("M/d 'at' h:mm")}`;
+    const locationTime = `${sportEvent.location ? sportEvent.location + '\n' : ''}${DateTime.fromISO(
+      sportEvent.date,
+    ).toFormat('MMM d')}${DateTime.fromISO(sportEvent.date)
+      .toFormat(" 'at' h:mma")
+      .toLowerCase()}`;
 
     return (
       <ListItemSwipeable
