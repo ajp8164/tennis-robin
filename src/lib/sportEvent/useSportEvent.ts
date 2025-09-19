@@ -1,3 +1,4 @@
+import lodash from 'lodash';
 import { DateTime } from 'luxon';
 import { Player } from 'types/player';
 import { MatchGender, MatchType, SportEvent } from 'types/sportEvent';
@@ -6,8 +7,11 @@ import { create } from 'zustand';
 type SportEventStore = {
   players: Player[];
   playerSwapPosition?: PlayerSwapPosition;
+  scheduleRoundsChanged: boolean;
   sportEvent: SportEvent;
-  resetSportEvent: () => void;
+  sportEventInitialValue: SportEvent;
+  initializeSportEvent: (sportEvent: SportEvent) => void;
+  reset: () => void;
   updatePlayers: (players: Player[]) => void;
   updatePlayerSwapPosition: (playerPosition?: PlayerSwapPosition) => void;
   updateScheduleRounds: (rounds: Player[][][][]) => void;
@@ -35,16 +39,34 @@ const defaultSportEvent: SportEvent = {
   players: [],
 };
 
-export const useSportEvent = create<SportEventStore>(set => ({
+const initialState = {
   players: [],
   playerSwapPosition: undefined,
+  scheduleRoundsChanged: false,
   sportEvent: defaultSportEvent,
-  resetSportEvent: () => set({ sportEvent: defaultSportEvent }),
+  sportEventInitialValue: defaultSportEvent,
+};
+
+export const useSportEvent = create<SportEventStore>(set => ({
+  ...initialState,
+  initializeSportEvent: sportEvent =>
+    set({
+      sportEvent,
+      sportEventInitialValue: lodash.cloneDeep(sportEvent),
+    }),
+  reset: () =>
+    set(state => ({
+      ...state,
+      sportEvent: lodash.cloneDeep(state.sportEventInitialValue),
+      scheduleRoundsChanged: false,
+    })),
   updatePlayers: players => set({ players }),
   updatePlayerSwapPosition: playerSwapPosition => set({ playerSwapPosition }),
   updateScheduleRounds: rounds =>
     set(state => ({
       sportEvent: { ...state.sportEvent, allRounds: rounds },
+      scheduleRoundsChanged: true,
     })),
-  updateSportEvent: sportEvent => set({ sportEvent }),
+  updateSportEvent: sportEvent =>
+    set({ sportEvent: lodash.cloneDeep(sportEvent) }),
 }));

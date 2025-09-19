@@ -93,6 +93,7 @@ type FormValues = {
   gender: MatchGender;
   typeOfMatch: MatchType;
   players: string[];
+  scheduleRoundsChanged: boolean;
 };
 
 const SportEventEditorScreen = ({ navigation, route }: Props) => {
@@ -107,7 +108,6 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
   const { doc: selectedTeam } = useSelectedTeam();
 
   const workingState = useSportEvent();
-
   const [scheduler, setScheduler] = useState<Scheduler>();
 
   // *** Live sportEvent data ***
@@ -164,6 +164,7 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
     gender: workingState.sportEvent.gender,
     typeOfMatch: workingState.sportEvent.typeOfMatch,
     players: workingState.sportEvent.players,
+    scheduleRoundsChanged: false,
   });
 
   const schema = Yup.object().shape({
@@ -175,6 +176,7 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
     gender: Yup.string().required(),
     typeOfMatch: Yup.string().required(),
     players: Yup.array().of(Yup.string()),
+    scheduleRoundsChanged: Yup.boolean(),
   });
 
   const [expandedDate, setExpandedDate] = useState(false);
@@ -202,7 +204,7 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
   useEffect(() => {
     if (!sportEventLoading) {
       if (sportEvent) {
-        workingState.updateSportEvent(sportEvent);
+        workingState.initializeSportEvent(sportEvent);
 
         // Reinitialize state with a loaded sportEvent.
         const schedulerId = sportEvent.schedule?.schedulerId || '';
@@ -215,6 +217,7 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
           gender: sportEvent.gender,
           typeOfMatch: sportEvent.typeOfMatch,
           players: sportEvent.players,
+          scheduleRoundsChanged: false,
         });
 
         const scheduler = schedulers.find(s => s.id === schedulerId);
@@ -225,8 +228,11 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
   }, [sportEvent, sportEventLoading]); // Do not want workingState here
 
   useEffect(() => {
-    console.log('SCHEDULE CHANGE');
-  }, [workingState]);
+    formikRef.current?.setFieldValue(
+      'scheduleRoundsChanged',
+      workingState.scheduleRoundsChanged,
+    );
+  }, [workingState.scheduleRoundsChanged]);
 
   useEffect(() => {
     if (!sportEventPlayersLoading) {
@@ -287,10 +293,7 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
               disabledStyle={theme.styles.buttonScreenHeaderDisabled}
               disabled={!formikCanSubmit}
               headerRight
-              onPress={() => {
-                save();
-                if (!sportEventId) navigation.goBack();
-              }}
+              onPress={save}
             />
           </>
         );
@@ -342,8 +345,8 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
   };
 
   const cancel = () => {
-    // Clear our working state.
-    workingState.resetSportEvent();
+    // Reset our working state.
+    workingState.reset();
     !sportEventId ? navigation.goBack() : formikRef.current?.resetForm();
   };
 
@@ -351,6 +354,7 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
     formikRef.current?.handleSubmit();
     formikRef.current?.resetForm({ values: formikRef.current?.values });
     Keyboard.dismiss();
+    if (!sportEventId) navigation.goBack();
   };
 
   const onSubmit = async (values: FormValues) => {
@@ -395,8 +399,8 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
       }
     }
 
-    // Clear our working state.
-    workingState.resetSportEvent();
+    // Reset our working state.
+    workingState.reset();
   };
 
   const choosePlayers = () => {
