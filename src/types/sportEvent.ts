@@ -10,7 +10,6 @@ export type SportEvent = {
   date: string;
   location: string;
   numberOfCourts: number;
-  typeOfMatch: MatchType;
   gender: MatchGender;
   owners: string[];
   players: string[];
@@ -56,7 +55,6 @@ export type SportEventEncoded = {
   date: string;
   location: string;
   numberOfCourts: number;
-  typeOfMatch: MatchType;
   gender: MatchGender;
   owners: string[];
   players: string[];

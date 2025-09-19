@@ -35,11 +35,7 @@ const SportEventScheduleScreen = () => {
       <Divider />
       {sportEvent.schedule
         ? sportEvent.schedule.allRounds?.map((_round, r) => (
-            <ScheduleRoundView
-              key={`round-${r + 1}`}
-              r={r}
-              sportEventId={sportEvent.id || ''}
-            />
+            <ScheduleRoundView key={`round-${r + 1}`} r={r} />
           ))
         : null}
 

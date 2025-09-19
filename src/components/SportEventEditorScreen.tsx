@@ -69,7 +69,7 @@ import {
   SportEventsNavigatorParamList,
 } from 'types/navigation';
 import { Player } from 'types/player';
-import { MatchGender, MatchType, SportEventEncoded } from 'types/sportEvent';
+import { MatchGender, SportEventEncoded } from 'types/sportEvent';
 import { Team } from 'types/team';
 import * as Yup from 'yup';
 
@@ -91,9 +91,8 @@ type FormValues = {
   location: string;
   numberOfCourts: number;
   gender: MatchGender;
-  typeOfMatch: MatchType;
   players: string[];
-  scheduleRoundsChanged: boolean;
+  scheduleRoundsVersion: number;
 };
 
 const SportEventEditorScreen = ({ navigation, route }: Props) => {
@@ -162,9 +161,8 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
     location: workingState.sportEvent.location,
     numberOfCourts: workingState.sportEvent.numberOfCourts,
     gender: workingState.sportEvent.gender,
-    typeOfMatch: workingState.sportEvent.typeOfMatch,
     players: workingState.sportEvent.players,
-    scheduleRoundsChanged: false,
+    scheduleRoundsVersion: 0,
   });
 
   const schema = Yup.object().shape({
@@ -174,9 +172,8 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
     location: Yup.string(),
     numberOfCourts: Yup.number().min(1).required(),
     gender: Yup.string().required(),
-    typeOfMatch: Yup.string().required(),
     players: Yup.array().of(Yup.string()),
-    scheduleRoundsChanged: Yup.boolean(),
+    scheduleRoundsVersion: Yup.number(),
   });
 
   const [expandedDate, setExpandedDate] = useState(false);
@@ -215,9 +212,8 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
           location: sportEvent.location,
           numberOfCourts: sportEvent.numberOfCourts,
           gender: sportEvent.gender,
-          typeOfMatch: sportEvent.typeOfMatch,
           players: sportEvent.players,
-          scheduleRoundsChanged: false,
+          scheduleRoundsVersion: 0,
         });
 
         const scheduler = schedulers.find(s => s.id === schedulerId);
@@ -229,14 +225,14 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
 
   useEffect(() => {
     formikRef.current?.setFieldValue(
-      'scheduleRoundsChanged',
-      workingState.scheduleRoundsChanged,
+      'scheduleRoundsVersion',
+      workingState.scheduleRoundsVersion,
     );
-  }, [workingState.scheduleRoundsChanged]);
+  }, [workingState.scheduleRoundsVersion]);
 
   useEffect(() => {
     if (!sportEventPlayersLoading) {
-      workingState.updatePlayers(sportEventPlayers);
+      workingState.initializePlayers(sportEventPlayers);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sportEventPlayers, sportEventPlayersLoading]); // Do not want workingState here
@@ -321,32 +317,29 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
 
     // Set the array of ids on the form, set the populated player objects and update
     // our working state.
-    formikRef.current?.setFieldValue(
-      'players',
-      players.map(p => p.id),
-    );
-
-    workingState.updateSportEvent({
-      ...workingState.sportEvent,
-      players: formikRef.current?.values.players || [],
-    });
+    const playerIds = (players.map(p => p.id) || []) as string[];
+    formikRef.current?.setFieldValue('players', playerIds);
 
     workingState.updatePlayers(players);
-    updateSchedule({ players });
   };
 
   const onChangeScheduler = async (result: EnumPickerResult) => {
     const schedulerId = result.value[0];
     formikRef.current?.setFieldValue('schedulerId', schedulerId);
-    updateSchedule({ schedulerId });
 
     const scheduler = schedulers.find(s => s.id === schedulerId);
     setScheduler(scheduler);
   };
 
   const cancel = () => {
-    // Reset our working state.
+    // Reset the sport event to initial values.
     workingState.reset();
+
+    const scheduler = schedulers.find(
+      s => s.id === workingState.sportEvent.schedule?.schedulerId,
+    );
+    setScheduler(scheduler);
+
     !sportEventId ? navigation.goBack() : formikRef.current?.resetForm();
   };
 
@@ -365,10 +358,10 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
           ...workingState.sportEvent,
           name: values.name,
           date: values.date,
+          owners: [],
           location: values.location,
           numberOfCourts: values.numberOfCourts,
           gender: values.gender,
-          typeOfMatch: values.typeOfMatch,
           players: values.players,
         }),
       );
@@ -382,12 +375,10 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
           location: values.location,
           numberOfCourts: values.numberOfCourts,
           gender: values.gender,
-          typeOfMatch: values.typeOfMatch,
           owners: userProfile ? [userProfile.id!] : [], // Should always be an id
           players: values.players,
         }),
       );
-
       // Associate the new sportEvent with my selected team.
       if (selectedTeam && newSportEvent.id) {
         updateDocument<Team>('Teams', {
@@ -398,9 +389,6 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
         } as Team);
       }
     }
-
-    // Reset our working state.
-    workingState.reset();
   };
 
   const choosePlayers = () => {
@@ -427,11 +415,6 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
         'players',
         wsep.map(p => p.id!),
       );
-
-      workingState.updateSportEvent({
-        ...workingState.sportEvent,
-        players: formikRef.current?.values.players || [],
-      });
     }
   };
 
@@ -455,35 +438,6 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
     );
   };
 
-  const onTypeOfMatchSelect = (index: number) => {
-    formikRef.current?.setFieldValue(
-      'typeOfMatch',
-      index === 0 ? MatchType.Singles : MatchType.Doubles,
-    );
-  };
-
-  const updateSchedule = ({
-    numberOfCourts,
-    players,
-    schedulerId,
-  }: {
-    numberOfCourts?: number;
-    players?: Player[];
-    schedulerId?: string;
-  } = {}) => {
-    // Get the schedular details.
-    const id = schedulerId || workingState.sportEvent.schedule?.schedulerId;
-    const scheduler = schedulers.find(s => s.id === id);
-
-    // Run the scheduler function.
-    const updated = scheduler?.fn(
-      players || workingState.players,
-      numberOfCourts || workingState.sportEvent.numberOfCourts,
-    );
-
-    workingState.sportEvent.schedule = updated;
-  };
-
   const onFormikWatcherStateChange = (
     state: FormikWatcherState<FormValues>,
   ) => {
@@ -491,17 +445,33 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
     const canSubmit = next.dirty && isValid;
     setFormikCanSubmit(canSubmit);
 
-    // Update the populated players list to match the player ids on the form.
-    if (changedFields.includes('players')) {
-      getDocuments<Player>('Players', {
-        where: [
-          { fieldPath: documentId(), opStr: 'in', value: next.values.players },
-        ],
-      }).then(({ result: players }) => {
-        // Set the players and update the schedule.
-        workingState.updatePlayers(players);
-        updateSchedule({ players });
-      });
+    if (!changedFields.length) return;
+
+    const updatedSportEvent = {
+      ...workingState.sportEvent,
+      name: next.values.name,
+      date: next.values.date,
+      location: next.values.location,
+      numberOfCourts: next.values.numberOfCourts,
+      gender: next.values.gender,
+      players: next.values.players,
+    };
+
+    // Run the scheduler function.
+    if (!changedFields.includes('scheduleRoundsVersion')) {
+      const updated = scheduler?.fn(
+        workingState.players,
+        next.values.numberOfCourts,
+      );
+
+      if (updated) {
+        workingState.updateSportEvent({
+          ...updatedSportEvent,
+          schedule: updated,
+        });
+      }
+    } else {
+      workingState.updateSportEvent(updatedSportEvent);
     }
   };
 
@@ -680,13 +650,6 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
                     onChangeIndex={onGenderSelect}
                     segments={['Mens', 'Womens', 'Mixed']}
                   />
-                  <ListItemSegmented
-                    title={'Type of Match'}
-                    segmentWidth={80}
-                    index={values.typeOfMatch === MatchType.Singles ? 0 : 1}
-                    onChangeIndex={onTypeOfMatchSelect}
-                    segments={['Singles', 'Doubles']}
-                  />
                   <ListItemInput
                     ref={locationFieldRef}
                     error={!!errors.location}
@@ -709,16 +672,13 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
                     initialValue={values.numberOfCourts}
                     min={1}
                     max={10}
-                    onChange={value => {
-                      setFieldValue('numberOfCourts', value);
-                      updateSchedule({ numberOfCourts: value });
-                    }}
+                    onChange={value => setFieldValue('numberOfCourts', value)}
                   />
                 </View>
               )}
             </Formik>
             <Animated.View entering={FadeIn}>
-              {workingState.players.length ? (
+              {scheduler && workingState.players.length ? (
                 <>
                   <Divider />
                   <ListItem

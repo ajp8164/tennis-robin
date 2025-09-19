@@ -1,5 +1,5 @@
 import { Player } from 'types/player';
-import { Schedule } from 'types/sportEvent';
+import { MatchType, Schedule } from 'types/sportEvent';
 
 import { uniquePartnerDoubles } from './uniquePartnerDoubles';
 
@@ -9,15 +9,17 @@ export type Scheduler = {
   id: string;
   name: string;
   description: string;
+  typeOfMatch: MatchType;
   icon: string;
   fn: (players: Player[], courts: number) => Schedule | undefined;
 };
 
-export const schedulers = [
+export const schedulers: Scheduler[] = [
   {
     id: 'singles',
     name: 'Singles',
     description: 'One player each team.',
+    typeOfMatch: MatchType.Singles,
     icon: 'Users',
     fn: uniquePartnerDoubles,
   },
@@ -26,6 +28,7 @@ export const schedulers = [
     name: 'Unique Partner Doubles',
     description:
       'Players are grouped into pairs. Each player partners with every other player exactly once. No pair repeats.',
+    typeOfMatch: MatchType.Doubles,
     icon: 'Users',
     fn: uniquePartnerDoubles,
   },

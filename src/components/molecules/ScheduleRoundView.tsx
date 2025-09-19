@@ -12,6 +12,7 @@ import { updateDocument } from 'firebase/firestore';
 import {
   PlayerSwapPosition,
   encodeSportEvent,
+  schedulers,
   useSportEvent,
 } from 'lib/sportEvent';
 import lodash from 'lodash';
@@ -28,7 +29,6 @@ export interface Props {
   r: number;
   roundLabel?: boolean;
   showScores?: boolean;
-  sportEventId: string;
 }
 
 const ScheduleRoundView = (props: Props) => {
@@ -46,6 +46,8 @@ const ScheduleRoundView = (props: Props) => {
   const schedule = sportEvent.schedule
     ? Object.assign({}, sportEvent.schedule)
     : undefined;
+
+  const scheduler = schedulers.find(s => s.id === schedule?.schedulerId);
 
   // Player swap first selection.
   // Not all users of this component may require the swap player swap feature.
@@ -90,27 +92,11 @@ const ScheduleRoundView = (props: Props) => {
         (player1RoundPath !== player2RoundPath && p1Index < 0 && p2Index < 0)
       ) {
         // Set each player to the others value.
-        // lodash.set(schedule!.allRounds, player1Path, player2);
-        // lodash.set(schedule!.allRounds, player2Path, player1);
+        const swapped = lodash.cloneDeep(sportEvent.schedule?.allRounds || []);
+        lodash.set(swapped, player1Path, player2);
+        lodash.set(swapped, player2Path, player1);
 
-        updateScheduleRounds({
-          ...sportEvent.schedule!.allRounds,
-          ...lodash.set(sportEvent.schedule!.allRounds, player1Path, player2),
-        });
-        updateScheduleRounds({
-          ...sportEvent.schedule!.allRounds,
-          ...lodash.set(sportEvent.schedule!.allRounds, player2Path, player1),
-        });
-
-        // updateDocument<SportEventEncoded>(
-        //   'SportEvents',
-        //   encodeSportEvent({
-        //     ...sportEvent,
-        //     schedule: {
-        //       ...sportEvent.schedule!,
-        //     },
-        //   }),
-        // );
+        updateScheduleRounds(swapped);
       } else {
         Alert.alert(
           'Illegal Assignment',
@@ -208,7 +194,7 @@ const ScheduleRoundView = (props: Props) => {
                     {`${court[0][0].firstName} ${court[0][0].lastName}` ||
                       'bye'}
                   </Text>
-                  {sportEvent.typeOfMatch === MatchType.Doubles ? (
+                  {scheduler?.typeOfMatch === MatchType.Doubles ? (
                     <Text
                       style={[
                         s.player,
@@ -235,7 +221,7 @@ const ScheduleRoundView = (props: Props) => {
                     {`${court[1][0].firstName} ${court[1][0].lastName}` ||
                       'bye'}
                   </Text>
-                  {sportEvent.typeOfMatch === MatchType.Doubles ? (
+                  {scheduler?.typeOfMatch === MatchType.Doubles ? (
                     <Text
                       style={[
                         s.player,
