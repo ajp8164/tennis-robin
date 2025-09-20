@@ -11,25 +11,23 @@ export type SportEvent = {
   location: string;
   numberOfCourts: number;
   numberOfSets: number;
+  courtSurface: CourtSurface;
   owners: string[];
   players: string[];
   schedule?: Schedule;
 };
 
-export enum EventCategory {
-  Match = 'Match',
-  RoundRobin = 'Round Robin',
-}
+export const CourtSurfaces = ['Hard', 'Clay', 'Grass', 'Other'] as const;
+export type CourtSurface = (typeof CourtSurfaces)[number];
 
-export enum MatchType {
-  Singles = 'Singles',
-  Doubles = 'Doubles',
-}
+export const EventCategories = ['Match', 'Round Robin', 'Other'] as const;
+export type EventCategory = (typeof EventCategories)[number];
 
-export enum TeamName {
-  Home = 0,
-  Away = 1,
-}
+export const MatchTypes = ['Singles', 'Doubles'] as const;
+export type MatchType = (typeof MatchTypes)[number];
+
+export const TeamSides = ['Home', 'Away'] as const;
+export type TeamSide = (typeof TeamSides)[number];
 
 export type Rounds = Player[][][][]; // Round, court, team, player
 export type Scores = number[][][][]; // Round, court, set, team (see enum TeamName for value)

@@ -37,6 +37,7 @@ const defaultSportEvent: SportEvent = {
   location: '',
   numberOfCourts: 1,
   numberOfSets: 2,
+  courtSurface: 'Other',
   owners: [],
   players: [],
 };

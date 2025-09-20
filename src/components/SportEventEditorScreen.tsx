@@ -22,6 +22,7 @@ import {
   ListEditorState,
   ListItem,
   ListItemDateTime,
+  ListItemSegmented,
   ListItemSwipeable,
   ThemeManager,
   listItemPosition,
@@ -68,7 +69,11 @@ import {
   SportEventsNavigatorParamList,
 } from 'types/navigation';
 import { Player } from 'types/player';
-import { SportEventEncoded } from 'types/sportEvent';
+import {
+  CourtSurface,
+  CourtSurfaces,
+  SportEventEncoded,
+} from 'types/sportEvent';
 import { Team } from 'types/team';
 import * as Yup from 'yup';
 
@@ -90,6 +95,7 @@ type FormValues = {
   location: string;
   numberOfCourts: number;
   numberOfSets: number;
+  courtSurface: CourtSurface;
   players: string[];
   scheduleRoundsVersion: number;
 };
@@ -163,6 +169,7 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
     location: '',
     numberOfCourts: 1,
     numberOfSets: 3,
+    courtSurface: 'Other',
     players: [],
     scheduleRoundsVersion: 0,
   });
@@ -174,6 +181,7 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
     location: Yup.string(),
     numberOfCourts: Yup.number().min(1).required(),
     numberOfSets: Yup.number().min(2).required(),
+    courtSurface: Yup.string().required(),
     players: Yup.array().of(Yup.string()),
     scheduleRoundsVersion: Yup.number(),
   });
@@ -220,6 +228,7 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
           location: sportEvent.location,
           numberOfCourts: sportEvent.numberOfCourts,
           numberOfSets: sportEvent.numberOfSets,
+          courtSurface: sportEvent.courtSurface,
           players: sportEvent.players,
           scheduleRoundsVersion: 0,
         });
@@ -370,6 +379,7 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
           location: values.location,
           numberOfCourts: values.numberOfCourts,
           numberOfSets: values.numberOfSets,
+          courtSurface: values.courtSurface,
           players: values.players,
         }),
       );
@@ -383,6 +393,7 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
           location: values.location,
           numberOfCourts: values.numberOfCourts,
           numberOfSets: values.numberOfSets,
+          courtSurface: values.courtSurface,
           owners: userProfile ? [userProfile.id!] : [], // Should always be an id
           players: values.players,
         }),
@@ -435,13 +446,17 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
     }
   };
 
+  const onSurfaceSelect = (index: number) => {
+    formikRef.current?.setFieldValue('courtSurface', CourtSurfaces[index]);
+  };
+
   const onFormikWatcherStateChange = (
     state: FormikWatcherState<FormValues>,
   ) => {
     const { next, isValid = false, changedFields } = state;
     const canSubmit = next.dirty && isValid;
     setFormikCanSubmit(canSubmit);
-
+    console.log(changedFields, next.dirty, isValid);
     if (!changedFields.length) return;
 
     const updatedSportEvent = {
@@ -451,6 +466,7 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
       location: next.values.location,
       numberOfCourts: next.values.numberOfCourts,
       numberOfSets: next.values.numberOfSets,
+      courtSurface: next.values.courtSurface,
       players: next.values.players,
     };
 
@@ -662,11 +678,18 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
                   />
                   <ListItemStepper
                     title={'Number of Courts'}
-                    position={['last']}
                     initialValue={values.numberOfCourts}
                     min={1}
                     max={10}
                     onChange={value => setFieldValue('numberOfCourts', value)}
+                  />
+                  <ListItemSegmented
+                    title={'Surface'}
+                    segmentWidth={60}
+                    index={CourtSurfaces.indexOf(values.courtSurface)}
+                    position={['last']}
+                    onChangeIndex={onSurfaceSelect}
+                    segments={[...CourtSurfaces]}
                   />
                 </View>
               )}

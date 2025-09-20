@@ -17,7 +17,7 @@ import {
 } from 'lib/sportEvent';
 import lodash from 'lodash';
 import { Player } from 'types/player';
-import { MatchType, SportEventEncoded, TeamName } from 'types/sportEvent';
+import { SportEventEncoded, TeamSides } from 'types/sportEvent';
 
 export interface Props {
   containerStyle?: StyleProp<ViewStyle>;
@@ -107,14 +107,13 @@ const ScheduleRoundView = (props: Props) => {
     r: number,
     c: number,
     set: number,
-    team: TeamName,
+    team: number,
     value: number,
   ) => {
     const updated = [...(sportEvent.schedule?.scores || [])];
     updated[r] = updated[r] || [];
     updated[r][c] = updated[r][c] || [];
     updated[r][c][set] = (updated[r][c][set] || []) as number[];
-    updated[r][c][set][team] = (updated[r][c][set][team] || []) as TeamName;
     updated[r][c][set][team] = value;
 
     updateDocument<SportEventEncoded>(
@@ -129,23 +128,24 @@ const ScheduleRoundView = (props: Props) => {
     );
   };
 
-  const isWin = (team: TeamName, scores?: number[]) => {
+  const isWin = (team: number, scores?: number[]) => {
     if (!scores) return false;
+
+    const home = TeamSides.indexOf('Home');
+    const away = TeamSides.indexOf('Away');
 
     // Must win by 2 or in a tie breaker (7-6).
     if (
-      team === TeamName.Home &&
-      ((scores[TeamName.Home] > 5 &&
-        scores[TeamName.Home] - scores[TeamName.Away] >= 2) ||
-        scores[TeamName.Home] === 7)
+      team === home &&
+      ((scores[home] > 5 && scores[home] - scores[away] >= 2) ||
+        scores[home] === 7)
     ) {
       return true;
     }
     if (
-      team === TeamName.Away &&
-      ((scores[TeamName.Away] > 5 &&
-        scores[TeamName.Away] - scores[TeamName.Home] >= 2) ||
-        scores[TeamName.Away] === 7)
+      team === away &&
+      ((scores[away] > 5 && scores[away] - scores[home] >= 2) ||
+        scores[away] === 7)
     ) {
       return true;
     }
@@ -186,7 +186,7 @@ const ScheduleRoundView = (props: Props) => {
                     {`${court[0][0].firstName} ${court[0][0].lastName}` ||
                       'bye'}
                   </Text>
-                  {scheduler?.typeOfMatch === MatchType.Doubles ? (
+                  {scheduler?.typeOfMatch === 'Doubles' ? (
                     <Text
                       style={[
                         s.player,
@@ -213,7 +213,7 @@ const ScheduleRoundView = (props: Props) => {
                     {`${court[1][0].firstName} ${court[1][0].lastName}` ||
                       'bye'}
                   </Text>
-                  {scheduler?.typeOfMatch === MatchType.Doubles ? (
+                  {scheduler?.typeOfMatch === 'Doubles' ? (
                     <Text
                       style={[
                         s.player,
@@ -286,7 +286,10 @@ const ScheduleRoundView = (props: Props) => {
               selectionColor={theme.colors.brandSecondary}
               inputStyle={{
                 ...s.scoreInput,
-                ...(isWin(TeamName.Home, schedule?.scores[r]?.[c]?.[set])
+                ...(isWin(
+                  TeamSides.indexOf('Home'),
+                  schedule?.scores[r]?.[c]?.[set],
+                )
                   ? {
                       backgroundColor: theme.colors.brandSecondary,
                       color: theme.colors.stickyWhite,
@@ -294,10 +297,17 @@ const ScheduleRoundView = (props: Props) => {
                   : {}),
               }}
               value={(
-                schedule?.scores[r]?.[c]?.[set]?.[TeamName.Home] || 0
+                schedule?.scores[r]?.[c]?.[set]?.[TeamSides.indexOf('Home')] ||
+                0
               ).toFixed(0)}
               onChangeText={value =>
-                updateScore(r, c, set, TeamName.Home, parseInt(value))
+                updateScore(
+                  r,
+                  c,
+                  set,
+                  TeamSides.indexOf('Home'),
+                  parseInt(value),
+                )
               }
             />
           ))}
@@ -312,7 +322,10 @@ const ScheduleRoundView = (props: Props) => {
               selectionColor={theme.colors.brandSecondary}
               inputStyle={{
                 ...s.scoreInput,
-                ...(isWin(TeamName.Away, schedule?.scores[r]?.[c]?.[set])
+                ...(isWin(
+                  TeamSides.indexOf('Away'),
+                  schedule?.scores[r]?.[c]?.[set],
+                )
                   ? {
                       backgroundColor: theme.colors.brandSecondary,
                       color: theme.colors.stickyWhite,
@@ -320,10 +333,17 @@ const ScheduleRoundView = (props: Props) => {
                   : {}),
               }}
               value={(
-                schedule?.scores[r]?.[c]?.[set]?.[TeamName.Away] || 0
+                schedule?.scores[r]?.[c]?.[set]?.[TeamSides.indexOf('Away')] ||
+                0
               ).toFixed(0)}
               onChangeText={value =>
-                updateScore(r, c, set, TeamName.Away, parseInt(value))
+                updateScore(
+                  r,
+                  c,
+                  set,
+                  TeamSides.indexOf('Away'),
+                  parseInt(value),
+                )
               }
             />
           ))}
