@@ -2,17 +2,17 @@ import React from 'react';
 
 import { useTheme } from '@react-native-hello/ui';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import SportEventRoundsScreen from 'components/SportEventSequenceRoundsScreen';
+import SportEventScoreboardScreen from 'components/SportEventScoreboardScreen';
 import SportEventStartScreen from 'components/SportEventStartScreen';
-import { SportEventSequenceNavigatorParamList } from 'types/navigation';
+import { SportEventScoreboardNavigatorParamList } from 'types/navigation';
 
-const SportEventSequenceStack =
-  createNativeStackNavigator<SportEventSequenceNavigatorParamList>();
+const SportEventScoreboardStack =
+  createNativeStackNavigator<SportEventScoreboardNavigatorParamList>();
 
-const SportEventSequenceNavigator = () => {
+const SportEventScoreboardNavigator = () => {
   const theme = useTheme();
   return (
-    <SportEventSequenceStack.Navigator
+    <SportEventScoreboardStack.Navigator
       initialRouteName={'SportEventStart'}
       screenOptions={{
         headerBackButtonDisplayMode: 'minimal',
@@ -22,7 +22,7 @@ const SportEventSequenceNavigator = () => {
         headerTitleStyle: { color: theme.colors.screenHeaderTitle },
         headerTintColor: theme.colors.screenHeaderButtonText,
       }}>
-      <SportEventSequenceStack.Screen
+      <SportEventScoreboardStack.Screen
         name="SportEventStart"
         component={SportEventStartScreen}
         options={({ route }) => {
@@ -31,9 +31,9 @@ const SportEventSequenceNavigator = () => {
           };
         }}
       />
-      <SportEventSequenceStack.Screen
-        name="SportEventRounds"
-        component={SportEventRoundsScreen}
+      <SportEventScoreboardStack.Screen
+        name="SportEventScoreboard"
+        component={SportEventScoreboardScreen}
         options={({ route }) => {
           return {
             title: route.params.screenTitle,
@@ -41,8 +41,8 @@ const SportEventSequenceNavigator = () => {
           };
         }}
       />
-    </SportEventSequenceStack.Navigator>
+    </SportEventScoreboardStack.Navigator>
   );
 };
 
-export default SportEventSequenceNavigator;
+export default SportEventScoreboardNavigator;

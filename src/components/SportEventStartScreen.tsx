@@ -6,11 +6,11 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Button } from 'components/atoms/Button';
 import { useDocument } from 'firebase/firestore';
 import { decodeSportEvent } from 'lib/sportEvent';
-import { SportEventSequenceNavigatorParamList } from 'types/navigation';
+import { SportEventScoreboardNavigatorParamList } from 'types/navigation';
 import { SportEventEncoded } from 'types/sportEvent';
 
 export type Props = NativeStackScreenProps<
-  SportEventSequenceNavigatorParamList,
+  SportEventScoreboardNavigatorParamList,
   'SportEventStart'
 >;
 
@@ -61,7 +61,7 @@ const SportEventStartScreen = ({ navigation, route }: Props) => {
           buttonStyle={theme.styles.button}
           containerStyle={theme.styles.buttonContainer}
           onPress={() =>
-            navigation.navigate('SportEventRounds', {
+            navigation.navigate('SportEventScoreboard', {
               sportEventId,
               screenTitle: sportEvent?.name || 'Event',
             })

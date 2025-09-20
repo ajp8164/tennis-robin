@@ -168,7 +168,7 @@ const SportEventsScreen = ({ navigation }: Props) => {
           })
         }
         onPress={() =>
-          navigation.navigate('SportEventSequenceNavigator', {
+          navigation.navigate('SportEventScoreboardNavigator', {
             screen: 'SportEventStart',
             params: {
               sportEventId: sportEvent.id || '',

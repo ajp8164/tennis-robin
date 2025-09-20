@@ -4,7 +4,7 @@ import { ScrollView } from 'react-native';
 import { Divider, ThemeManager, useTheme } from '@react-native-hello/ui';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { EmptyView } from 'components/molecules/EmptyView';
-import ScheduleRoundView from 'components/molecules/ScheduleRoundView';
+import ScheduleRoundView from 'components/views/ScheduleRoundView';
 import { useSportEvent } from 'lib/sportEvent';
 import { SportEventsNavigatorParamList } from 'types/navigation';
 

@@ -4,10 +4,11 @@ import SystemNavigationBar from 'react-native-system-navigation-bar';
 
 import { ThemeManager, useTheme } from '@react-native-hello/ui';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Home, Settings, Trophy } from 'lucide-react-native';
+import { Home, Settings, Trophy, TvMinimal } from 'lucide-react-native';
 import { TabNavigatorParamList } from 'types/navigation';
 
 import HomeNavigator from './HomeNavigator';
+import ScoreboardNavigator from './ScoreboardNavigator';
 import SetupNavigator from './SetupNavigator';
 import SportEventsNavigator from './SportEventsNavigator';
 
@@ -53,6 +54,14 @@ const TabNavigator = () => {
         options={{
           tabBarShowLabel: false,
           tabBarIcon: ({ color }) => <Home color={color} size={33} />,
+        }}
+      />
+      <Tab.Screen
+        name="ScoreboardTab"
+        component={ScoreboardNavigator}
+        options={{
+          tabBarShowLabel: false,
+          tabBarIcon: ({ color }) => <TvMinimal color={color} size={33} />,
         }}
       />
       <Tab.Screen

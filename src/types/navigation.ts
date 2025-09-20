@@ -44,6 +44,10 @@ export type NewSportEventNavigatorParamList = {
   SportEventSchedule: undefined;
 };
 
+export type ScoreboardNavigatorParamList = {
+  Scoreboard: undefined;
+};
+
 export type SetupNavigatorParamList = {
   About: undefined;
   AppSettings: undefined;
@@ -74,8 +78,8 @@ export type SetupNavigatorParamList = {
   UserProfileEditor: undefined;
 };
 
-export type SportEventSequenceNavigatorParamList = {
-  SportEventRounds: {
+export type SportEventScoreboardNavigatorParamList = {
+  SportEventScoreboard: {
     sportEventId: string;
     screenTitle: string;
   };
@@ -91,7 +95,7 @@ export type SportEventsNavigatorParamList = {
   Player: {
     playerId: string;
   };
-  SportEventSequenceNavigator: NavigatorScreenParams<SportEventSequenceNavigatorParamList>;
+  SportEventScoreboardNavigator: NavigatorScreenParams<SportEventScoreboardNavigatorParamList>;
   SportEvents: undefined;
   SportEventEditor: {
     sportEventId?: string;
@@ -102,6 +106,7 @@ export type SportEventsNavigatorParamList = {
 
 export type TabNavigatorParamList = {
   HomeTab: undefined;
+  ScoreboardTab: undefined;
   SetupTab: {
     screen: string;
     params: object;

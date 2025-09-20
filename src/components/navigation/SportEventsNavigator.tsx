@@ -10,7 +10,7 @@ import SportEventsScreen from 'components/SportEventsScreen';
 import { SportEventsNavigatorParamList } from 'types/navigation';
 
 import NewSportEventNavigator from './NewSportEventNavigator';
-import SportEventSequenceNavigator from './SportEventSequenceNavigator';
+import SportEventScoreboardNavigator from './SportEventScoreboardNavigator';
 
 const SportEventsStack =
   createNativeStackNavigator<SportEventsNavigatorParamList>();
@@ -42,8 +42,8 @@ const SportEventsNavigator = () => {
         }}
       />
       <SportEventsStack.Screen
-        name="SportEventSequenceNavigator"
-        component={SportEventSequenceNavigator}
+        name="SportEventScoreboardNavigator"
+        component={SportEventScoreboardNavigator}
         options={{
           headerShown: false,
           presentation: 'fullScreenModal',

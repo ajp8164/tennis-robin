@@ -13,19 +13,19 @@ import {
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Button } from 'components/atoms/Button';
 import { EmptyView } from 'components/molecules/EmptyView';
-import ScheduleRoundView from 'components/molecules/ScheduleRoundView';
+import ScoreboardMatchView from 'components/views/ScoreboardMatchView';
 import { useDocument } from 'firebase/firestore';
 import { decodeSportEvent, useSportEvent } from 'lib/sportEvent';
 import { ChevronRight } from 'lucide-react-native';
-import { SportEventSequenceNavigatorParamList } from 'types/navigation';
+import { SportEventScoreboardNavigatorParamList } from 'types/navigation';
 import { SportEventEncoded } from 'types/sportEvent';
 
 export type Props = NativeStackScreenProps<
-  SportEventSequenceNavigatorParamList,
-  'SportEventRounds'
+  SportEventScoreboardNavigatorParamList,
+  'SportEventScoreboard'
 >;
 
-const SportEventRoundsScreen = ({ navigation, route }: Props) => {
+const SportEventScoreboardScreen = ({ navigation, route }: Props) => {
   const { sportEventId } = route.params || {};
 
   const theme = useTheme();
@@ -98,7 +98,7 @@ const SportEventRoundsScreen = ({ navigation, route }: Props) => {
           <ScrollView
             showsVerticalScrollIndicator={false}
             style={s.carouselPageTop}>
-            <ScheduleRoundView
+            <ScoreboardMatchView
               r={r}
               roundLabel={false}
               showScores
@@ -222,4 +222,4 @@ const useStyles = ThemeManager.createStyleSheet(({ theme }) => ({
   },
 }));
 
-export default SportEventRoundsScreen;
+export default SportEventScoreboardScreen;
