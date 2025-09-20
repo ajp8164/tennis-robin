@@ -154,7 +154,10 @@ const SportEventsScreen = ({ navigation }: Props) => {
         title={sportEvent.name}
         subtitle={playerCount}
         value={locationTime}
-        valueStyle={theme.text.medium}
+        valueStyle={[
+          theme.text.medium,
+          { color: theme.colors.listItemSubtitle },
+        ]}
         position={listItemPosition(index, allSportEvents.length)}
         rightContent={'info'}
         listEditor={listEditorRef.current}

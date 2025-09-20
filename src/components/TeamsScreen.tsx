@@ -166,7 +166,6 @@ const TeamsScreen = ({ navigation }: Props) => {
         <ListItemCheckBoxInfo
           title={defaultTeam?.name || defaultTeamName}
           position={['first', 'last']}
-          // hideInfo={true}
           checked={selectedTeamId === defaultTeam?.id}
           onPress={() => setTeam(defaultTeam)}
           onPressInfo={() =>

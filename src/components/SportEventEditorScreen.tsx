@@ -13,6 +13,7 @@ import { documentId } from '@react-native-firebase/firestore';
 import { ISODateString } from '@react-native-hello/common';
 import { useEvent } from '@react-native-hello/core';
 import {
+  ConditionalWrapper,
   Divider,
   InputMethods,
   KeyboardAccessory,
@@ -21,6 +22,7 @@ import {
   ListEditorMethods,
   ListEditorState,
   ListItem,
+  ListItemCollapsible,
   ListItemDateTime,
   ListItemSegmented,
   ListItemSwipeable,
@@ -363,6 +365,7 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
 
   const save = () => {
     formikRef.current?.handleSubmit();
+    formikRef.current?.resetForm({ values: formikRef.current?.values });
     Keyboard.dismiss();
     if (!sportEventId) navigation.goBack();
   };
@@ -375,11 +378,11 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
           ...workingState.sportEvent,
           name: values.name,
           date: values.date,
-          owners: [],
           location: values.location,
           numberOfCourts: values.numberOfCourts,
           numberOfSets: values.numberOfSets,
           courtSurface: values.courtSurface,
+          // Not updating owners here
           players: values.players,
         }),
       );
@@ -398,6 +401,7 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
           players: values.players,
         }),
       );
+
       // Associate the new sportEvent with my selected team.
       if (selectedTeam && newSportEvent.id) {
         updateDocument<Team>('Teams', {
@@ -456,7 +460,7 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
     const { next, isValid = false, changedFields } = state;
     const canSubmit = next.dirty && isValid;
     setFormikCanSubmit(canSubmit);
-    console.log(changedFields, next.dirty, isValid);
+
     if (!changedFields.length) return;
 
     const updatedSportEvent = {
@@ -583,114 +587,165 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
                   <FormikStateWatcher<FormValues>
                     onChange={onFormikWatcherStateChange}
                   />
-                  <Divider text={'SCHEDULER'} />
-                  <ListItem
-                    title={scheduler?.name || 'Choose Your Match Scheduler'}
-                    subtitle={
-                      scheduler?.description ||
-                      'The scheduler calculates all match round, court, and player assignments. You can also make manual player assignments.'
-                    }
-                    subtitleLines={5}
-                    position={['first', 'last']}
-                    rightContent={'chevron-right'}
-                    footerContent={
-                      !values.schedulerId ? (
-                        <Text style={s.requiredText}>
-                          {'Selection required'}
-                        </Text>
-                      ) : (
-                        <></>
-                      )
-                    }
-                    onPress={() =>
-                      navigation.navigate('EnumPicker', {
-                        title: 'Match Schedulers',
-                        values: schedulers.map(s => {
-                          return {
-                            id: s.id,
-                            title: s.eventCategory,
-                            subtitle: `${s.name}\n${s.description}`,
-                            leftIcon: { icon: s.icon },
-                          };
-                        }) as EnumPickerValue[],
-                        selected: [values.schedulerId],
-                        eventName: 'change-scheduler',
-                        mode: 'one',
-                        closeOnSelect: true,
-                      })
-                    }
-                  />
                   <Divider text={'DETAILS'} />
-                  <ListItemInput
-                    ref={nameFieldRef}
-                    position={['first']}
-                    error={!!errors.name}
-                    inputProps={{
-                      inputAccessoryViewID: 'keyboardAccessory',
-                      onChangeText: handleChange('name'),
-                      onFocus: () =>
-                        keyboardAccessory.current?.focusedField(Fields.name),
-                      value: values.name,
-                      label: 'Event Name',
-                      placeholder: 'Event Name',
-                      autoCapitalize: 'words',
-                    }}
-                  />
-                  <ListItemDateTime
-                    title={'Date'}
-                    subtitle={`${DateTime.fromISO(values.date).toFormat(
-                      'MMM d',
-                    )}${DateTime.fromISO(values.date)
-                      .toFormat(" 'at' h:mma")
-                      .toLowerCase()}`}
-                    value={DateTime.fromISO(values.date).toRelativeCalendar()}
-                    minimumDate={DateTime.now().toJSDate()}
-                    maximumDate={DateTime.now().plus({ years: 100 }).toJSDate()}
-                    mode={'datetime'}
-                    pickerValue={values.date}
-                    expanded={expandedDate}
-                    accentColor={theme.colors.brandSecondary}
-                    onPress={() => setExpandedDate(!expandedDate)}
-                    onChange={onDateChange}
-                  />
-                  <ListItemInput
-                    ref={locationFieldRef}
-                    error={!!errors.location}
-                    inputProps={{
-                      inputAccessoryViewID: 'keyboardAccessory',
-                      onChangeText: handleChange('location'),
-                      onFocus: () =>
-                        keyboardAccessory.current?.focusedField(
-                          Fields.location,
-                        ),
-                      value: values.location,
-                      label: 'Location',
-                      placeholder: 'Location',
-                      autoCapitalize: 'words',
-                    }}
-                  />
-                  <ListItemStepper
-                    title={'Number of Sets'}
-                    initialValue={values.numberOfSets}
-                    min={2}
-                    max={10}
-                    onChange={value => setFieldValue('numberOfSets', value)}
-                  />
-                  <ListItemStepper
-                    title={'Number of Courts'}
-                    initialValue={values.numberOfCourts}
-                    min={1}
-                    max={10}
-                    onChange={value => setFieldValue('numberOfCourts', value)}
-                  />
-                  <ListItemSegmented
-                    title={'Surface'}
-                    segmentWidth={60}
-                    index={CourtSurfaces.indexOf(values.courtSurface)}
-                    position={['last']}
-                    onChangeIndex={onSurfaceSelect}
-                    segments={[...CourtSurfaces]}
-                  />
+                  <ConditionalWrapper
+                    condition={!!sportEventId}
+                    wrapper={children => (
+                      <ListItemCollapsible
+                        initExpanded={!sportEventId}
+                        mainContent={
+                          <View>
+                            <Text style={theme.text.normal}>
+                              {values.name || 'No name'}
+                            </Text>
+                            <Text
+                              style={[
+                                theme.text.small,
+                                { color: theme.colors.listItemSubtitle },
+                              ]}>
+                              {`${DateTime.fromISO(values.date).toFormat(
+                                'MMM d',
+                              )} ${DateTime.fromISO(values.date)
+                                .toFormat("'at' h:mma")
+                                .toLowerCase()}`}
+                            </Text>
+                            {values.location ? (
+                              <Text
+                                style={[
+                                  theme.text.small,
+                                  { color: theme.colors.listItemSubtitle },
+                                ]}>
+                                {values.location}
+                              </Text>
+                            ) : null}
+                          </View>
+                        }
+                        mainContentStyle={{
+                          paddingHorizontal: 15,
+                          paddingVertical: 10,
+                        }}
+                        position={['first', 'last']}>
+                        {children}
+                      </ListItemCollapsible>
+                    )}>
+                    <View>
+                      <ListItemInput
+                        ref={nameFieldRef}
+                        error={!!errors.name}
+                        position={!sportEventId ? ['first'] : undefined}
+                        inputProps={{
+                          inputAccessoryViewID: 'keyboardAccessory',
+                          onChangeText: handleChange('name'),
+                          onFocus: () =>
+                            keyboardAccessory.current?.focusedField(
+                              Fields.name,
+                            ),
+                          value: values.name,
+                          label: 'Event Name',
+                          placeholder: 'Event Name',
+                          autoCapitalize: 'words',
+                        }}
+                      />
+                      <ListItemDateTime
+                        title={'Date'}
+                        subtitle={`${DateTime.fromISO(values.date).toFormat(
+                          'MMM d',
+                        )}${DateTime.fromISO(values.date)
+                          .toFormat(" 'at' h:mma")
+                          .toLowerCase()}`}
+                        value={DateTime.fromISO(
+                          values.date,
+                        ).toRelativeCalendar()}
+                        minimumDate={DateTime.now().toJSDate()}
+                        maximumDate={DateTime.now()
+                          .plus({ years: 100 })
+                          .toJSDate()}
+                        mode={'datetime'}
+                        pickerValue={values.date}
+                        expanded={expandedDate}
+                        accentColor={theme.colors.brandSecondary}
+                        onPress={() => setExpandedDate(!expandedDate)}
+                        onChange={onDateChange}
+                      />
+                      <ListItemInput
+                        ref={locationFieldRef}
+                        error={!!errors.location}
+                        inputProps={{
+                          inputAccessoryViewID: 'keyboardAccessory',
+                          onChangeText: handleChange('location'),
+                          onFocus: () =>
+                            keyboardAccessory.current?.focusedField(
+                              Fields.location,
+                            ),
+                          value: values.location,
+                          label: 'Location',
+                          placeholder: 'Location',
+                          autoCapitalize: 'words',
+                        }}
+                      />
+                      <ListItemStepper
+                        title={'Number of Sets'}
+                        initialValue={values.numberOfSets}
+                        min={2}
+                        max={10}
+                        onChange={value => setFieldValue('numberOfSets', value)}
+                      />
+                      <ListItemStepper
+                        title={'Number of Courts'}
+                        initialValue={values.numberOfCourts}
+                        min={1}
+                        max={10}
+                        onChange={value =>
+                          setFieldValue('numberOfCourts', value)
+                        }
+                      />
+                      <ListItemSegmented
+                        title={'Surface'}
+                        segmentWidth={60}
+                        index={CourtSurfaces.indexOf(values.courtSurface)}
+                        position={['last']}
+                        onChangeIndex={onSurfaceSelect}
+                        segments={[...CourtSurfaces]}
+                      />
+                      <Divider text={'SCHEDULER'} />
+                      <ListItem
+                        title={scheduler?.name || 'Choose Your Match Scheduler'}
+                        subtitle={
+                          scheduler?.description ||
+                          'The scheduler calculates all match round, court, and player assignments. You can also make manual player assignments.'
+                        }
+                        subtitleLines={5}
+                        position={['first', 'last']}
+                        rightContent={'chevron-right'}
+                        footerContent={
+                          !values.schedulerId ? (
+                            <Text style={s.requiredText}>
+                              {'Selection required'}
+                            </Text>
+                          ) : (
+                            <></>
+                          )
+                        }
+                        onPress={() =>
+                          navigation.navigate('EnumPicker', {
+                            title: 'Match Schedulers',
+                            values: schedulers.map(s => {
+                              return {
+                                id: s.id,
+                                title: s.eventCategory,
+                                subtitle: `${s.name}\n${s.description}`,
+                                leftIcon: { icon: s.icon },
+                              };
+                            }) as EnumPickerValue[],
+                            selected: [values.schedulerId],
+                            eventName: 'change-scheduler',
+                            mode: 'one',
+                            closeOnSelect: true,
+                          })
+                        }
+                      />
+                    </View>
+                  </ConditionalWrapper>
                 </View>
               )}
             </Formik>
@@ -703,11 +758,7 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
                     subtitle={`${workingState.sportEvent.schedule?.numberOfRounds} Round${workingState.sportEvent.schedule?.numberOfRounds !== 1 ? 's' : ''} on ${workingState.sportEvent.schedule?.numberOfCourtsUsed} Court${workingState.sportEvent.schedule?.numberOfCourtsUsed !== 1 ? 's' : ''}`}
                     position={['first', 'last']}
                     rightContent={'chevron-right'}
-                    onPress={() => {
-                      navigation.navigate('SportEventSchedule', {
-                        screenTitle: workingState.sportEvent.name || 'Event',
-                      });
-                    }}
+                    onPress={() => navigation.navigate('SportEventSchedule')}
                   />
                   {sportEvent?.numberOfCourts !==
                   sportEvent?.schedule?.numberOfCourtsUsed ? (

@@ -159,7 +159,7 @@ const ScheduleRoundView = (props: Props) => {
           position={['first', 'last']}
           containerStyle={s.courtItem}
           headerContent={
-            <View style={s.header}>
+            <View style={s.courtHeader}>
               <Text style={s.homeAway}>{'Home'}</Text>
               <Text style={s.courtLabel}>{`Court ${c + 1}`}</Text>
               <Text style={s.homeAway}>{'Away'}</Text>
@@ -396,22 +396,22 @@ const useStyles = ThemeManager.createStyleSheet(({ theme }) => ({
     flex: 1,
   },
   courtHeader: {
-    alignItems: 'center',
-    width: '100%',
-    paddingVertical: 5,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 15,
+    paddingTop: 5,
   },
   courtItem: {
     borderColor: theme.colors.lightGray,
     borderWidth: 1,
+    borderTopLeftRadius: 0,
+    borderTopRightRadius: 0,
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
   },
   courtLabel: {
     ...theme.text.normal,
     backgroundColor: theme.colors.listItem,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 15,
   },
   homeAway: {
     ...theme.text.small,
@@ -436,7 +436,7 @@ const useStyles = ThemeManager.createStyleSheet(({ theme }) => ({
     ...theme.text.medium,
     borderWidth: 1,
     borderColor: theme.colors.subtleGray,
-    borderRadius: 5,
+    borderRadius: theme.radius.S,
     paddingHorizontal: 5,
     paddingVertical: 3,
     fontWeight: '700',
@@ -467,7 +467,7 @@ const useStyles = ThemeManager.createStyleSheet(({ theme }) => ({
     margin: 0,
     lineHeight: 0,
     textAlign: 'center',
-    borderRadius: 5,
+    borderRadius: theme.radius.S,
     borderWidth: 1,
     borderColor: theme.colors.brandSecondary,
   },

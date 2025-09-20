@@ -42,10 +42,8 @@ const NewSportEventNavigator = () => {
       <NewSportEventStack.Screen
         name="SportEventSchedule"
         component={SportEventScheduleScreen}
-        options={({ route }) => {
-          return {
-            title: route.params.screenTitle ?? 'hello',
-          };
+        options={{
+          title: 'Schedule',
         }}
       />
       <NewSportEventStack.Screen

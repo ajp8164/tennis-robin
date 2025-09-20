@@ -63,7 +63,8 @@ const SportEventsNavigator = () => {
         component={NewSportEventNavigator}
         options={{
           headerShown: false,
-          presentation: 'fullScreenModal',
+          presentation: 'modal',
+          gestureEnabled: false,
         }}
       />
       <SportEventsStack.Screen
@@ -76,10 +77,8 @@ const SportEventsNavigator = () => {
       <SportEventsStack.Screen
         name="SportEventSchedule"
         component={SportEventScheduleScreen}
-        options={({ route }) => {
-          return {
-            title: route.params.screenTitle ?? 'hello',
-          };
+        options={{
+          title: 'Schedule',
         }}
       />
       <SportEventsStack.Screen
