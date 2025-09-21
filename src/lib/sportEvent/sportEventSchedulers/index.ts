@@ -1,6 +1,8 @@
 import { Player } from 'types/player';
-import { EventCategory, MatchType, Schedule } from 'types/sportEvent';
+import { EventFormat, MatchType, Schedule } from 'types/sportEvent';
 
+import { simpleMatchDoubles } from './simpleMatchDoubles';
+import { simpleMatchSingles } from './simpleMatchSingles';
 import { uniquePartnerDoubles } from './uniquePartnerDoubles';
 
 export * from './uniquePartnerDoubles';
@@ -10,20 +12,29 @@ export type Scheduler = {
   name: string;
   description: string;
   typeOfMatch: MatchType;
-  eventCategory: EventCategory;
+  eventFormat: EventFormat;
   icon: string;
   fn: (players: Player[], courts: number) => Schedule | undefined;
 };
 
 export const schedulers: Scheduler[] = [
   {
-    id: 'singles',
+    id: 'simple-match-singles',
     name: 'Singles',
     description: 'One player each team.',
     typeOfMatch: 'Singles',
-    eventCategory: 'Match',
+    eventFormat: 'Single Elimination Match',
     icon: 'Users',
-    fn: uniquePartnerDoubles,
+    fn: simpleMatchSingles,
+  },
+  {
+    id: 'simple-match-doubles',
+    name: 'Doubles',
+    description: 'Two players each team.',
+    typeOfMatch: 'Doubles',
+    eventFormat: 'Single Elimination Match',
+    icon: 'Users',
+    fn: simpleMatchDoubles,
   },
   {
     id: 'unique-partner-doubles',
@@ -31,7 +42,7 @@ export const schedulers: Scheduler[] = [
     description:
       'Players are grouped into pairs. Each player partners with every other player exactly once. No pair repeats.',
     typeOfMatch: 'Doubles',
-    eventCategory: 'Round Robin',
+    eventFormat: 'Round Robin',
     icon: 'Users',
     fn: uniquePartnerDoubles,
   },

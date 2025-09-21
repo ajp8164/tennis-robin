@@ -61,7 +61,7 @@ import {
   decodeSportEvent,
   encodeSportEvent,
   schedulers,
-  useSportEvent,
+  useSportEventStore,
 } from 'lib/sportEvent';
 import { useSelectedTeam } from 'lib/team';
 import { CircleMinus, EyeOff } from 'lucide-react-native';
@@ -113,7 +113,7 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
   const { doc: userProfile } = useUserProfile();
   const { doc: selectedTeam } = useSelectedTeam();
 
-  const workingState = useSportEvent();
+  const workingState = useSportEventStore();
   const [scheduler, setScheduler] = useState<Scheduler>();
 
   // *** Live sportEvent data ***
@@ -732,7 +732,7 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
                             values: schedulers.map(s => {
                               return {
                                 id: s.id,
-                                title: s.eventCategory,
+                                title: s.eventFormat,
                                 subtitle: `${s.name}\n${s.description}`,
                                 leftIcon: { icon: s.icon },
                               };

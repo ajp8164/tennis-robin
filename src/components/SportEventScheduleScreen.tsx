@@ -5,7 +5,7 @@ import { Divider, ThemeManager, useTheme } from '@react-native-hello/ui';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { EmptyView } from 'components/molecules/EmptyView';
 import ScheduleRoundView from 'components/views/ScheduleRoundView';
-import { useSportEvent } from 'lib/sportEvent';
+import { useSportEventStore } from 'lib/sportEvent';
 import { SportEventsNavigatorParamList } from 'types/navigation';
 
 export type Props = NativeStackScreenProps<
@@ -17,7 +17,7 @@ const SportEventScheduleScreen = () => {
   const theme = useTheme();
   const s = useStyles();
 
-  const { sportEvent } = useSportEvent();
+  const { sportEvent } = useSportEventStore();
 
   if (!sportEvent) {
     return (
@@ -43,7 +43,7 @@ const SportEventScheduleScreen = () => {
         subHeaderStyle={s.divider}
       />
       {sportEvent.schedule
-        ? sportEvent.schedule.allRounds?.map((_round, r) => (
+        ? sportEvent.schedule.rounds?.map((_round, r) => (
             <ScheduleRoundView key={`round-${r + 1}`} r={r} />
           ))
         : null}

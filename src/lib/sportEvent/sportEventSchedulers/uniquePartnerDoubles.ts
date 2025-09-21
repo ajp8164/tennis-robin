@@ -92,7 +92,7 @@ export const uniquePartnerDoubles = (
     schedulerId: 'unique-partner-doubles',
     numberOfRounds: scheduleRounds.length,
     numberOfCourtsUsed: resolved.maxCourtsUsed,
-    allRounds: scheduleRounds,
+    rounds: scheduleRounds,
     byes: resolved.byePlayers,
     scores: [],
   };

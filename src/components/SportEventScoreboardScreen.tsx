@@ -15,7 +15,7 @@ import { Button } from 'components/atoms/Button';
 import { EmptyView } from 'components/molecules/EmptyView';
 import ScoreboardMatchView from 'components/views/ScoreboardMatchView';
 import { useDocument } from 'firebase/firestore';
-import { decodeSportEvent, useSportEvent } from 'lib/sportEvent';
+import { decodeSportEvent, useSportEventStore } from 'lib/sportEvent';
 import { ChevronRight } from 'lucide-react-native';
 import { SportEventScoreboardNavigatorParamList } from 'types/navigation';
 import { SportEventEncoded } from 'types/sportEvent';
@@ -32,7 +32,7 @@ const SportEventScoreboardScreen = ({ navigation, route }: Props) => {
   const s = useStyles();
   const device = useDevice();
 
-  const { sportEvent, initializeSportEvent } = useSportEvent();
+  const { sportEvent, initializeSportEvent } = useSportEventStore();
 
   const { doc: sportEventEncoded, loading: sportEventLoading } =
     useDocument<SportEventEncoded>('SportEvents', sportEventId);
@@ -89,7 +89,7 @@ const SportEventScoreboardScreen = ({ navigation, route }: Props) => {
   }, []);
 
   const pages =
-    sportEvent?.schedule?.allRounds.map((_round, r) => {
+    sportEvent?.schedule?.rounds.map((_round, r) => {
       return (
         <>
           <View style={s.carouselPage}>
@@ -113,7 +113,7 @@ const SportEventScoreboardScreen = ({ navigation, route }: Props) => {
   const renderPagination = () => {
     return (
       <View style={s.paginationContainer}>
-        {sportEvent.schedule?.allRounds.map((_, index) => (
+        {sportEvent.schedule?.rounds.map((_, index) => (
           <Pressable
             key={`${index}`}
             style={[
@@ -141,7 +141,7 @@ const SportEventScoreboardScreen = ({ navigation, route }: Props) => {
     );
   };
 
-  if (!sportEvent?.schedule?.allRounds.length) {
+  if (!sportEvent?.schedule?.rounds.length) {
     return (
       <EmptyView
         type={'info'}

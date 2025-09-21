@@ -20,8 +20,12 @@ export type SportEvent = {
 export const CourtSurfaces = ['Hard', 'Clay', 'Grass', 'Other'] as const;
 export type CourtSurface = (typeof CourtSurfaces)[number];
 
-export const EventCategories = ['Match', 'Round Robin', 'Other'] as const;
-export type EventCategory = (typeof EventCategories)[number];
+export const EventFormats = [
+  'Single Elimination Match',
+  'Round Robin',
+  'Other',
+] as const;
+export type EventFormat = (typeof EventFormats)[number];
 
 export const MatchTypes = ['Singles', 'Doubles'] as const;
 export type MatchType = (typeof MatchTypes)[number];
@@ -36,7 +40,7 @@ export type Schedule = {
   schedulerId: string;
   numberOfRounds: number;
   numberOfCourtsUsed: number;
-  allRounds: Rounds; // Includes all player and bye-placeholder assignments on all courts.
+  rounds: Rounds; // Includes all player and bye-placeholder assignments on all courts.
   byes: Player[][]; // Round, player
   scores: Scores;
 };
@@ -53,6 +57,7 @@ export type SportEventEncoded = {
   location: string;
   numberOfCourts: number;
   numberOfSets: number;
+  courtSurface: CourtSurface;
   owners: string[];
   players: string[];
   schedule?: ScheduleEncoded;
@@ -62,7 +67,7 @@ export type ScheduleEncoded = {
   schedulerId: string;
   numberOfRounds: number;
   numberOfCourtsUsed: number;
-  allRounds: string; // Stringified
+  rounds: string; // Stringified
   byes: string; // Stringified
   scores: string; // Stringified
 };

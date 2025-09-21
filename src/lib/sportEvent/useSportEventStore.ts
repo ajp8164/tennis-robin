@@ -51,7 +51,7 @@ const initialState = {
   sportEventInitialValue: defaultSportEvent,
 };
 
-export const useSportEvent = create<SportEventStore>(set => ({
+export const useSportEventStore = create<SportEventStore>(set => ({
   ...initialState,
   clear: () =>
     set(_state => ({
@@ -87,7 +87,7 @@ export const useSportEvent = create<SportEventStore>(set => ({
         ...state.sportEvent,
         schedule: {
           ...state.sportEvent.schedule!,
-          allRounds: rounds,
+          rounds,
         },
       },
       scheduleRoundsVersion: state.scheduleRoundsVersion + 1,

@@ -13,7 +13,7 @@ import {
   PlayerSwapPosition,
   encodeSportEvent,
   schedulers,
-  useSportEvent,
+  useSportEventStore,
 } from 'lib/sportEvent';
 import lodash from 'lodash';
 import { Player } from 'types/player';
@@ -36,7 +36,7 @@ const ScoreboardMatchView = (props: Props) => {
     sportEvent,
     updatePlayerSwapPosition,
     updateScheduleRounds,
-  } = useSportEvent();
+  } = useSportEventStore();
 
   const schedule = sportEvent.schedule
     ? Object.assign({}, sportEvent.schedule)
@@ -61,8 +61,8 @@ const ScoreboardMatchView = (props: Props) => {
       const player2Path = `[${position.r}][${position.c}][${position.t}][${position.p}]`;
 
       // Get each player at their round path.
-      const player1: Player = lodash.get(schedule?.allRounds, player1Path);
-      const player2: Player = lodash.get(schedule?.allRounds, player2Path);
+      const player1: Player = lodash.get(schedule?.rounds, player1Path);
+      const player2: Player = lodash.get(schedule?.rounds, player2Path);
 
       // Check validity of the requested assignments.
       // No player may be present in a round more than once.
@@ -70,10 +70,10 @@ const ScoreboardMatchView = (props: Props) => {
       const player2RoundPath = `[${position.r}]`;
 
       const player1RoundPlayers: Player[] = lodash
-        .get(schedule!.allRounds, player1RoundPath)
+        .get(schedule!.rounds, player1RoundPath)
         .flat(Infinity);
       const player2RoundPlayers: Player[] = lodash
-        .get(schedule!.allRounds, player2RoundPath)
+        .get(schedule!.rounds, player2RoundPath)
         .flat(Infinity);
 
       const p1Index = player2RoundPlayers.findIndex(p => p.id === player1.id);
@@ -84,7 +84,7 @@ const ScoreboardMatchView = (props: Props) => {
         (player1RoundPath !== player2RoundPath && p1Index < 0 && p2Index < 0)
       ) {
         // Set each player to the others value.
-        const swapped = lodash.cloneDeep(sportEvent.schedule?.allRounds || []);
+        const swapped = lodash.cloneDeep(sportEvent.schedule?.rounds || []);
         lodash.set(swapped, player1Path, player2);
         lodash.set(swapped, player2Path, player1);
 
@@ -359,7 +359,7 @@ const ScoreboardMatchView = (props: Props) => {
       ) : (
         <View style={s.noRoundLabel} />
       )}
-      {schedule?.allRounds[r].map((court, c) =>
+      {schedule?.rounds[r].map((court, c) =>
         // Courts with bye placeholders are not playable matches. Render court for
         // playable matches with the list of bye players.
         court.flat().findIndex(p => p.firstName === '(Bye)') >= 0
