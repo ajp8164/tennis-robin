@@ -12,6 +12,7 @@ export type Scheduler = {
   name: string;
   description: string;
   typeOfMatch: MatchType;
+  requiredPlayerCount: number; // -1 = unlimited (tournament play)
   eventFormat: EventFormat;
   icon: string;
   fn: (players: Player[], courts: number) => Schedule | undefined;
@@ -23,6 +24,7 @@ export const schedulers: Scheduler[] = [
     name: 'Singles',
     description: 'One player each team.',
     typeOfMatch: 'Singles',
+    requiredPlayerCount: 2,
     eventFormat: 'Single Elimination Match',
     icon: 'Users',
     fn: simpleMatchSingles,
@@ -32,16 +34,18 @@ export const schedulers: Scheduler[] = [
     name: 'Doubles',
     description: 'Two players each team.',
     typeOfMatch: 'Doubles',
+    requiredPlayerCount: 4,
     eventFormat: 'Single Elimination Match',
     icon: 'Users',
     fn: simpleMatchDoubles,
   },
   {
     id: 'unique-partner-doubles',
-    name: 'Unique Partner Doubles',
+    name: 'Round Robin',
     description:
       'Players are grouped into pairs. Each player partners with every other player exactly once. No pair repeats.',
     typeOfMatch: 'Doubles',
+    requiredPlayerCount: -1,
     eventFormat: 'Round Robin',
     icon: 'Users',
     fn: uniquePartnerDoubles,

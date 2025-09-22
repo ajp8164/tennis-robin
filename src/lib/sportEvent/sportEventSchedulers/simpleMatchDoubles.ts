@@ -17,9 +17,6 @@ export const simpleMatchDoubles = (
           players[0],
           players[1],
         ],
-      ],
-      [
-        // Team
         [
           // Player
           players[2],

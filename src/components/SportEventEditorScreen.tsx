@@ -74,6 +74,7 @@ import { Player } from 'types/player';
 import {
   CourtSurface,
   CourtSurfaces,
+  SportEvent,
   SportEventEncoded,
 } from 'types/sportEvent';
 import { Team } from 'types/team';
@@ -171,7 +172,7 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
     location: '',
     numberOfCourts: 1,
     numberOfSets: 3,
-    courtSurface: 'Other',
+    courtSurface: 'Hard',
     players: [],
     scheduleRoundsVersion: 0,
   });
@@ -328,19 +329,46 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
       event.removeListener('change-scheduler', onChangeScheduler);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [workingState]);
 
   const onChangePlayers = async (result: EnumPickerResult) => {
     const { result: players } = await getDocuments<Player>('Players', {
       where: [{ fieldPath: documentId(), opStr: 'in', value: result.value }],
     });
 
-    // Set the array of ids on the form, set the populated player objects and update
-    // our working state.
-    const playerIds = (players.map(p => p.id) || []) as string[];
-    formikRef.current?.setFieldValue('players', playerIds);
+    let playerIds = [...(formikRef.current?.values.players || [])];
 
-    workingState.updatePlayers(players);
+    if (!result.extraData) {
+      // Set the array of ids on the form, set the populated player objects and update
+      // our working state.
+      playerIds = (players.map(p => p.id) || []) as string[];
+
+      workingState.updatePlayers(players);
+    } else {
+      // For non-tournament selection the selected player is added to the existing set.
+      // (The unused players in the set are discarded since they are not stored with the schedule)
+      workingState.updatePlayers([...workingState.players, ...players]);
+
+      // Player ids in the form is an ordered array for singles/doubles.
+      switch (result.extraData as string) {
+        case 'singles-player-1':
+        case 'doubles-player-1':
+          playerIds[0] = result.value[0];
+          break;
+        case 'singles-player-2':
+        case 'doubles-player-2':
+          playerIds[1] = result.value[0];
+          break;
+        case 'doubles-player-3':
+          playerIds[2] = result.value[0];
+          break;
+        case 'doubles-player-4':
+          playerIds[3] = result.value[0];
+          break;
+      }
+    }
+
+    formikRef.current?.setFieldValue('players', [...playerIds]);
   };
 
   const onChangeScheduler = async (result: EnumPickerResult) => {
@@ -414,14 +442,69 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
     }
   };
 
-  const choosePlayers = () => {
+  const choosePlayers = (which?: string) => {
+    // Default is all selected players (e.g. tournament)
+    let selected = formikRef.current?.values.players;
+    let title = 'Players';
+    let values = playerEnum;
+
+    switch (which as string) {
+      case 'singles-player-1':
+      case 'doubles-player-1':
+        title = 'Player 1';
+        selected = [formikRef.current?.values.players[0] || ''];
+        // The values selection list should not include players selected into other positions.
+        // This avoids duplicating a player on court.
+        values = playerEnum.filter(
+          pe =>
+            pe.id !== formikRef.current?.values.players[1] &&
+            pe.id !== formikRef.current?.values.players[2] &&
+            pe.id !== formikRef.current?.values.players[3],
+        );
+        break;
+      case 'singles-player-2':
+      case 'doubles-player-2':
+        title = 'Player 2';
+        selected = [formikRef.current?.values.players[1] || ''];
+        values = playerEnum.filter(
+          pe =>
+            pe.id !== formikRef.current?.values.players[0] &&
+            pe.id !== formikRef.current?.values.players[2] &&
+            pe.id !== formikRef.current?.values.players[3],
+        );
+        break;
+      case 'doubles-player-3':
+        title = 'Player 3';
+        selected = [formikRef.current?.values.players[2] || ''];
+        values = playerEnum.filter(
+          pe =>
+            pe.id !== formikRef.current?.values.players[0] &&
+            pe.id !== formikRef.current?.values.players[1] &&
+            pe.id !== formikRef.current?.values.players[3],
+        );
+        break;
+      case 'doubles-player-4':
+        title = 'Player 4';
+        selected = [formikRef.current?.values.players[3] || ''];
+        values = playerEnum.filter(
+          pe =>
+            pe.id !== formikRef.current?.values.players[0] &&
+            pe.id !== formikRef.current?.values.players[1] &&
+            pe.id !== formikRef.current?.values.players[2],
+        );
+        break;
+    }
+
+    // For non-tournament players choose one at a time.
     navigation.navigate('EnumPicker', {
-      title: 'Players',
-      values: playerEnum,
-      selected: workingState.players.map(p => p.id!),
+      title,
+      values,
+      selected,
+      extraData: which,
       itemPlural: 'Players',
       eventName: 'change-players',
-      mode: 'many-or-none',
+      mode: scheduler?.requiredPlayerCount === -1 ? 'many-or-none' : 'one',
+      closeOnSelect: scheduler?.requiredPlayerCount !== -1,
     });
   };
 
@@ -463,7 +546,7 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
 
     if (!changedFields.length) return;
 
-    const updatedSportEvent = {
+    const updatedSportEvent: SportEvent = {
       ...workingState.sportEvent,
       name: next.values.name,
       date: next.values.date,
@@ -472,6 +555,9 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
       numberOfSets: next.values.numberOfSets,
       courtSurface: next.values.courtSurface,
       players: next.values.players,
+      schedule: changedFields.includes('schedulerId')
+        ? undefined
+        : workingState.sportEvent.schedule,
     };
 
     // Run the scheduler function.
@@ -539,22 +625,86 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
           title={'Choose Players'}
           titleStyle={theme.styles.buttonScreenHeaderTitle}
           buttonStyle={theme.styles.dividerTextButton}
-          onPress={choosePlayers}
+          onPress={() => choosePlayers()}
         />
       }
     />
   );
 
+  const renderPlayersSinglesSelect = () => {
+    const rounds = workingState.sportEvent.schedule?.rounds;
+    const player1 = rounds?.[0]?.[0]?.[0]?.[0];
+    const player2 = rounds?.[0]?.[0]?.[1]?.[0];
+    return (
+      <>
+        <Divider text={'PLAYERS'} />
+        <ListItem
+          title={'Player 1'}
+          position={['first']}
+          rightContent={'chevron-right'}
+          value={player1 ? `${player1.firstName} ${player1?.lastName}` : ''}
+          onPress={() => choosePlayers('singles-player-1')}
+        />
+        <ListItem
+          title={'Player 2'}
+          position={['last']}
+          rightContent={'chevron-right'}
+          value={player2 ? `${player2.firstName} ${player2.lastName}` : ''}
+          onPress={() => choosePlayers('singles-player-2')}
+        />
+      </>
+    );
+  };
+
+  const renderPlayersDoublesSelect = () => {
+    const rounds = workingState.sportEvent.schedule?.rounds;
+    const player1 = rounds?.[0]?.[0]?.[0]?.[0];
+    const player2 = rounds?.[0]?.[0]?.[0]?.[1];
+    const player3 = rounds?.[0]?.[0]?.[1]?.[0];
+    const player4 = rounds?.[0]?.[0]?.[1]?.[1];
+    return (
+      <>
+        <Divider text={'TEAM 1'} />
+        <ListItem
+          title={'Player 1'}
+          position={['first']}
+          rightContent={'chevron-right'}
+          value={player1 ? `${player1.firstName} ${player1?.lastName}` : ''}
+          onPress={() => choosePlayers('doubles-player-1')}
+        />
+        <ListItem
+          title={'Player 2'}
+          position={['last']}
+          rightContent={'chevron-right'}
+          value={player2 ? `${player2.firstName} ${player2.lastName}` : ''}
+          onPress={() => choosePlayers('doubles-player-2')}
+        />
+        <Divider text={'TEAM 2'} />
+        <ListItem
+          title={'Player 1'}
+          position={['first']}
+          rightContent={'chevron-right'}
+          value={player3 ? `${player3.firstName} ${player3.lastName}` : ''}
+          onPress={() => choosePlayers('doubles-player-3')}
+        />
+        <ListItem
+          title={'Player 2'}
+          position={['last']}
+          rightContent={'chevron-right'}
+          value={player4 ? `${player4.firstName} ${player4.lastName}` : ''}
+          onPress={() => choosePlayers('doubles-player-4')}
+        />
+      </>
+    );
+  };
   const renderPlayersEmpty = () => (
     <>
       <Divider />
-      <EmptyView
-        type={'info'}
-        message={'No Players'}
-        details={'Add Players to your Event.'}
-        positionTop
-        buttonTitle={'Choose Players'}
-        onButtonPress={choosePlayers}
+      <Button
+        title={'Add Players'}
+        titleProps={{ allowFontScaling: false }}
+        containerStyle={theme.styles.buttonContainer}
+        onPress={() => choosePlayers()}
       />
     </>
   );
@@ -587,7 +737,7 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
                   <FormikStateWatcher<FormValues>
                     onChange={onFormikWatcherStateChange}
                   />
-                  <Divider text={'DETAILS'} />
+                  <Divider />
                   <ConditionalWrapper
                     condition={!!sportEventId}
                     wrapper={children => (
@@ -653,6 +803,7 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
                         )}${DateTime.fromISO(values.date)
                           .toFormat(" 'at' h:mma")
                           .toLowerCase()}`}
+                        position={['last']}
                         value={DateTime.fromISO(
                           values.date,
                         ).toRelativeCalendar()}
@@ -667,9 +818,11 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
                         onPress={() => setExpandedDate(!expandedDate)}
                         onChange={onDateChange}
                       />
+                      <Divider text={'LOCATION'} />
                       <ListItemInput
                         ref={locationFieldRef}
                         error={!!errors.location}
+                        position={['first']}
                         inputProps={{
                           inputAccessoryViewID: 'keyboardAccessory',
                           onChangeText: handleChange('location'),
@@ -679,16 +832,9 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
                             ),
                           value: values.location,
                           label: 'Location',
-                          placeholder: 'Location',
+                          placeholder: 'Location Name',
                           autoCapitalize: 'words',
                         }}
-                      />
-                      <ListItemStepper
-                        title={'Number of Sets'}
-                        initialValue={values.numberOfSets}
-                        min={2}
-                        max={10}
-                        onChange={value => setFieldValue('numberOfSets', value)}
                       />
                       <ListItemStepper
                         title={'Number of Courts'}
@@ -707,15 +853,15 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
                         onChangeIndex={onSurfaceSelect}
                         segments={[...CourtSurfaces]}
                       />
-                      <Divider text={'SCHEDULER'} />
+                      <Divider text={'EVENT'} />
                       <ListItem
-                        title={scheduler?.name || 'Choose Your Match Scheduler'}
+                        title={scheduler?.name || 'Choose Your Event Format'}
                         subtitle={
                           scheduler?.description ||
-                          'The scheduler calculates all match round, court, and player assignments. You can also make manual player assignments.'
+                          'Singles, Doubles, Tournament...'
                         }
                         subtitleLines={5}
-                        position={['first', 'last']}
+                        position={['first']}
                         rightContent={'chevron-right'}
                         footerContent={
                           !values.schedulerId ? (
@@ -728,12 +874,12 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
                         }
                         onPress={() =>
                           navigation.navigate('EnumPicker', {
-                            title: 'Match Schedulers',
+                            title: 'Event',
                             values: schedulers.map(s => {
                               return {
                                 id: s.id,
-                                title: s.eventFormat,
-                                subtitle: `${s.name}\n${s.description}`,
+                                title: s.name,
+                                subtitle: s.description,
                                 leftIcon: { icon: s.icon },
                               };
                             }) as EnumPickerValue[],
@@ -744,18 +890,30 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
                           })
                         }
                       />
+                      <ListItemStepper
+                        title={'Number of Sets'}
+                        initialValue={values.numberOfSets}
+                        min={2}
+                        max={10}
+                        position={['last']}
+                        onChange={value => setFieldValue('numberOfSets', value)}
+                      />
                     </View>
                   </ConditionalWrapper>
                 </View>
               )}
             </Formik>
             <Animated.View entering={FadeIn}>
-              {scheduler && workingState.players.length ? (
+              {scheduler ? (
                 <>
                   <Divider />
                   <ListItem
                     title={'Schedule'}
-                    subtitle={`${workingState.sportEvent.schedule?.numberOfRounds} Round${workingState.sportEvent.schedule?.numberOfRounds !== 1 ? 's' : ''} on ${workingState.sportEvent.schedule?.numberOfCourtsUsed} Court${workingState.sportEvent.schedule?.numberOfCourtsUsed !== 1 ? 's' : ''}`}
+                    subtitle={
+                      workingState.sportEvent.schedule?.numberOfRounds
+                        ? `${workingState.sportEvent.schedule.numberOfRounds} Round${workingState.sportEvent.schedule.numberOfRounds !== 1 ? 's' : ''} on ${workingState.sportEvent.schedule.numberOfCourtsUsed} Court${workingState.sportEvent.schedule.numberOfCourtsUsed !== 1 ? 's' : ''}`
+                        : 'Add players to create your schedule'
+                    }
                     position={['first', 'last']}
                     rightContent={'chevron-right'}
                     onPress={() => navigation.navigate('SportEventSchedule')}
@@ -773,25 +931,31 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
                   ) : null}
                 </>
               ) : null}
-              <ListEditor
-                ref={listEditorRef}
-                onChangeState={v => {
-                  setListEditorState(v);
-                }}>
-                <FlatList
-                  contentInsetAdjustmentBehavior={'automatic'}
-                  data={workingState.players}
-                  renderItem={renderPlayer}
-                  keyExtractor={item => `${item.id}`}
-                  scrollEnabled={false}
-                  showsVerticalScrollIndicator={false}
-                  ListHeaderComponent={
-                    workingState.players.length ? renderPlayersHeader() : null
-                  }
-                  ListFooterComponent={<Divider />}
-                  ListEmptyComponent={renderPlayersEmpty()}
-                />
-              </ListEditor>
+              {scheduler?.requiredPlayerCount === -1 ? (
+                <ListEditor
+                  ref={listEditorRef}
+                  onChangeState={v => {
+                    setListEditorState(v);
+                  }}>
+                  <FlatList
+                    contentInsetAdjustmentBehavior={'automatic'}
+                    data={workingState.players}
+                    renderItem={renderPlayer}
+                    keyExtractor={item => `${item.id}`}
+                    scrollEnabled={false}
+                    showsVerticalScrollIndicator={false}
+                    ListHeaderComponent={
+                      workingState.players.length ? renderPlayersHeader() : null
+                    }
+                    ListEmptyComponent={renderPlayersEmpty()}
+                  />
+                </ListEditor>
+              ) : scheduler?.requiredPlayerCount === 2 ? (
+                renderPlayersSinglesSelect()
+              ) : scheduler?.requiredPlayerCount === 4 ? (
+                renderPlayersDoublesSelect()
+              ) : null}
+              <Divider />
             </Animated.View>
           </ScrollView>
         </View>

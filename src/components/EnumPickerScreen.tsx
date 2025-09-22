@@ -1,5 +1,11 @@
 import React, { useEffect } from 'react';
-import { FlatList, ListRenderItem, ScrollView, View } from 'react-native';
+import {
+  Alert,
+  FlatList,
+  ListRenderItem,
+  ScrollView,
+  View,
+} from 'react-native';
 
 import { useEvent, useSetState } from '@react-native-hello/core';
 import {
@@ -33,7 +39,12 @@ export type EnumPickerValue = {
 };
 
 export type EnumPickerInterface = {
-  mode?: 'one' | 'one-or-none' | 'many' | 'many-or-none';
+  mode?: 'one' | 'one-or-none' | 'many' | 'many-or-none' | 'count';
+  count?: number;
+  countWarning?: {
+    title?: string;
+    message?: string;
+  };
   title: string;
   itemPlural?: string;
   headerBackTitle?: string;
@@ -42,11 +53,15 @@ export type EnumPickerInterface = {
   values: EnumPickerValue[];
   selected?: string[]; // Array of enum id, values[].id
   eventName: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  extraData?: any;
   closeOnSelect?: boolean;
 };
 
 export type EnumPickerResult = {
   value: string[]; // Array of enum id
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  extraData?: any;
 };
 
 export type Props = NativeStackScreenProps<
@@ -57,6 +72,8 @@ export type Props = NativeStackScreenProps<
 const EnumPickerScreen = ({ route, navigation }: Props) => {
   const {
     mode = 'one',
+    count = 1,
+    countWarning,
     title,
     itemPlural = 'Items',
     headerBackTitle,
@@ -65,6 +82,7 @@ const EnumPickerScreen = ({ route, navigation }: Props) => {
     values,
     selected,
     eventName,
+    extraData,
     closeOnSelect,
   } = route.params;
 
@@ -92,7 +110,7 @@ const EnumPickerScreen = ({ route, navigation }: Props) => {
     const onDone = () => {
       // For multi-selection mode we send the selected values only when done.
       if (mode.includes('many')) {
-        event.emit(eventName, { value: list.selected });
+        event.emit(eventName, { value: list.selected, extraData });
         navigation.goBack();
       }
     };
@@ -109,7 +127,11 @@ const EnumPickerScreen = ({ route, navigation }: Props) => {
   }, [list]);
 
   const toggleSelect = (value?: EnumPickerValue) => {
-    if (mode === 'one' || mode === 'one-or-none') {
+    if (
+      mode === 'one' ||
+      mode === 'one-or-none' ||
+      (mode === 'count' && count === 1)
+    ) {
       value
         ? setList({ selected: [value.id] })
         : setList({ selected: [] }, { assign: true });
@@ -120,14 +142,34 @@ const EnumPickerScreen = ({ route, navigation }: Props) => {
           { assign: true },
         );
       } else {
-        setList({ selected: list.selected.concat(value.id) }, { assign: true });
+        // Warning if maximum selection count reached.
+        if (mode === 'count' && list.selected.length === count) {
+          Alert.alert(
+            countWarning?.title || `Select Only ${count} Items`,
+            countWarning?.message || 'Please deselect one to add another.',
+            [{ text: 'OK' }],
+            {
+              cancelable: false,
+            },
+          );
+        } else {
+          setList(
+            { selected: list.selected.concat(value.id) },
+            { assign: true },
+          );
+        }
       }
     }
 
     // For single selection mode we send the selected value immediately.
-    if (mode === 'one' || mode === 'one-or-none') {
+    if (
+      mode === 'one' ||
+      mode === 'one-or-none' ||
+      (mode === 'count' && list.selected.length === count)
+    ) {
       event.emit(eventName, {
         value: value ? [value.id] : [],
+        extraData,
       } as EnumPickerResult);
     }
 

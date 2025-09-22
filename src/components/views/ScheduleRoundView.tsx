@@ -22,12 +22,11 @@ import { SportEventEncoded, TeamSides } from 'types/sportEvent';
 export interface Props {
   containerStyle?: StyleProp<ViewStyle>;
   r: number;
-  roundLabel?: boolean;
   showScores?: boolean;
 }
 
 const ScheduleRoundView = (props: Props) => {
-  const { containerStyle, r, roundLabel = true, showScores } = props;
+  const { containerStyle, r, showScores } = props;
 
   const theme = useTheme();
   const s = useStyles();
@@ -43,17 +42,23 @@ const ScheduleRoundView = (props: Props) => {
     : undefined;
 
   const scheduler = schedulers.find(s => s.id === schedule?.schedulerId);
+  const isRound = scheduler?.eventFormat === 'Round Robin';
 
   // Player swap first selection.
   // Not all users of this component may require the swap player swap feature.
   // If not then this context won't be used (no provider is wrapping the use of
   // this component).
-  // const { swapSelection, setSwapSelection } = useContext(PlayerSwapContext);
 
   const numberOfScores = new Array(sportEvent.numberOfSets).fill('');
 
   const setSwap = (position: PlayerSwapPosition) => {
     if (!playerSwapPosition) {
+      const playerPath = `[${position.r}][${position.c}][${position.t}][${position.p}]`;
+      const player: Player = lodash.get(schedule?.rounds, playerPath);
+
+      // May not have players if no player assignment was made.
+      if (!player) return;
+
       updatePlayerSwapPosition(position);
     } else {
       // Get path in rounds to each player.
@@ -63,6 +68,14 @@ const ScheduleRoundView = (props: Props) => {
       // Get each player at their round path.
       const player1: Player = lodash.get(schedule?.rounds, player1Path);
       const player2: Player = lodash.get(schedule?.rounds, player2Path);
+
+      // May not have players if no player assignment was made.
+      // Make sure both players are set.
+      if (!player1 || !player2) {
+        // Clear swap selection.
+        updatePlayerSwapPosition(undefined);
+        return;
+      }
 
       // Check validity of the requested assignments.
       // No player may be present in a round more than once.
@@ -153,6 +166,7 @@ const ScheduleRoundView = (props: Props) => {
   };
 
   const renderCourt = (r: number, c: number, court: Player[][]) => {
+    // Argument court is teams on court [team-index 0-1][player-index 0-1]
     return (
       <View key={`court-${c + 1}]`}>
         <ListItem
@@ -183,8 +197,9 @@ const ScheduleRoundView = (props: Props) => {
                         : {},
                     ]}
                     onPress={() => setSwap({ r, c, t: 0, p: 0 })}>
-                    {`${court[0][0].firstName} ${court[0][0].lastName}` ||
-                      'bye'}
+                    {court?.[0]?.[0]
+                      ? `${court[0][0].firstName} ${court[0][0].lastName}`
+                      : 'Player 1'}
                   </Text>
                   {scheduler?.typeOfMatch === 'Doubles' ? (
                     <Text
@@ -195,8 +210,9 @@ const ScheduleRoundView = (props: Props) => {
                           : {},
                       ]}
                       onPress={() => setSwap({ r, c, t: 0, p: 1 })}>
-                      {`${court[0][1].firstName} ${court[0][1].lastName}` ||
-                        'bye'}
+                      {court?.[0]?.[1]
+                        ? `${court[0][1].firstName} ${court[0][1].lastName}`
+                        : 'Player 2'}
                     </Text>
                   ) : null}
                 </View>
@@ -210,8 +226,11 @@ const ScheduleRoundView = (props: Props) => {
                         : {},
                     ]}
                     onPress={() => setSwap({ r, c, t: 1, p: 0 })}>
-                    {`${court[1][0].firstName} ${court[1][0].lastName}` ||
-                      'bye'}
+                    {court?.[1]?.[0]
+                      ? `${court[1][0].firstName} ${court[1][0].lastName}`
+                      : scheduler?.typeOfMatch === 'Singles'
+                        ? 'Player 2'
+                        : 'Player 3'}
                   </Text>
                   {scheduler?.typeOfMatch === 'Doubles' ? (
                     <Text
@@ -222,8 +241,9 @@ const ScheduleRoundView = (props: Props) => {
                           : {},
                       ]}
                       onPress={() => setSwap({ r, c, t: 1, p: 1 })}>
-                      {`${court[1][1]?.firstName} ${court[1][1]?.lastName}` ||
-                        'bye'}
+                      {court?.[1]?.[1]
+                        ? `${court[1][1].firstName} ${court[1][1].lastName}`
+                        : 'Player 4'}
                     </Text>
                   ) : null}
                 </View>
@@ -354,7 +374,7 @@ const ScheduleRoundView = (props: Props) => {
 
   return (
     <View style={[s.roundContainer, containerStyle]}>
-      {roundLabel ? (
+      {isRound ? (
         <Divider text={`ROUND ${r + 1}`} subHeaderStyle={s.roundLabel} />
       ) : (
         <View style={s.noRoundLabel} />
@@ -362,7 +382,7 @@ const ScheduleRoundView = (props: Props) => {
       {schedule?.rounds[r].map((court, c) =>
         // Courts with bye placeholders are not playable matches. Render court for
         // playable matches with the list of bye players.
-        court.flat().findIndex(p => p.firstName === '(Bye)') >= 0
+        court.flat().findIndex(p => p?.firstName === '(Bye)') >= 0
           ? renderByes(r, c, court)
           : renderCourt(r, c, court),
       )}

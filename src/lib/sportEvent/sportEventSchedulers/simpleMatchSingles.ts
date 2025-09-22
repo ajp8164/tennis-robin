@@ -16,9 +16,6 @@ export const simpleMatchSingles = (
           // Player
           players[0],
         ],
-      ],
-      [
-        // Team
         [
           // Player
           players[1],

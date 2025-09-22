@@ -19,12 +19,12 @@ const SportEventScheduleScreen = () => {
 
   const { sportEvent } = useSportEventStore();
 
-  if (!sportEvent) {
+  if (!sportEvent || !sportEvent.schedule?.rounds) {
     return (
       <EmptyView
         type={'info'}
         message={'No Schedule'}
-        details={'Add players to your event to generate a schedule.'}
+        details={'Add players to your event to create a schedule.'}
       />
     );
   }
