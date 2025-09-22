@@ -768,6 +768,13 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
                                 {values.location}
                               </Text>
                             ) : null}
+                            <Text
+                              style={[
+                                theme.text.small,
+                                { color: theme.colors.listItemSubtitle },
+                              ]}>
+                              {`${values.courtSurface}, ${values.numberOfCourts} Court${values.numberOfCourts !== 1 ? 's' : ''}`}
+                            </Text>
                           </View>
                         }
                         mainContentStyle={{
