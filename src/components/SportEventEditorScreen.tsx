@@ -377,6 +377,10 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
 
     const scheduler = schedulers.find(s => s.id === schedulerId);
     setScheduler(scheduler);
+
+    // Remove all players
+    workingState.updatePlayers([]);
+    formikRef.current?.setFieldValue('players', []);
   };
 
   const cancel = () => {
