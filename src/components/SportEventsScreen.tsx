@@ -191,7 +191,7 @@ const SportEventsScreen = ({ navigation }: Props) => {
             confirmation: () => {
               listEditorRef.current?.reset();
               return confirmAction({
-                label: `Archive SportEvent`,
+                label: `Archive Event`,
                 title:
                   'Archived sport events can be retrieved later by changing your settings.\nAre you sure you want to archive this sportEvent?',
               });
