@@ -57,7 +57,7 @@ const MatchScoringScreen = ({ navigation, route }: Props) => {
     return (
       <>
         {sportEvent?.schedule?.rounds[r][c].map((_team, teamIndex) => (
-          <View style={s.teamContainer}>
+          <View key={`team-${teamIndex}`} style={s.teamContainer}>
             <View
               style={[
                 s.scoresContainer,
