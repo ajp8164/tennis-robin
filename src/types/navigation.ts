@@ -78,24 +78,21 @@ export type SetupNavigatorParamList = {
   UserProfileEditor: undefined;
 };
 
-export type SportEventScoreboardNavigatorParamList = {
-  SportEventScoreboard: {
+export type SportEventsNavigatorParamList = {
+  EnumPicker: EnumPickerInterface;
+  MatchScoring: {
     sportEventId: string;
-    screenTitle: string;
+    round: number;
+    court: number;
+  };
+  NewSportEventNavigator: NavigatorScreenParams<NewSportEventNavigatorParamList>;
+  Player: {
+    playerId: string;
   };
   SportEventStart: {
     sportEventId: string;
     screenTitle: string;
   };
-};
-
-export type SportEventsNavigatorParamList = {
-  EnumPicker: EnumPickerInterface;
-  NewSportEventNavigator: NavigatorScreenParams<NewSportEventNavigatorParamList>;
-  Player: {
-    playerId: string;
-  };
-  SportEventScoreboardNavigator: NavigatorScreenParams<SportEventScoreboardNavigatorParamList>;
   SportEvents: undefined;
   SportEventEditor: {
     sportEventId?: string;

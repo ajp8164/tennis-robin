@@ -3,30 +3,25 @@ import { Alert, StyleProp, Text, View, ViewStyle } from 'react-native';
 
 import {
   Divider,
-  Input,
   ListItem,
   ThemeManager,
   useTheme,
 } from '@react-native-hello/ui';
-import { updateDocument } from 'firebase/firestore';
 import {
   PlayerSwapPosition,
-  encodeSportEvent,
   schedulers,
   useSportEventStore,
 } from 'lib/sportEvent';
 import lodash from 'lodash';
 import { Player } from 'types/player';
-import { SportEventEncoded, TeamSides } from 'types/sportEvent';
 
 export interface Props {
   containerStyle?: StyleProp<ViewStyle>;
   r: number;
-  showScores?: boolean;
 }
 
 const ScheduleRoundView = (props: Props) => {
-  const { containerStyle, r, showScores } = props;
+  const { containerStyle, r } = props;
 
   const theme = useTheme();
   const s = useStyles();
@@ -48,8 +43,6 @@ const ScheduleRoundView = (props: Props) => {
   // Not all users of this component may require the swap player swap feature.
   // If not then this context won't be used (no provider is wrapping the use of
   // this component).
-
-  const numberOfScores = new Array(sportEvent.numberOfSets).fill('');
 
   const setSwap = (position: PlayerSwapPosition) => {
     if (!playerSwapPosition) {
@@ -116,54 +109,54 @@ const ScheduleRoundView = (props: Props) => {
     }
   };
 
-  const updateScore = (
-    r: number,
-    c: number,
-    set: number,
-    team: number,
-    value: number,
-  ) => {
-    const updated = [...(sportEvent.schedule?.scores || [])];
-    updated[r] = updated[r] || [];
-    updated[r][c] = updated[r][c] || [];
-    updated[r][c][set] = (updated[r][c][set] || []) as number[];
-    updated[r][c][set][team] = value;
+  // const updateScore = (
+  //   r: number,
+  //   c: number,
+  //   set: number,
+  //   team: number,
+  //   value: number,
+  // ) => {
+  //   const updated = [...(sportEvent.schedule?.scores || [])];
+  //   updated[r] = updated[r] || [];
+  //   updated[r][c] = updated[r][c] || [];
+  //   updated[r][c][set] = (updated[r][c][set] || []) as number[];
+  //   updated[r][c][set][team] = value;
 
-    updateDocument<SportEventEncoded>(
-      'SportEvents',
-      encodeSportEvent({
-        ...sportEvent,
-        schedule: {
-          ...sportEvent.schedule!,
-          scores: updated,
-        },
-      }),
-    );
-  };
+  //   updateDocument<SportEventEncoded>(
+  //     'SportEvents',
+  //     encodeSportEvent({
+  //       ...sportEvent,
+  //       schedule: {
+  //         ...sportEvent.schedule!,
+  //         scores: updated,
+  //       },
+  //     }),
+  //   );
+  // };
 
-  const isWin = (team: number, scores?: number[]) => {
-    if (!scores) return false;
+  // const isWin = (team: number, scores?: number[]) => {
+  //   if (!scores) return false;
 
-    const home = TeamSides.indexOf('Home');
-    const away = TeamSides.indexOf('Away');
+  //   const home = TeamSides.indexOf('Home');
+  //   const away = TeamSides.indexOf('Away');
 
-    // Must win by 2 or in a tie breaker (7-6).
-    if (
-      team === home &&
-      ((scores[home] > 5 && scores[home] - scores[away] >= 2) ||
-        scores[home] === 7)
-    ) {
-      return true;
-    }
-    if (
-      team === away &&
-      ((scores[away] > 5 && scores[away] - scores[home] >= 2) ||
-        scores[away] === 7)
-    ) {
-      return true;
-    }
-    return false;
-  };
+  //   // Must win by 2 or in a tie breaker (7-6).
+  //   if (
+  //     team === home &&
+  //     ((scores[home] > 5 && scores[home] - scores[away] >= 2) ||
+  //       scores[home] === 7)
+  //   ) {
+  //     return true;
+  //   }
+  //   if (
+  //     team === away &&
+  //     ((scores[away] > 5 && scores[away] - scores[home] >= 2) ||
+  //       scores[away] === 7)
+  //   ) {
+  //     return true;
+  //   }
+  //   return false;
+  // };
 
   const renderCourt = (r: number, c: number, court: Player[][]) => {
     // Argument court is teams on court [team-index 0-1][player-index 0-1]
@@ -251,7 +244,6 @@ const ScheduleRoundView = (props: Props) => {
             </View>
           }
           mainContentStyle={s.mainContainer}
-          footerContent={showScores ? renderScores(r, c) : <></>}
         />
         {c === schedule!.numberOfCourtsUsed - 1 ? null : <Divider />}
       </View>
@@ -287,86 +279,6 @@ const ScheduleRoundView = (props: Props) => {
               }
             });
           })}
-        </View>
-      </View>
-    );
-  };
-
-  // Scores - Rounds, court, set, team
-  const renderScores = (r: number, c: number) => {
-    return (
-      <View key={`scores-${r}-${c}`} style={s.scoresContainer}>
-        {/* Home */}
-        <View style={s.scoresRow}>
-          {numberOfScores.map((_set, set) => (
-            <Input
-              key={`scores-home-${set}`}
-              caretHidden
-              selectTextOnFocus
-              selectionColor={theme.colors.brandSecondary}
-              inputStyle={{
-                ...s.scoreInput,
-                ...(isWin(
-                  TeamSides.indexOf('Home'),
-                  schedule?.scores[r]?.[c]?.[set],
-                )
-                  ? {
-                      backgroundColor: theme.colors.brandSecondary,
-                      color: theme.colors.stickyWhite,
-                    }
-                  : {}),
-              }}
-              value={(
-                schedule?.scores[r]?.[c]?.[set]?.[TeamSides.indexOf('Home')] ||
-                0
-              ).toFixed(0)}
-              onChangeText={value =>
-                updateScore(
-                  r,
-                  c,
-                  set,
-                  TeamSides.indexOf('Home'),
-                  parseInt(value),
-                )
-              }
-            />
-          ))}
-        </View>
-        {/* Away */}
-        <View style={s.scoresRow}>
-          {numberOfScores.map((_set, set) => (
-            <Input
-              key={`scores-away-${set}`}
-              caretHidden
-              selectTextOnFocus
-              selectionColor={theme.colors.brandSecondary}
-              inputStyle={{
-                ...s.scoreInput,
-                ...(isWin(
-                  TeamSides.indexOf('Away'),
-                  schedule?.scores[r]?.[c]?.[set],
-                )
-                  ? {
-                      backgroundColor: theme.colors.brandSecondary,
-                      color: theme.colors.stickyWhite,
-                    }
-                  : {}),
-              }}
-              value={(
-                schedule?.scores[r]?.[c]?.[set]?.[TeamSides.indexOf('Away')] ||
-                0
-              ).toFixed(0)}
-              onChangeText={value =>
-                updateScore(
-                  r,
-                  c,
-                  set,
-                  TeamSides.indexOf('Away'),
-                  parseInt(value),
-                )
-              }
-            />
-          ))}
         </View>
       </View>
     );
@@ -477,30 +389,6 @@ const useStyles = ThemeManager.createStyleSheet(({ theme }) => ({
   },
   roundLabel: {
     marginTop: -10,
-  },
-  scoreInput: {
-    ...theme.text.h2,
-    width: 30,
-    height: 30,
-    paddingHorizontal: 0,
-    paddingVertical: 0,
-    margin: 0,
-    lineHeight: 0,
-    textAlign: 'center',
-    borderRadius: theme.radius.S,
-    borderWidth: 1,
-    borderColor: theme.colors.brandSecondary,
-  },
-  scoresContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingTop: 15,
-  },
-  scoresRow: {
-    flexDirection: 'row',
-    marginBottom: 10,
-    flex: 1,
-    justifyContent: 'space-evenly',
   },
   team1: {
     alignItems: 'flex-start',

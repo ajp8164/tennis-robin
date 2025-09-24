@@ -3,14 +3,15 @@ import React from 'react';
 import { useTheme } from '@react-native-hello/ui';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import EnumPickerScreen from 'components/EnumPickerScreen';
+import MatchScoringScreen from 'components/MatchScoringScreen';
 import PlayerScreen from 'components/PlayerScreen';
 import SportEventEditorScreen from 'components/SportEventEditorScreen';
 import SportEventScheduleScreen from 'components/SportEventScheduleScreen';
+import SportEventStartScreen from 'components/SportEventStartScreen';
 import SportEventsScreen from 'components/SportEventsScreen';
 import { SportEventsNavigatorParamList } from 'types/navigation';
 
 import NewSportEventNavigator from './NewSportEventNavigator';
-import SportEventScoreboardNavigator from './SportEventScoreboardNavigator';
 
 const SportEventsStack =
   createNativeStackNavigator<SportEventsNavigatorParamList>();
@@ -39,14 +40,6 @@ const SportEventsNavigator = () => {
           headerLargeStyle: {
             backgroundColor: theme.colors.viewBackground,
           },
-        }}
-      />
-      <SportEventsStack.Screen
-        name="SportEventScoreboardNavigator"
-        component={SportEventScoreboardNavigator}
-        options={{
-          headerShown: false,
-          presentation: 'fullScreenModal',
         }}
       />
       <SportEventsStack.Screen
@@ -79,6 +72,24 @@ const SportEventsNavigator = () => {
         component={SportEventScheduleScreen}
         options={{
           title: 'Schedule',
+        }}
+      />
+      <SportEventsStack.Screen
+        name="SportEventStart"
+        component={SportEventStartScreen}
+        options={({ route }) => {
+          return {
+            title: route.params.screenTitle,
+            presentation: 'fullScreenModal',
+          };
+        }}
+      />
+      <SportEventsStack.Screen
+        name="MatchScoring"
+        component={MatchScoringScreen}
+        options={{
+          headerShown: false,
+          presentation: 'fullScreenModal',
         }}
       />
       <SportEventsStack.Screen

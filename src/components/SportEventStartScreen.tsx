@@ -1,16 +1,23 @@
 import React, { useEffect, useMemo } from 'react';
 import { ScrollView, View } from 'react-native';
 
-import { Divider, ThemeManager, useTheme } from '@react-native-hello/ui';
+import {
+  ConditionalWrapper,
+  Divider,
+  ListItemCollapsible,
+  useTheme,
+} from '@react-native-hello/ui';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Button } from 'components/atoms/Button';
+import ScoreboardMatchView from 'components/views/ScoreboardMatchView';
 import { useDocument } from 'firebase/firestore';
+import { getRoundState } from 'lib/scoring';
 import { decodeSportEvent } from 'lib/sportEvent';
-import { SportEventScoreboardNavigatorParamList } from 'types/navigation';
+import { SportEventsNavigatorParamList } from 'types/navigation';
 import { SportEventEncoded } from 'types/sportEvent';
 
 export type Props = NativeStackScreenProps<
-  SportEventScoreboardNavigatorParamList,
+  SportEventsNavigatorParamList,
   'SportEventStart'
 >;
 
@@ -18,7 +25,6 @@ const SportEventStartScreen = ({ navigation, route }: Props) => {
   const { sportEventId } = route.params || {};
 
   const theme = useTheme();
-  const s = useStyles();
 
   const { doc: sportEventEncoded } = useDocument<SportEventEncoded>(
     'SportEvents',
@@ -35,7 +41,7 @@ const SportEventStartScreen = ({ navigation, route }: Props) => {
       headerLeft: () => {
         return (
           <Button
-            title={'Cancel'}
+            title={'Close'}
             titleStyle={theme.styles.buttonScreenHeaderTitle}
             buttonStyle={theme.styles.buttonScreenHeader}
             onPress={() => navigation.goBack()}
@@ -47,39 +53,78 @@ const SportEventStartScreen = ({ navigation, route }: Props) => {
   }, []);
 
   return (
-    <>
-      <ScrollView
-        style={theme.styles.view}
-        showsVerticalScrollIndicator={false}
-        contentInsetAdjustmentBehavior={'automatic'}>
-        <Divider />
-      </ScrollView>
-      <View style={s.bottomButton}>
-        <Button
-          title={'Begin Event'}
-          titleStyle={theme.styles.buttonTitle}
-          buttonStyle={theme.styles.button}
-          containerStyle={theme.styles.buttonContainer}
-          onPress={() =>
-            navigation.navigate('SportEventScoreboard', {
-              sportEventId,
-              screenTitle: sportEvent?.name || 'Event',
-            })
-          }
-        />
-      </View>
-    </>
+    <ScrollView
+      style={theme.styles.view}
+      showsVerticalScrollIndicator={false}
+      contentInsetAdjustmentBehavior={'automatic'}>
+      <Divider />
+      {sportEvent?.schedule
+        ? sportEvent.schedule.rounds?.map((round, r) => {
+            const roundState = getRoundState(sportEvent, round, r);
+            return (
+              <View key={`round-${r + 1}`}>
+                <ConditionalWrapper
+                  condition={round.length > 1} // Use the collapsible only if there is more than one round
+                  wrapper={children => (
+                    <ListItemCollapsible
+                      title={`ROUND ${r + 1}`}
+                      subtitle={`${roundState.matchCount} matches`}
+                      value={roundState.roundStateLabel}
+                      initExpanded={false}
+                      position={['first', 'last']}>
+                      {children}
+                    </ListItemCollapsible>
+                  )}>
+                  <>
+                    {round.map((court, c) => {
+                      // Skip round/court that has bye players.
+                      const byeIndex = court
+                        .flat()
+                        .findIndex(p => p.firstName === '(Bye)');
+                      if (byeIndex >= 0) return null;
+                      return (
+                        <View key={`court-${c + 1}`}>
+                          <Divider
+                            text={`Court ${c + 1}`}
+                            subHeaderStyle={{
+                              ...theme.text.normal,
+                              textTransform: 'none',
+                            }}
+                            rightComponent={
+                              <Button
+                                title={'Begin Match'}
+                                titleStyle={
+                                  theme.styles.buttonScreenHeaderTitle
+                                }
+                                buttonStyle={theme.styles.dividerTextButton}
+                                onPress={() =>
+                                  navigation.navigate('MatchScoring', {
+                                    sportEventId,
+                                    round: r,
+                                    court: 0,
+                                  })
+                                }
+                              />
+                            }
+                          />
+                          <ScoreboardMatchView
+                            sportEventId={sportEventId}
+                            round={r}
+                            court={c}
+                          />
+                        </View>
+                      );
+                    })}
+                  </>
+                </ConditionalWrapper>
+                <Divider />
+              </View>
+            );
+          })
+        : null}
+      <Divider />
+    </ScrollView>
   );
 };
-
-const useStyles = ThemeManager.createStyleSheet(({ device, theme }) => ({
-  bottomButton: {
-    height: 80,
-    marginBottom: device.insets.bottom,
-    paddingVertical: 15,
-    borderTopWidth: 1,
-    borderTopColor: theme.colors.subtleGray,
-  },
-}));
 
 export default SportEventStartScreen;

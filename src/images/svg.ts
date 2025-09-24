@@ -4,6 +4,7 @@ import brandLogoInv from './img/brand/logo-brand-inv.svg';
 import brandLogo from './img/brand/logo-brand.svg';
 import welcomeDark from './img/brand/welcome-dark.svg';
 import welcomeLight from './img/brand/welcome-light.svg';
+import chevronHandle from './img/chevron-handle.svg';
 import appleIcon from './img/social/icon-apple.svg';
 import facebookIcon from './img/social/icon-facebook.svg';
 import googleIcon from './img/social/icon-google.svg';
@@ -17,6 +18,7 @@ export const svgImages = Object.assign(
     brandIconInv,
     brandLogo,
     brandLogoInv,
+    chevronHandle,
     facebookIcon,
     googleIcon,
     twitterIcon,

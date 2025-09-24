@@ -26,7 +26,6 @@ const ScoreboardNavigator = () => {
         component={ScoreboardScreen}
         options={{
           headerBackVisible: false,
-          headerShown: false,
         }}
       />
     </ScoreboardStack.Navigator>

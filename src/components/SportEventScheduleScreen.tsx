@@ -47,7 +47,6 @@ const SportEventScheduleScreen = () => {
             <ScheduleRoundView key={`round-${r + 1}`} r={r} />
           ))
         : null}
-
       <Divider />
     </ScrollView>
   );

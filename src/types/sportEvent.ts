@@ -11,6 +11,7 @@ export type SportEvent = {
   location: string;
   numberOfCourts: number;
   numberOfSets: number;
+  numberOfGamesPerSet: number;
   courtSurface: CourtSurface;
   owners: string[];
   players: string[];
@@ -34,7 +35,56 @@ export const TeamSides = ['Home', 'Away'] as const;
 export type TeamSide = (typeof TeamSides)[number];
 
 export type Rounds = Player[][][][]; // Round, court, team, player
-export type Scores = number[][][][]; // Round, court, set, team (see enum TeamName for value)
+
+// Scores are an array of scoring progression.
+// [r][c][s][g][t][scores]
+//
+// [0][0][0][0][0] [0,  15, 30, 40, 40, 50] // Winner
+// [0][0][0][0][1] [0,   0,  0,  0,  0,  0]
+//
+// 50 is game winner if win is 50/30
+// [0][0][0][0][0] [0,  15, 30, 40, 40, 50] // Winner
+// [0][0][0][0][1] [15, 15, 15, 15, 30, 30]
+//
+// 60 is game winner if win is 60/40
+// [0][0][0][0][0] [0,  15, 30, 40, 40, 40, 50, 60] // Ad, winner
+// [0][0][0][0][1] [15, 15, 15, 15, 30, 40, 40, 40]
+//
+// 50/40 is ad, win is 60/40
+// [0][0][0][0][0] [0,  15, 30, 40, 40, 40, 50, 40, 50, 60] // Ad (x2), winner
+// [0][0][0][0][1] [15, 15, 15, 15, 30, 40, 40, 40, 40, 40]
+//
+// 3 game set example
+// [r][c][s][g][t] [scores]
+//
+// [0][0][0][0][0] [0,  15, 30, 40, 40, 50] // set 1, game 1 (0 index)
+// [0][0][0][0][1] [0,   0,  0,  0,  0,  0]
+//
+// [0][0][0][1][0] [0,  15, 30, 40, 40, 50] // set 1, game 2
+// [0][0][0][1][1] [0,   0,  0,  0,  0,  0]
+//
+// [0][0][0][2][0] [0,  15, 30, 40, 40, 50] // set 1, game 3
+// [0][0][0][2][1] [0,   0,  0,  0,  0,  0]
+//
+// [0][0][1][0][0] [0,  15, 30, 40, 40, 50] // set 2, game 1
+// [0][0][1][0][1] [0,   0,  0,  0,  0,  0]
+//
+// [0][0][1][1][0] [0,  15, 30, 40, 40, 50] // set 2, game 2
+// [0][0][1][1][1] [0,   0,  0,  0,  0,  0]
+//
+// [0][0][1][2][0] [0,  15, 30, 40, 40, 50] // set 2, game 3
+// [0][0][1][2][1] [0,   0,  0,  0,  0,  0]
+//
+// [0][0][2][0][0] [0,  15, 30, 40, 40, 50] // set 3, game 1
+// [0][0][2][0][1] [0,   0,  0,  0,  0,  0]
+//
+// [0][0][2][1][0] [0,  15, 30, 40, 40, 50] // set 3, game 2
+// [0][0][2][1][1] [0,   0,  0,  0,  0,  0]
+//
+// [0][0][2][2][0] [0,  15, 30, 40, 40, 50] // set 3, game 3
+// [0][0][2][2][1] [0,   0,  0,  0,  0,  0]
+
+export type Scores = number[][][][][][]; // Round, court, set, game, team, scores
 
 export type Schedule = {
   schedulerId: string;
@@ -57,6 +107,7 @@ export type SportEventEncoded = {
   location: string;
   numberOfCourts: number;
   numberOfSets: number;
+  numberOfGamesPerSet: number;
   courtSurface: CourtSurface;
   owners: string[];
   players: string[];

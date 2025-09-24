@@ -168,12 +168,9 @@ const SportEventsScreen = ({ navigation }: Props) => {
           })
         }
         onPress={() =>
-          navigation.navigate('SportEventScoreboardNavigator', {
-            screen: 'SportEventStart',
-            params: {
-              sportEventId: sportEvent.id || '',
-              screenTitle: sportEvent.name,
-            },
+          navigation.navigate('SportEventStart', {
+            sportEventId: sportEvent.id || '',
+            screenTitle: sportEvent.name,
           })
         }
         showEditor={listEditorState?.show}
