@@ -1,7 +1,8 @@
 import React, { useMemo } from 'react';
 import { Text, View } from 'react-native';
 
-import { ThemeManager } from '@react-native-hello/ui';
+import { Divider, ThemeManager, useTheme } from '@react-native-hello/ui';
+import { Button } from 'components/atoms/Button';
 import { useDocument } from 'firebase/firestore';
 import { getMatchState, getSetState } from 'lib/scoring';
 import { decodeSportEvent } from 'lib/sportEvent';
@@ -14,11 +15,20 @@ export interface Props {
   sportEventId: string;
   round: number;
   court: number;
+  showActions?: boolean;
+  onMatchActionPress: () => void;
 }
 
 const ScoreboardMatchView = (props: Props) => {
-  const { sportEventId, round, court } = props;
+  const {
+    sportEventId,
+    round: r,
+    court: c,
+    showActions,
+    onMatchActionPress,
+  } = props;
 
+  const theme = useTheme();
   const s = useStyles();
 
   const { doc: sportEventEncoded } = useDocument<SportEventEncoded>(
@@ -34,8 +44,7 @@ const ScoreboardMatchView = (props: Props) => {
   const homeIndex = TeamSides.indexOf('Home');
   const awayIndex = TeamSides.indexOf('Away');
 
-  const r = round;
-  const c = court;
+  // Set counter
   const sets = new Array(sportEvent?.numberOfSets).fill('');
 
   const playerNames = (players: Player[]) => {
@@ -59,76 +68,105 @@ const ScoreboardMatchView = (props: Props) => {
   );
 
   let matchStateLabel = '';
-  let resultLabel = '';
-  switch (matchState) {
+  let matchStateAction = '';
+  let matchWinnerMessage = '';
+
+  switch (matchState.status) {
     case 'not-started':
       matchStateLabel = 'Match Not Started';
+      matchStateAction = 'Begin Match';
       break;
     case 'in-progress':
       matchStateLabel = 'Match In Progress';
+      matchStateAction = 'Resume Match';
       break;
     case 'home-wins':
       matchStateLabel = 'Winner - Team 1';
+      matchStateAction = 'Ended';
+      matchWinnerMessage = `Congratulations ${playerNames(sportEvent.schedule!.rounds[r][c][homeIndex])}`;
       break;
     case 'away-wins':
       matchStateLabel = 'Winner - Team 2';
+      matchStateAction = 'Ended';
+      matchWinnerMessage = `Congratulations ${playerNames(sportEvent.schedule!.rounds[r][c][awayIndex])}`;
       break;
   }
 
-  return (
-    <View style={[s.container]}>
-      <View style={s.header}>
-        <Text style={s.playStatus}>{matchStateLabel}</Text>
-        <Text style={s.playTime}>{'2h 23m'}</Text>
-      </View>
-      {sportEvent.schedule?.rounds?.[r]?.[c]?.map((team, teamIndex) => (
-        <View key={`team-${teamIndex}`} style={s.teamContainer}>
-          <View style={[s.playerNamesContainer]}>
-            <Text style={s.playerName}>{playerNames(team)}</Text>
-          </View>
-          <View
-            style={[
-              s.scoresContainer,
-              teamIndex === 0 ? s.team1Scores : s.team2Scores,
-              { width: sets.length * setScoreBoxWidth * 1.05 },
-            ]}>
-            {sets.map((_set, setIndex) => {
-              const setState = getSetState(
-                sportEvent.numberOfGamesPerSet,
-                sportEvent.schedule?.scores[r]?.[c]?.[setIndex],
-              );
-              if (teamIndex === homeIndex && matchState === 'home-wins') {
-                resultLabel = `Congratulations ${playerNames(sportEvent.schedule!.rounds[r][c][teamIndex])}`;
-              }
-              if (teamIndex === awayIndex && matchState === 'away-wins') {
-                resultLabel = `Congratulations ${playerNames(sportEvent.schedule!.rounds[r][c][teamIndex])}`;
-              }
+  const renderHeader = () => {
+    return (
+      <Divider
+        text={`Court ${c + 1}`}
+        subHeaderStyle={s.headerText}
+        rightComponent={
+          matchState.status === 'not-started' ||
+          matchState.status === 'in-progress' ? (
+            <Button
+              title={matchStateAction}
+              titleStyle={theme.styles.buttonScreenHeaderTitle}
+              buttonStyle={theme.styles.dividerTextButton}
+              onPress={onMatchActionPress}
+            />
+          ) : (
+            <Text style={s.matchStatus}>{matchStateAction}</Text>
+          )
+        }
+      />
+    );
+  };
 
-              return (
-                <Text
-                  key={`set-${setIndex}`}
-                  style={[
-                    s.score,
-                    teamIndex === homeIndex && setState === 'home-wins'
-                      ? s.scoreWin
-                      : s.scoreLose,
-                    setState === 'in-progress' ? s.scoreInProgress : {},
-                  ]}>
-                  {sportEvent.schedule?.scores[r]?.[c]?.[setIndex]?.[
-                    teamIndex
-                  ] || ''}
-                </Text>
-              );
-            })}
+  return (
+    <>
+      {showActions ? renderHeader() : null}
+      <View style={[s.container]}>
+        <View style={s.header}>
+          <Text style={s.playStatus}>{matchStateLabel}</Text>
+          <Text style={s.playTime}>{'2h 23m'}</Text>
+        </View>
+        {sportEvent.schedule?.rounds?.[r]?.[c]?.map((team, teamIndex) => (
+          <View key={`team-${teamIndex}`} style={s.teamContainer}>
+            <View style={[s.playerNamesContainer]}>
+              <Text style={s.playerName}>{playerNames(team)}</Text>
+            </View>
+            <View
+              style={[
+                s.scoresContainer,
+                teamIndex === homeIndex ? s.team1Scores : s.team2Scores,
+                { width: sets.length * setScoreBoxWidth * 1.05 },
+              ]}>
+              {sets.map((_set, setIndex) => {
+                const setState = getSetState(
+                  sportEvent.numberOfGamesPerSet,
+                  sportEvent.schedule?.scores[r]?.[c]?.[setIndex],
+                );
+                return (
+                  <Text
+                    key={`set-${setIndex}`}
+                    style={[
+                      s.score,
+                      (teamIndex === homeIndex &&
+                        setState.status === 'home-wins') ||
+                      (teamIndex === awayIndex &&
+                        setState.status === 'away-wins')
+                        ? s.scoreWin
+                        : s.scoreLose,
+                      setState.status === 'in-progress'
+                        ? s.scoreInProgress
+                        : {},
+                    ]}>
+                    {setState.gameScores[teamIndex]}
+                  </Text>
+                );
+              })}
+            </View>
           </View>
-        </View>
-      ))}
-      {resultLabel ? (
-        <View style={s.footer}>
-          <Text style={s.result}>{resultLabel}</Text>
-        </View>
-      ) : null}
-    </View>
+        ))}
+        {matchWinnerMessage ? (
+          <View style={s.footer}>
+            <Text style={s.result}>{matchWinnerMessage}</Text>
+          </View>
+        ) : null}
+      </View>
+    </>
   );
 };
 
@@ -144,6 +182,15 @@ const useStyles = ThemeManager.createStyleSheet(({ theme }) => ({
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingBottom: 10,
+  },
+  headerText: {
+    ...theme.text.normal,
+    textTransform: 'none',
+  },
+  matchStatus: {
+    ...theme.text.normal,
+    fontWeight: '500',
+    padding: 15,
   },
   playStatus: {
     ...theme.text.normal,

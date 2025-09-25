@@ -11,7 +11,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Button } from 'components/atoms/Button';
 import ScoreboardMatchView from 'components/views/ScoreboardMatchView';
 import { useDocument } from 'firebase/firestore';
-import { getRoundState } from 'lib/scoring';
+import { RoundStatus, getRoundState } from 'lib/scoring';
 import { decodeSportEvent } from 'lib/sportEvent';
 import { SportEventsNavigatorParamList } from 'types/navigation';
 import { SportEventEncoded } from 'types/sportEvent';
@@ -52,6 +52,14 @@ const SportEventStartScreen = ({ navigation, route }: Props) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const getRoundLabel = (roundStatus: RoundStatus) => {
+    return roundStatus === 'not-started'
+      ? 'Not Started'
+      : roundStatus === 'in-progress'
+        ? 'In Progress'
+        : 'Ended';
+  };
+
   return (
     <ScrollView
       style={theme.styles.view}
@@ -69,7 +77,7 @@ const SportEventStartScreen = ({ navigation, route }: Props) => {
                     <ListItemCollapsible
                       title={`ROUND ${r + 1}`}
                       subtitle={`${roundState.matchCount} matches`}
-                      value={roundState.roundStateLabel}
+                      value={getRoundLabel(roundState.roundStatus)}
                       initExpanded={false}
                       position={['first', 'last']}>
                       {children}
@@ -84,33 +92,18 @@ const SportEventStartScreen = ({ navigation, route }: Props) => {
                       if (byeIndex >= 0) return null;
                       return (
                         <View key={`court-${c + 1}`}>
-                          <Divider
-                            text={`Court ${c + 1}`}
-                            subHeaderStyle={{
-                              ...theme.text.normal,
-                              textTransform: 'none',
-                            }}
-                            rightComponent={
-                              <Button
-                                title={'Begin Match'}
-                                titleStyle={
-                                  theme.styles.buttonScreenHeaderTitle
-                                }
-                                buttonStyle={theme.styles.dividerTextButton}
-                                onPress={() =>
-                                  navigation.navigate('MatchScoring', {
-                                    sportEventId,
-                                    round: r,
-                                    court: c,
-                                  })
-                                }
-                              />
-                            }
-                          />
                           <ScoreboardMatchView
                             sportEventId={sportEventId}
                             round={r}
                             court={c}
+                            showActions
+                            onMatchActionPress={() =>
+                              navigation.navigate('MatchScoring', {
+                                sportEventId,
+                                round: r,
+                                court: c,
+                              })
+                            }
                           />
                         </View>
                       );

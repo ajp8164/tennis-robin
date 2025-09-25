@@ -3,8 +3,12 @@ import { SportEvent } from 'types/sportEvent';
 
 import { getMatchState } from './index';
 
-export type RoundState = 'not-started' | 'in-progress' | 'ended';
+export type RoundStatus = 'not-started' | 'in-progress' | 'ended';
 
+type RoundStateResult = {
+  roundStatus: RoundStatus;
+  matchCount: number;
+};
 export const getRoundState = (
   sportEvent: SportEvent,
   round: Player[][][],
@@ -14,8 +18,7 @@ export const getRoundState = (
     return court.flat().every(p => p.firstName !== '(Bye)');
   });
 
-  let roundState: RoundState = 'ended';
-  let roundStateLabel = 'Ended';
+  const allRoundStatus = new Set<RoundStatus>();
 
   matches.forEach((_, c) => {
     const matchState = getMatchState(
@@ -24,22 +27,35 @@ export const getRoundState = (
       sportEvent.schedule?.scores[roundIndex]?.[c],
     );
 
-    if (matchState === 'not-started') {
-      roundState = 'not-started';
-      roundStateLabel = 'Not Started';
-      return;
+    if (matchState.status === 'not-started') {
+      allRoundStatus.add('not-started');
     }
 
-    if (matchState === 'in-progress') {
-      roundState = 'in-progress';
-      roundStateLabel = 'In Progress';
-      return;
+    if (matchState.status === 'in-progress') {
+      allRoundStatus.add('in-progress');
+    }
+
+    if (
+      matchState.status === 'home-wins' ||
+      matchState.status === 'away-wins'
+    ) {
+      allRoundStatus.add('ended');
     }
   });
 
+  let roundStatus: RoundStatus;
+  if (allRoundStatus.size > 1) {
+    roundStatus = 'in-progress';
+  } else if (allRoundStatus.has('not-started')) {
+    roundStatus = 'not-started';
+  } else if (allRoundStatus.has('ended')) {
+    roundStatus = 'ended';
+  } else {
+    roundStatus = 'in-progress';
+  }
+
   return {
-    roundState,
-    roundStateLabel,
+    roundStatus,
     matchCount: matches.length,
-  };
+  } as RoundStateResult;
 };
