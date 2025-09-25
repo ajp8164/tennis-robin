@@ -34,8 +34,8 @@ const MatchScoringScreen = ({ navigation, route }: Props) => {
   const theme = useTheme();
   const s = useStyles();
 
-  const homeIndex = TeamSides.indexOf('Home');
-  const awayIndex = TeamSides.indexOf('Away');
+  const team1Index = TeamSides.indexOf('Team1');
+  const team2Index = TeamSides.indexOf('Team2');
 
   const { doc: sportEventEncoded } = useDocument<SportEventEncoded>(
     'SportEvents',
@@ -60,15 +60,15 @@ const MatchScoringScreen = ({ navigation, route }: Props) => {
 
   const [matchEnded, setMatchEnded] = useState(false);
 
-  const homeScores = sportEvent?.schedule?.scores?.[r]?.[c]?.[currentSet]?.[
+  const team1Scores = sportEvent?.schedule?.scores?.[r]?.[c]?.[currentSet]?.[
     currentGame
-  ]?.[homeIndex] || [0];
-  const homeCurrentScore = homeScores[homeScores.length - 1];
+  ]?.[team1Index] || [0];
+  const team1CurrentScore = team1Scores[team1Scores.length - 1];
 
-  const awayScores = sportEvent?.schedule?.scores?.[r]?.[c]?.[currentSet]?.[
+  const team2Scores = sportEvent?.schedule?.scores?.[r]?.[c]?.[currentSet]?.[
     currentGame
-  ]?.[awayIndex] || [0];
-  const awayCurrentScore = awayScores[awayScores.length - 1];
+  ]?.[team2Index] || [0];
+  const team2CurrentScore = team2Scores[team2Scores.length - 1];
 
   // A mesage to display for a team. [team1, team2].
   const [teamMessage, setTeamMessage] = useState<string[]>();
@@ -91,10 +91,13 @@ const MatchScoringScreen = ({ navigation, route }: Props) => {
     );
 
     // Move to next game?
-    if (gameState.status === 'home-wins' || gameState.status === 'away-wins') {
+    if (
+      gameState.status === 'team1-wins' ||
+      gameState.status === 'team2-wins'
+    ) {
       setCurrentGame(currentGame => currentGame + 1);
 
-      if (gameState.status === 'home-wins') {
+      if (gameState.status === 'team1-wins') {
         setTeamMessage(['Team 1 Wins Game', '']);
       } else {
         setTeamMessage(['', 'Team 2 Wins Game']);
@@ -102,11 +105,11 @@ const MatchScoringScreen = ({ navigation, route }: Props) => {
     }
 
     // Move to next set?
-    if (setState.status === 'home-wins' || setState.status === 'away-wins') {
+    if (setState.status === 'team1-wins' || setState.status === 'team2-wins') {
       setCurrentSet(currentSet => currentSet + 1);
       setCurrentGame(0);
 
-      if (setState.status === 'home-wins') {
+      if (setState.status === 'team1-wins') {
         setTeamMessage(['Team 1 Wins Set', '']);
       } else {
         setTeamMessage(['', 'Team 2 Wins Set']);
@@ -115,12 +118,12 @@ const MatchScoringScreen = ({ navigation, route }: Props) => {
 
     // End match?
     if (
-      matchState.status === 'home-wins' ||
-      matchState.status === 'away-wins'
+      matchState.status === 'team1-wins' ||
+      matchState.status === 'team2-wins'
     ) {
       setMatchEnded(true);
 
-      if (matchState.status === 'home-wins') {
+      if (matchState.status === 'team1-wins') {
         setTeamMessage(['Team 1 Wins Match', '']);
       } else {
         setTeamMessage(['', 'Team 2 Wins Match']);
@@ -153,11 +156,11 @@ const MatchScoringScreen = ({ navigation, route }: Props) => {
     .runOnJS(true);
 
   const increaseScoreTeam1 = () => {
-    increaseScore(homeIndex, awayIndex);
+    increaseScore(team1Index, team2Index);
   };
 
   const increaseScoreTeam2 = () => {
-    increaseScore(awayIndex, homeIndex);
+    increaseScore(team2Index, team1Index);
   };
 
   const increaseScore = (teamAIndex: number, teamBIndex: number) => {
@@ -275,8 +278,8 @@ const MatchScoringScreen = ({ navigation, route }: Props) => {
                       key={`set-${setIndex}`}
                       style={[
                         s.score,
-                        teamIndex === homeIndex &&
-                        setState.status === 'home-wins'
+                        teamIndex === team1Index &&
+                        setState.status === 'team1-wins'
                           ? s.scoreWin
                           : s.scoreLose,
                         setState.status === 'in-progress'
@@ -317,17 +320,17 @@ const MatchScoringScreen = ({ navigation, route }: Props) => {
               color={theme.colors.whiteTransparentLight}
             />
             <Text style={s.teamName}>
-              {playerNames(sportEvent.schedule!.rounds[r][c][awayIndex])}
+              {playerNames(sportEvent.schedule!.rounds[r][c][team2Index])}
             </Text>
             <Text style={s.gameScore}>
-              {resolveScore(awayCurrentScore, homeCurrentScore)}
+              {resolveScore(team2CurrentScore, team1CurrentScore)}
             </Text>
           </View>
           {/* Team 2 message */}
           <View style={s.messageContainer}>
-            {teamMessage && teamMessage[awayIndex] ? (
+            {teamMessage && teamMessage[team2Index] ? (
               <Animated.Text style={s.message} exiting={FadeOut}>
-                {teamMessage[awayIndex]}
+                {teamMessage[team2Index]}
               </Animated.Text>
             ) : null}
           </View>
@@ -335,19 +338,19 @@ const MatchScoringScreen = ({ navigation, route }: Props) => {
           <View style={s.setScoresContainer}>{renderSetScores()}</View>
           {/* Team 1 message */}
           <View style={s.messageContainer}>
-            {teamMessage && teamMessage[homeIndex] ? (
+            {teamMessage && teamMessage[team1Index] ? (
               <Animated.Text style={s.message} exiting={FadeOut}>
-                {teamMessage[homeIndex]}
+                {teamMessage[team1Index]}
               </Animated.Text>
             ) : null}
           </View>
           {/* Team 1 */}
           <View style={s.team1}>
             <Text style={s.gameScore}>
-              {resolveScore(homeCurrentScore, awayCurrentScore)}
+              {resolveScore(team1CurrentScore, team2CurrentScore)}
             </Text>
             <Text style={s.teamName}>
-              {playerNames(sportEvent.schedule!.rounds[r][c][homeIndex])}
+              {playerNames(sportEvent.schedule!.rounds[r][c][team1Index])}
             </Text>
             <SvgXml
               xml={getColoredSvg('chevronHandle')}

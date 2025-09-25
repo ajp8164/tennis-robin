@@ -36,8 +36,8 @@ export const getRoundState = (
     }
 
     if (
-      matchState.status === 'home-wins' ||
-      matchState.status === 'away-wins'
+      matchState.status === 'team1-wins' ||
+      matchState.status === 'team2-wins'
     ) {
       allRoundStatus.add('ended');
     }

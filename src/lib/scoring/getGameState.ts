@@ -1,14 +1,14 @@
 import { TeamSides } from 'types/sportEvent';
 
-type GameStatus = 'home-wins' | 'away-wins' | 'in-progress' | 'not-started';
+type GameStatus = 'team1-wins' | 'team2-wins' | 'in-progress' | 'not-started';
 
 type GameStateResult = {
   status: GameStatus;
-  scores: number[]; // [home, away]
+  scores: number[]; // [team1, team2]
 };
 
-const home = TeamSides.indexOf('Home');
-const away = TeamSides.indexOf('Away');
+const team1 = TeamSides.indexOf('Team1');
+const team2 = TeamSides.indexOf('Team2');
 
 export const getGameState = (teamScores?: number[][]): GameStateResult => {
   if (!teamScores) {
@@ -20,34 +20,42 @@ export const getGameState = (teamScores?: number[][]): GameStateResult => {
 
   // Get index of last game score in the set.
   const lastScoreInGameIndex = teamScores[0].length - 1;
-  let homeWinsGame = false;
-  let awayWinsGame = false;
+  let team1WinsGame = false;
+  let team2WinsGame = false;
 
-  // Home wins game if...
-  // Home score > away score AND
-  // Home score is at least away score + 20 (win by 2 where score differential is 10) AND
-  // Home score is >= 50 (50 is win in 3 serves - 0,15,30,40)
-  const homeScore = teamScores[home][lastScoreInGameIndex];
-  const awayScore = teamScores[away][lastScoreInGameIndex];
+  // Team 1 wins game if...
+  // Team 1 score > team 2 score AND
+  // Team 1 score is at least team 2 score + 20 (win by 2 where score differential is 10) AND
+  // Team 1 score is >= 50 (50 is win in 3 serves - 0,15,30,40)
+  const team1Score = teamScores[team1][lastScoreInGameIndex];
+  const team2Score = teamScores[team2][lastScoreInGameIndex];
 
-  // Check if home team is winner.
-  if (homeScore > awayScore && homeScore - awayScore >= 20 && homeScore >= 50) {
-    homeWinsGame = true;
+  // Check if team 1 is winner.
+  if (
+    team1Score > team2Score &&
+    team1Score - team2Score >= 20 &&
+    team1Score >= 50
+  ) {
+    team1WinsGame = true;
   }
 
-  // Check if away team is winner.
-  if (awayScore > homeScore && awayScore - homeScore >= 20 && awayScore >= 50) {
-    awayWinsGame = true;
+  // Check if team 2 is winner.
+  if (
+    team2Score > team1Score &&
+    team2Score - team1Score >= 20 &&
+    team2Score >= 50
+  ) {
+    team2WinsGame = true;
   }
 
-  const status: GameStatus = homeWinsGame
-    ? 'home-wins'
-    : awayWinsGame
-      ? 'away-wins'
+  const status: GameStatus = team1WinsGame
+    ? 'team1-wins'
+    : team2WinsGame
+      ? 'team2-wins'
       : 'in-progress';
 
   return {
     status,
-    scores: [homeScore, awayScore],
+    scores: [team1Score, team2Score],
   } as GameStateResult;
 };

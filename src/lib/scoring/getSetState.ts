@@ -1,12 +1,10 @@
-// import { TeamSides } from 'types/sportEvent';
-
 import { getGameState } from './index';
 
-type SetStatus = 'home-wins' | 'away-wins' | 'in-progress' | 'not-started';
+type SetStatus = 'team1-wins' | 'team2-wins' | 'in-progress' | 'not-started';
 
 type SetStateResult = {
   status: SetStatus;
-  gameScores: number[]; // [home, away]
+  gameScores: number[]; // [team1, team2]
 };
 
 export const getSetState = (
@@ -22,55 +20,55 @@ export const getSetState = (
   }
 
   const gamesPlayed = gameTeamScores.length;
-  let homeTeamWins = 0;
-  let awayTeamWins = 0;
-  let homeWinsSet = false;
-  let awayWinsSet = false;
+  let team1TeamWins = 0;
+  let team2TeamWins = 0;
+  let team1WinsSet = false;
+  let team2WinsSet = false;
 
   // For each game in the set count up the number of wins for each team.
   for (let g = 0; g < gamesPlayed; g++) {
     const gameState = getGameState(gameTeamScores[g]);
 
-    if (gameState.status === 'home-wins') {
-      homeTeamWins += 1;
+    if (gameState.status === 'team1-wins') {
+      team1TeamWins += 1;
     }
 
-    if (gameState.status === 'away-wins') {
-      awayTeamWins += 1;
+    if (gameState.status === 'team2-wins') {
+      team2TeamWins += 1;
     }
   }
 
-  // Home wins set if...
-  // Home wins > away wins AND
-  // Home wins is at least 2 more than away wins (win by 2) OR home team wins is 7 (tie break set) AND
-  // Home wins is greater than 50% of max games (majority of games won)
+  // Team 1 wins set if...
+  // Team 1 wins > team 2 wins AND
+  // Team 1 wins is at least 2 more than team 2 wins (win by 2) OR team 1 wins is 7 (tie break set) AND
+  // Team 1 wins is greater than 50% of max games (majority of games won)
   if (
-    homeTeamWins > awayTeamWins &&
-    (homeTeamWins - awayTeamWins >= 2 || homeTeamWins === 7) &&
-    // homeTeamWins > maxGamesPerSet * 0.5 // Best n of m (e.g. 3 of 5) NYI
-    homeTeamWins >= maxGamesPerSet
+    team1TeamWins > team2TeamWins &&
+    (team1TeamWins - team2TeamWins >= 2 || team1TeamWins === 7) &&
+    // team1TeamWins > maxGamesPerSet * 0.5 // Best n of m (e.g. 3 of 5) NYI
+    team1TeamWins >= maxGamesPerSet
   ) {
-    homeWinsSet = true;
+    team1WinsSet = true;
   }
 
-  // Check for away wins set
+  // Check for team 2 wins set.
   if (
-    awayTeamWins > homeTeamWins &&
-    (awayTeamWins - homeTeamWins >= 2 || awayTeamWins === 7) &&
-    // awayTeamWins > maxGamesPerSet * 0.5 // Best n of m (e.g. 3 of 5) NYI
-    awayTeamWins >= maxGamesPerSet
+    team2TeamWins > team1TeamWins &&
+    (team2TeamWins - team1TeamWins >= 2 || team2TeamWins === 7) &&
+    // team2TeamWins > maxGamesPerSet * 0.5 // Best n of m (e.g. 3 of 5) NYI
+    team2TeamWins >= maxGamesPerSet
   ) {
-    awayWinsSet = true;
+    team2WinsSet = true;
   }
 
-  const status: SetStatus = homeWinsSet
-    ? 'home-wins'
-    : awayWinsSet
-      ? 'away-wins'
+  const status: SetStatus = team1WinsSet
+    ? 'team1-wins'
+    : team2WinsSet
+      ? 'team2-wins'
       : 'in-progress';
 
   return {
     status,
-    gameScores: [homeTeamWins, awayTeamWins],
+    gameScores: [team1TeamWins, team2TeamWins],
   } as SetStateResult;
 };

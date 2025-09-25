@@ -41,8 +41,8 @@ const ScoreboardMatchView = (props: Props) => {
     [sportEventEncoded],
   );
 
-  const homeIndex = TeamSides.indexOf('Home');
-  const awayIndex = TeamSides.indexOf('Away');
+  const team1Index = TeamSides.indexOf('Team1');
+  const team2Index = TeamSides.indexOf('Team2');
 
   // Set counter
   const sets = new Array(sportEvent?.numberOfSets).fill('');
@@ -80,15 +80,15 @@ const ScoreboardMatchView = (props: Props) => {
       matchStateLabel = 'Match In Progress';
       matchStateAction = 'Resume Match';
       break;
-    case 'home-wins':
+    case 'team1-wins':
       matchStateLabel = 'Winner - Team 1';
       matchStateAction = 'Ended';
-      matchWinnerMessage = `Congratulations ${playerNames(sportEvent.schedule!.rounds[r][c][homeIndex])}`;
+      matchWinnerMessage = `Congratulations ${playerNames(sportEvent.schedule!.rounds[r][c][team1Index])}`;
       break;
-    case 'away-wins':
+    case 'team2-wins':
       matchStateLabel = 'Winner - Team 2';
       matchStateAction = 'Ended';
-      matchWinnerMessage = `Congratulations ${playerNames(sportEvent.schedule!.rounds[r][c][awayIndex])}`;
+      matchWinnerMessage = `Congratulations ${playerNames(sportEvent.schedule!.rounds[r][c][team2Index])}`;
       break;
   }
 
@@ -130,7 +130,7 @@ const ScoreboardMatchView = (props: Props) => {
             <View
               style={[
                 s.scoresContainer,
-                teamIndex === homeIndex ? s.team1Scores : s.team2Scores,
+                teamIndex === team1Index ? s.team1Scores : s.team2Scores,
                 { width: sets.length * setScoreBoxWidth * 1.05 },
               ]}>
               {sets.map((_set, setIndex) => {
@@ -143,10 +143,10 @@ const ScoreboardMatchView = (props: Props) => {
                     key={`set-${setIndex}`}
                     style={[
                       s.score,
-                      (teamIndex === homeIndex &&
-                        setState.status === 'home-wins') ||
-                      (teamIndex === awayIndex &&
-                        setState.status === 'away-wins')
+                      (teamIndex === team1Index &&
+                        setState.status === 'team1-wins') ||
+                      (teamIndex === team2Index &&
+                        setState.status === 'team2-wins')
                         ? s.scoreWin
                         : s.scoreLose,
                       setState.status === 'in-progress'

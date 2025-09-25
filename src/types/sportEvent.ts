@@ -31,7 +31,7 @@ export type EventFormat = (typeof EventFormats)[number];
 export const MatchTypes = ['Singles', 'Doubles'] as const;
 export type MatchType = (typeof MatchTypes)[number];
 
-export const TeamSides = ['Home', 'Away'] as const;
+export const TeamSides = ['Team1', 'Team2'] as const;
 export type TeamSide = (typeof TeamSides)[number];
 
 export type Rounds = Player[][][][]; // Round, court, team, player

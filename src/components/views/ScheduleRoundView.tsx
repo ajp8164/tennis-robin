@@ -109,55 +109,6 @@ const ScheduleRoundView = (props: Props) => {
     }
   };
 
-  // const updateScore = (
-  //   r: number,
-  //   c: number,
-  //   set: number,
-  //   team: number,
-  //   value: number,
-  // ) => {
-  //   const updated = [...(sportEvent.schedule?.scores || [])];
-  //   updated[r] = updated[r] || [];
-  //   updated[r][c] = updated[r][c] || [];
-  //   updated[r][c][set] = (updated[r][c][set] || []) as number[];
-  //   updated[r][c][set][team] = value;
-
-  //   updateDocument<SportEventEncoded>(
-  //     'SportEvents',
-  //     encodeSportEvent({
-  //       ...sportEvent,
-  //       schedule: {
-  //         ...sportEvent.schedule!,
-  //         scores: updated,
-  //       },
-  //     }),
-  //   );
-  // };
-
-  // const isWin = (team: number, scores?: number[]) => {
-  //   if (!scores) return false;
-
-  //   const home = TeamSides.indexOf('Home');
-  //   const away = TeamSides.indexOf('Away');
-
-  //   // Must win by 2 or in a tie breaker (7-6).
-  //   if (
-  //     team === home &&
-  //     ((scores[home] > 5 && scores[home] - scores[away] >= 2) ||
-  //       scores[home] === 7)
-  //   ) {
-  //     return true;
-  //   }
-  //   if (
-  //     team === away &&
-  //     ((scores[away] > 5 && scores[away] - scores[home] >= 2) ||
-  //       scores[away] === 7)
-  //   ) {
-  //     return true;
-  //   }
-  //   return false;
-  // };
-
   const renderCourt = (r: number, c: number, court: Player[][]) => {
     // Argument court is teams on court [team-index 0-1][player-index 0-1]
     return (
@@ -167,9 +118,9 @@ const ScheduleRoundView = (props: Props) => {
           containerStyle={s.courtItem}
           headerContent={
             <View style={s.courtHeader}>
-              <Text style={s.homeAway}>{'Home'}</Text>
+              <Text style={s.team1Team2}>{'Team 1'}</Text>
               <Text style={s.courtLabel}>{`Court ${c + 1}`}</Text>
-              <Text style={s.homeAway}>{'Away'}</Text>
+              <Text style={s.team1Team2}>{'Team 2'}</Text>
             </View>
           }
           mainContent={
@@ -345,7 +296,7 @@ const useStyles = ThemeManager.createStyleSheet(({ theme }) => ({
     ...theme.text.normal,
     backgroundColor: theme.colors.listItem,
   },
-  homeAway: {
+  team1Team2: {
     ...theme.text.small,
     color: theme.colors.lightGray,
   },
