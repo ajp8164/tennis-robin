@@ -147,13 +147,19 @@ const SportEventsScreen = ({ navigation }: Props) => {
     ).toFormat('MMM d')}${DateTime.fromISO(sportEvent.date)
       .toFormat(" 'at' h:mma")
       .toLowerCase()}`;
+    const status =
+      sportEvent.state.status === 'not-started'
+        ? locationTime
+        : sportEvent.state.status === 'in-progress'
+          ? 'In Progress'
+          : 'Ended';
 
     return (
       <ListItemSwipeable
         key={sportEvent.id}
         title={sportEvent.name}
         subtitle={playerCount}
-        value={locationTime}
+        value={status}
         valueStyle={[
           theme.text.medium,
           { color: theme.colors.listItemSubtitle },

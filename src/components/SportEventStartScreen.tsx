@@ -79,7 +79,7 @@ const SportEventStartScreen = ({ navigation, route }: Props) => {
                     <ListItemCollapsible
                       title={`ROUND ${r + 1}`}
                       subtitle={`${roundState.matchCount} matches`}
-                      value={getRoundLabel(roundState.roundStatus)}
+                      value={getRoundLabel(roundState.status)}
                       initExpanded={false}
                       position={['first', 'last']}>
                       {children}

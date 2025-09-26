@@ -6,7 +6,7 @@ import { getMatchState } from './index';
 export type RoundStatus = 'not-started' | 'in-progress' | 'ended';
 
 type RoundStateResult = {
-  roundStatus: RoundStatus;
+  status: RoundStatus;
   matchCount: number;
 };
 export const getRoundState = (
@@ -60,7 +60,7 @@ export const getRoundState = (
   }
 
   return {
-    roundStatus,
+    status: roundStatus,
     matchCount: matches.length,
   } as RoundStateResult;
 };

@@ -14,7 +14,12 @@ import { Button } from 'components/atoms/Button';
 import { EmptyView } from 'components/molecules/EmptyView';
 import { updateDocument, useDocument } from 'firebase/firestore';
 import { formatMatchTime } from 'lib/formatMatchTime';
-import { getGameState, getMatchState, getSetState } from 'lib/scoring';
+import {
+  getGameState,
+  getMatchState,
+  getSetState,
+  getSportEventState,
+} from 'lib/scoring';
 import { decodeSportEvent, encodeSportEvent } from 'lib/sportEvent';
 import lodash from 'lodash';
 import { CircleX } from 'lucide-react-native';
@@ -85,6 +90,9 @@ const MatchScoringScreen = ({ navigation, route }: Props) => {
   useEffect(() => {
     sportEventRef.current = sportEvent ?? null;
 
+    // This match can only proceed if the sport event is still in-progress.
+    if (sportEvent?.state?.status === 'ended') return;
+
     const timerIsRunning =
       lodash.get(
         sportEvent?.schedule?.matchDetails,
@@ -140,7 +148,15 @@ const MatchScoringScreen = ({ navigation, route }: Props) => {
 
   // Check for end of game or set or match.
   useEffect(() => {
-    if (!sportEvent?.schedule) return;
+    if (!sportEvent?.schedule || matchEnded) return;
+
+    const team1Names = playerNames(
+      sportEvent.schedule!.rounds[r][c][team1Index],
+    );
+
+    const team2Names = playerNames(
+      sportEvent.schedule!.rounds[r][c][team2Index],
+    );
 
     const matchState = getMatchState(
       sportEvent.numberOfSetsPerMatch,
@@ -166,9 +182,9 @@ const MatchScoringScreen = ({ navigation, route }: Props) => {
       setCurrentGame(currentGame => currentGame + 1);
 
       if (gameState.status === 'team1-wins') {
-        setTeamMessage(['Team 1 Wins Game', '']);
+        setTeamMessage([`${team1Names}\nWin Game`, '']);
       } else {
-        setTeamMessage(['', 'Team 2 Wins Game']);
+        setTeamMessage(['', `${team2Names}\nWin Game`]);
       }
     }
 
@@ -178,9 +194,9 @@ const MatchScoringScreen = ({ navigation, route }: Props) => {
       setCurrentGame(0);
 
       if (setState.status === 'team1-wins') {
-        setTeamMessage(['Team 1 Wins Set', '']);
+        setTeamMessage([`${team1Names}\nWin Set`, '']);
       } else {
-        setTeamMessage(['', 'Team 2 Wins Set']);
+        setTeamMessage(['', `${team2Names}\nWin Set`]);
       }
     }
 
@@ -193,13 +209,39 @@ const MatchScoringScreen = ({ navigation, route }: Props) => {
       updateMatchTimer('ended');
 
       if (matchState.status === 'team1-wins') {
-        setTeamMessage(['Team 1 Wins Match', '']);
+        setTeamMessage([`${team1Names}\nWin Match`, '']);
       } else {
-        setTeamMessage(['', 'Team 2 Wins Match']);
+        setTeamMessage(['', `${team2Names}\nWin Match`]);
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [c, currentGame, currentSet, r, sportEvent]);
+
+  // End of sport event?
+  useEffect(() => {
+    if (!sportEvent) return;
+    const sportEventState = getSportEventState(sportEvent);
+
+    if (
+      sportEventState.status === 'ended' && // Reported status
+      sportEvent.state.status !== 'ended' // Saved status
+    ) {
+      const updatedSportEventState = sportEvent.state;
+
+      if (sportEventState.status === 'ended') {
+        updatedSportEventState.status = sportEventState.status;
+        updatedSportEventState.endDate = DateTime.now().toISO();
+      }
+
+      updateDocument<SportEventEncoded>(
+        'SportEvents',
+        encodeSportEvent({
+          ...sportEvent,
+          state: updatedSportEventState,
+        }),
+      );
+    }
+  }, [sportEvent]);
 
   const updateMatchTimer = (state: MatchTimerState) => {
     const sportEvent = sportEventRef.current;
@@ -207,6 +249,9 @@ const MatchScoringScreen = ({ navigation, route }: Props) => {
 
     const updated = lodash.cloneDeep(sportEvent?.schedule?.matchDetails) || [];
     const timer = lodash.get(updated, `[${r}][${c}].timer`);
+
+    // Don't update if the match has already ended.
+    if (timer?.state === 'ended') return;
 
     lodash.set(updated, `[${r}][${c}].timer`, {
       ...timer,
@@ -242,7 +287,7 @@ const MatchScoringScreen = ({ navigation, route }: Props) => {
       ? `${players[0].lastName} ${players[0].firstName.slice(0, 1)}.`
       : '';
     const player2 = players[1]
-      ? `/${players[1].lastName} ${players[1].firstName.slice(0, 1)}.`
+      ? ` / ${players[1].lastName} ${players[1].firstName.slice(0, 1)}.`
       : '';
     return `${player1}${player2}`;
   };
@@ -250,14 +295,18 @@ const MatchScoringScreen = ({ navigation, route }: Props) => {
   const swipe = Gesture.Fling()
     .direction(Directions.UP)
     .onEnd(() => {
-      increaseScoreTeam2();
+      if (!matchEnded) {
+        increaseScoreTeam2();
+      }
     })
     .runOnJS(true);
 
   const swipeDown = Gesture.Fling()
     .direction(Directions.DOWN)
     .onEnd(() => {
-      increaseScoreTeam1();
+      if (!matchEnded) {
+        increaseScoreTeam1();
+      }
     })
     .runOnJS(true);
 
@@ -331,20 +380,26 @@ const MatchScoringScreen = ({ navigation, route }: Props) => {
     );
   };
 
-  // Resolve scoring value in case of a tie breaker.
-  const resolveScore = (score: number, otherScore: number) => {
+  // Resolve scoring value for display.
+  const resolveDispayedScore = (score: number, otherScore: number) => {
     if (matchEnded) {
-      return 0;
+      return '';
     }
 
-    // In tie break?
-    if (
-      score <= 40 ||
-      otherScore <= 40 ||
-      (score === 40 && otherScore === 40)
-    ) {
+    // Not in tie break?
+    if (score <= 40 && otherScore <= 40) {
       return score;
     }
+
+    if (score > 40 && otherScore < 40) {
+      return 40;
+    }
+
+    if (otherScore > 40 && score < 40) {
+      return score;
+    }
+
+    // In tie break
 
     // Deuce?
     if (score === otherScore) {
@@ -436,7 +491,7 @@ const MatchScoringScreen = ({ navigation, route }: Props) => {
               {playerNames(sportEvent.schedule!.rounds[r][c][team2Index])}
             </Text>
             <Text style={s.gameScore}>
-              {resolveScore(team2CurrentScore, team1CurrentScore)}
+              {resolveDispayedScore(team2CurrentScore, team1CurrentScore)}
             </Text>
           </View>
           {/* Team 2 message */}
@@ -460,7 +515,7 @@ const MatchScoringScreen = ({ navigation, route }: Props) => {
           {/* Team 1 */}
           <View style={s.team1}>
             <Text style={s.gameScore}>
-              {resolveScore(team1CurrentScore, team2CurrentScore)}
+              {resolveDispayedScore(team1CurrentScore, team2CurrentScore)}
             </Text>
             <Text style={s.teamName}>
               {playerNames(sportEvent.schedule!.rounds[r][c][team1Index])}
@@ -511,6 +566,12 @@ const useStyles = ThemeManager.createStyleSheet(({ device, theme }) => ({
   message: {
     ...theme.text.xl,
     color: theme.colors.stickyWhite,
+    textAlign: 'center',
+    borderWidth: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 40,
+    borderRadius: theme.radius.M,
+    borderColor: theme.colors.whiteTransparentLight,
   },
   messageContainer: {
     flex: 1,

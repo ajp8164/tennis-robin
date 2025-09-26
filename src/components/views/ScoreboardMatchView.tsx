@@ -5,9 +5,10 @@ import { Divider, ThemeManager, useTheme } from '@react-native-hello/ui';
 import { Button } from 'components/atoms/Button';
 import { updateDocument, useDocument } from 'firebase/firestore';
 import { formatMatchTime } from 'lib/formatMatchTime';
-import { getMatchState, getSetState } from 'lib/scoring';
+import { getMatchState, getSetState, getSportEventState } from 'lib/scoring';
 import { decodeSportEvent, encodeSportEvent } from 'lib/sportEvent';
 import lodash from 'lodash';
+import { DateTime } from 'luxon';
 import { Player } from 'types/player';
 import { SportEventEncoded, TeamSides } from 'types/sportEvent';
 
@@ -43,6 +44,10 @@ const ScoreboardMatchView = (props: Props) => {
     [sportEventEncoded],
   );
 
+  if (!sportEvent?.schedule) {
+    return null;
+  }
+
   const team1Index = TeamSides.indexOf('Team1');
   const team2Index = TeamSides.indexOf('Team2');
 
@@ -54,7 +59,7 @@ const ScoreboardMatchView = (props: Props) => {
       ? `${players[0].lastName} ${players[0].firstName.slice(0, 1)}.`
       : '';
     const player2 = players[1]
-      ? `/${players[1].lastName} ${players[1].firstName.slice(0, 1)}.`
+      ? ` / ${players[1].lastName} ${players[1].firstName.slice(0, 1)}.`
       : '';
     return `${player1}${player2}`;
   };
@@ -65,18 +70,14 @@ const ScoreboardMatchView = (props: Props) => {
     return `${player1}${player2}`;
   };
 
-  if (!sportEvent?.schedule) {
-    return null;
-  }
-
   const matchState = getMatchState(
     sportEvent.numberOfSetsPerMatch,
     sportEvent.numberOfGamesPerSet,
-    sportEvent.schedule?.scores[r]?.[c],
-    sportEvent.schedule?.matchDetails[r]?.[c],
+    sportEvent.schedule.scores[r]?.[c],
+    sportEvent.schedule.matchDetails[r]?.[c],
   );
 
-  const timer = sportEvent.schedule?.matchDetails[r]?.[c]?.timer;
+  const timer = sportEvent.schedule.matchDetails[r]?.[c]?.timer;
 
   let matchStateLabel = '';
   let matchStateAction = '';
@@ -103,12 +104,12 @@ const ScoreboardMatchView = (props: Props) => {
         case 'team1-wins':
           matchStateLabel = 'Winner - Team 1';
           matchStateAction = '';
-          matchWinnerMessage = `Congratulations ${playerNamesFirsts(sportEvent.schedule!.rounds[r][c][team1Index])}`;
+          matchWinnerMessage = `Congratulations ${playerNamesFirsts(sportEvent.schedule.rounds[r][c][team1Index])}`;
           break;
         case 'team2-wins':
           matchStateLabel = 'Winner - Team 2';
           matchStateAction = '';
-          matchWinnerMessage = `Congratulations ${playerNamesFirsts(sportEvent.schedule!.rounds[r][c][team2Index])}`;
+          matchWinnerMessage = `Congratulations ${playerNamesFirsts(sportEvent.schedule.rounds[r][c][team2Index])}`;
           break;
       }
 
@@ -119,21 +120,30 @@ const ScoreboardMatchView = (props: Props) => {
       break;
   }
 
+  // Force the end of the match.
   const endMatch = () => {
-    // Set match timer to final state.
-    if (!sportEvent?.schedule) return;
+    const updatedMatchDetails =
+      lodash.cloneDeep(sportEvent?.schedule?.matchDetails) || [];
+    lodash.set(updatedMatchDetails, `[${r}][${c}].timer.state`, 'abandoned');
 
-    const updated = lodash.cloneDeep(sportEvent?.schedule?.matchDetails) || [];
-    lodash.set(updated, `[${r}][${c}].timer.state`, 'abandoned');
+    // Is forcing this match to end forcing the event to end?
+    const sportEventState = getSportEventState(sportEvent);
 
-    // Update match timer.
+    const updatedSportEventState = sportEvent.state;
+
+    if (sportEventState.status === 'ended') {
+      updatedSportEventState.status = sportEventState.status;
+      updatedSportEventState.endDate = DateTime.now().toISO();
+    }
+
     updateDocument<SportEventEncoded>(
       'SportEvents',
       encodeSportEvent({
         ...sportEvent,
+        state: updatedSportEventState,
         schedule: {
-          ...sportEvent.schedule,
-          matchDetails: updated,
+          ...sportEvent.schedule!,
+          matchDetails: updatedMatchDetails,
         },
       }),
     );
@@ -178,12 +188,10 @@ const ScoreboardMatchView = (props: Props) => {
         <View style={s.header}>
           <Text style={s.playStatus}>{matchStateLabel}</Text>
           <Text style={s.playTime}>
-            {formatMatchTime(
-              sportEvent?.schedule?.matchDetails?.[r]?.[c]?.timer,
-            )}
+            {formatMatchTime(sportEvent.schedule.matchDetails?.[r]?.[c]?.timer)}
           </Text>
         </View>
-        {sportEvent.schedule?.rounds?.[r]?.[c]?.map((team, teamIndex) => (
+        {sportEvent.schedule.rounds?.[r]?.[c]?.map((team, teamIndex) => (
           <View key={`team-${teamIndex}`} style={s.teamContainer}>
             <View style={[s.playerNamesContainer]}>
               <Text style={s.playerName}>{playerNames(team)}</Text>
