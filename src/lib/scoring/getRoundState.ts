@@ -27,11 +27,7 @@ export const getRoundState = (
       sportEvent.schedule?.scores[roundIndex]?.[c],
       sportEvent.schedule?.matchDetails[roundIndex]?.[c],
     );
-    console.log(
-      matchState,
-      sportEvent.schedule?.matchDetails[roundIndex]?.[c],
-      sportEvent.schedule?.scores[roundIndex]?.[c],
-    );
+
     if (matchState.status === 'ended' || matchState.status === 'abandoned') {
       allRoundStatus.add('ended');
     }

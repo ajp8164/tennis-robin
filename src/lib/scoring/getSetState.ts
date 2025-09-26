@@ -44,7 +44,8 @@ export const getSetState = (
   // Team 1 wins is greater than 50% of max games (majority of games won)
   if (
     team1TeamWins > team2TeamWins &&
-    (team1TeamWins - team2TeamWins >= 2 || team1TeamWins === 7) &&
+    (team1TeamWins - team2TeamWins >= 2 ||
+      team1TeamWins === maxGamesPerSet + 1) && // +1 for possible tie break game
     // team1TeamWins > maxGamesPerSet * 0.5 // Best n of m (e.g. 3 of 5) NYI
     team1TeamWins >= maxGamesPerSet
   ) {
@@ -54,7 +55,8 @@ export const getSetState = (
   // Check for team 2 wins set.
   if (
     team2TeamWins > team1TeamWins &&
-    (team2TeamWins - team1TeamWins >= 2 || team2TeamWins === 7) &&
+    (team2TeamWins - team1TeamWins >= 2 ||
+      team2TeamWins === maxGamesPerSet + 1) && // +1 for possible tie break game
     // team2TeamWins > maxGamesPerSet * 0.5 // Best n of m (e.g. 3 of 5) NYI
     team2TeamWins >= maxGamesPerSet
   ) {

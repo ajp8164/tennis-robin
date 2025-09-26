@@ -59,6 +59,12 @@ const ScoreboardMatchView = (props: Props) => {
     return `${player1}${player2}`;
   };
 
+  const playerNamesFirsts = (players: Player[]) => {
+    const player1 = players[0] ? players[0].firstName : '';
+    const player2 = players[1] ? `and ${players[1].firstName}` : '';
+    return `${player1}${player2}`;
+  };
+
   if (!sportEvent?.schedule) {
     return null;
   }
@@ -96,13 +102,13 @@ const ScoreboardMatchView = (props: Props) => {
       switch (matchState.status) {
         case 'team1-wins':
           matchStateLabel = 'Winner - Team 1';
-          matchStateAction = 'Ended';
-          matchWinnerMessage = `Congratulations ${playerNames(sportEvent.schedule!.rounds[r][c][team1Index])}`;
+          matchStateAction = '';
+          matchWinnerMessage = `Congratulations ${playerNamesFirsts(sportEvent.schedule!.rounds[r][c][team1Index])}`;
           break;
         case 'team2-wins':
           matchStateLabel = 'Winner - Team 2';
-          matchStateAction = 'Ended';
-          matchWinnerMessage = `Congratulations ${playerNames(sportEvent.schedule!.rounds[r][c][team2Index])}`;
+          matchStateAction = '';
+          matchWinnerMessage = `Congratulations ${playerNamesFirsts(sportEvent.schedule!.rounds[r][c][team2Index])}`;
           break;
       }
 

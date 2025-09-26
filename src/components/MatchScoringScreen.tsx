@@ -358,10 +358,10 @@ const MatchScoringScreen = ({ navigation, route }: Props) => {
               <View
                 style={[
                   s.scoresContainer,
-                  reverseTeamIndex === 0 ? s.team2Scores : s.team1Scores,
+                  teamIndex === team1Index ? s.team1Scores : s.team2Scores,
                   { width: sets.length * setScoreBoxWidth * 1.05 },
                 ]}>
-                {sets.map((_, setIndex) => {
+                {sets.map((_set, setIndex) => {
                   const setState = getSetState(
                     sportEvent.numberOfGamesPerSet,
                     sportEvent.schedule?.scores[r]?.[c]?.[setIndex],
@@ -371,8 +371,10 @@ const MatchScoringScreen = ({ navigation, route }: Props) => {
                       key={`set-${setIndex}`}
                       style={[
                         s.score,
-                        teamIndex === team1Index &&
-                        setState.status === 'team1-wins'
+                        (reverseTeamIndex === team1Index &&
+                          setState.status === 'team1-wins') ||
+                        (reverseTeamIndex === team2Index &&
+                          setState.status === 'team2-wins')
                           ? s.scoreWin
                           : s.scoreLose,
                         setState.status === 'in-progress'
