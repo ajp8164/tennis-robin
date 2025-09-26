@@ -161,12 +161,17 @@ const SportEventsScreen = ({ navigation }: Props) => {
         position={listItemPosition(index, allSportEvents.length)}
         rightContent={'info'}
         listEditor={listEditorRef.current}
-        onPressRight={() =>
-          navigation.navigate('SportEventEditor', {
-            sportEventId: sportEvent.id || '',
-            screenTitle: sportEvent.name,
-          })
-        }
+        onPressRight={() => {
+          sportEvent.status === 'not-started'
+            ? navigation.navigate('SportEventEditor', {
+                sportEventId: sportEvent.id || '',
+                screenTitle: sportEvent.name,
+              })
+            : navigation.navigate('SportEventSummary', {
+                sportEventId: sportEvent.id || '',
+                screenTitle: sportEvent.name,
+              });
+        }}
         onPress={() =>
           navigation.navigate('SportEventStart', {
             sportEventId: sportEvent.id || '',

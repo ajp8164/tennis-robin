@@ -65,7 +65,9 @@ const SportEventStartScreen = ({ navigation, route }: Props) => {
       style={theme.styles.view}
       showsVerticalScrollIndicator={false}
       contentInsetAdjustmentBehavior={'automatic'}>
-      <Divider />
+      {sportEvent?.schedule && sportEvent.schedule.rounds.length > 1 ? (
+        <Divider />
+      ) : null}
       {sportEvent?.schedule
         ? sportEvent.schedule.rounds?.map((round, r) => {
             const roundState = getRoundState(sportEvent, round, r);

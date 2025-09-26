@@ -8,6 +8,7 @@ import PlayerScreen from 'components/PlayerScreen';
 import SportEventEditorScreen from 'components/SportEventEditorScreen';
 import SportEventScheduleScreen from 'components/SportEventScheduleScreen';
 import SportEventStartScreen from 'components/SportEventStartScreen';
+import SportEventSummaryScreen from 'components/SportEventSummaryScreen';
 import SportEventsScreen from 'components/SportEventsScreen';
 import { SportEventsNavigatorParamList } from 'types/navigation';
 
@@ -45,6 +46,15 @@ const SportEventsNavigator = () => {
       <SportEventsStack.Screen
         name="SportEventEditor"
         component={SportEventEditorScreen}
+        options={({ route }) => {
+          return {
+            title: route.params.screenTitle,
+          };
+        }}
+      />
+      <SportEventsStack.Screen
+        name="SportEventSummary"
+        component={SportEventSummaryScreen}
         options={({ route }) => {
           return {
             title: route.params.screenTitle,

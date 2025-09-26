@@ -211,11 +211,19 @@ const MatchScoringScreen = ({ navigation, route }: Props) => {
     const updated = lodash.cloneDeep(sportEvent?.schedule?.matchDetails) || [];
     lodash.set(updated, `[${r}][${c}].timer.state`, state);
 
+    // Start sport event.
+    // The sport event status changes to in-progress when the first match begins.
+    let sportEventStatus = sportEvent.status;
+    if (state === 'running' && sportEventStatus !== 'in-progress') {
+      sportEventStatus = 'in-progress';
+    }
+
     // Update match timer.
     updateDocument<SportEventEncoded>(
       'SportEvents',
       encodeSportEvent({
         ...sportEvent,
+        status: sportEventStatus,
         schedule: {
           ...sportEvent.schedule,
           matchDetails: updated,

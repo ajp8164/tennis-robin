@@ -85,6 +85,14 @@ export type Props = CompositeScreenProps<
   NativeStackScreenProps<NewSportEventNavigatorParamList, 'NewSportEvent'>
 >;
 
+type SimpleMatchPosition =
+  | 'singles-player-1'
+  | 'singles-player-2'
+  | 'doubles-player-1'
+  | 'doubles-player-2'
+  | 'doubles-player-3'
+  | 'doubles-player-4';
+
 // Order of fields for accessory view.
 enum Fields {
   name,
@@ -297,15 +305,17 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
       headerRight: () => {
         return (
           <>
-            <Button
-              title={listEditorState?.enabled ? 'Done' : 'Edit'}
-              titleStyle={theme.styles.buttonScreenHeaderTitle}
-              buttonStyle={theme.styles.buttonScreenHeader}
-              disabledTitleStyle={theme.styles.buttonScreenHeaderTitle}
-              disabledStyle={theme.styles.buttonScreenHeaderDisabled}
-              disabled={!workingState.players.length}
-              onPress={() => listEditorRef.current?.onToggleEditMode()}
-            />
+            {scheduler?.requiredPlayerCount === -1 ? (
+              <Button
+                title={listEditorState?.enabled ? 'Done' : 'Edit'}
+                titleStyle={theme.styles.buttonScreenHeaderTitle}
+                buttonStyle={theme.styles.buttonScreenHeader}
+                disabledTitleStyle={theme.styles.buttonScreenHeaderTitle}
+                disabledStyle={theme.styles.buttonScreenHeaderDisabled}
+                disabled={!workingState.players.length}
+                onPress={() => listEditorRef.current?.onToggleEditMode()}
+              />
+            ) : null}
             <Button
               title={'Save'}
               titleStyle={theme.styles.buttonScreenHeaderTitle}
@@ -354,7 +364,7 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
       workingState.updatePlayers([...workingState.players, ...players]);
 
       // Player ids in the form is an ordered array for singles/doubles.
-      switch (result.extraData as string) {
+      switch (result.extraData as SimpleMatchPosition) {
         case 'singles-player-1':
         case 'doubles-player-1':
           playerIds[0] = result.value[0];
@@ -421,6 +431,7 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
           courtSurface: values.courtSurface,
           // Not updating owners here
           players: values.players,
+          status: 'not-started',
         }),
       );
     } else {
@@ -437,6 +448,7 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
           courtSurface: values.courtSurface,
           owners: userProfile ? [userProfile.id!] : [], // Should always be an id
           players: values.players,
+          status: 'not-started',
         }),
       );
 
@@ -452,13 +464,13 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
     }
   };
 
-  const choosePlayers = (which?: string) => {
+  const choosePlayers = (which?: SimpleMatchPosition) => {
     // Default is all selected players (e.g. tournament)
     let selected = formikRef.current?.values.players;
     let title = 'Players';
     let values = playerEnum;
 
-    switch (which as string) {
+    switch (which) {
       case 'singles-player-1':
       case 'doubles-player-1':
         title = 'Player 1';

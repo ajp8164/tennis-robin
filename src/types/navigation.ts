@@ -99,6 +99,10 @@ export type SportEventsNavigatorParamList = {
     screenTitle?: string;
   };
   SportEventSchedule: undefined;
+  SportEventSummary: {
+    sportEventId?: string;
+    screenTitle?: string;
+  };
 };
 
 export type TabNavigatorParamList = {
