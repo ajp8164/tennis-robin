@@ -28,6 +28,25 @@ export const EventFormats = [
 ] as const;
 export type EventFormat = (typeof EventFormats)[number];
 
+export type MatchDetail = {
+  timer: MatchTimer;
+};
+
+export type MatchTimer = {
+  hours: number;
+  minutes: number;
+  state: MatchTimerState;
+};
+
+export type MatchTimerState =
+  | 'initial'
+  | 'running'
+  | 'paused'
+  | 'ended'
+  | 'abandoned';
+
+export type MatchDetails = MatchDetail[][]; // Round, court
+
 export const MatchTypes = ['Singles', 'Doubles'] as const;
 export type MatchType = (typeof MatchTypes)[number];
 
@@ -93,6 +112,7 @@ export type Schedule = {
   rounds: Rounds; // Includes all player and bye-placeholder assignments on all courts.
   byes: Player[][]; // Round, player
   scores: Scores;
+  matchDetails: MatchDetails;
 };
 
 // Encoded types provide firestore compatibility since firestore does not allow next arrays.
@@ -121,4 +141,5 @@ export type ScheduleEncoded = {
   rounds: string; // Stringified
   byes: string; // Stringified
   scores: string; // Stringified
+  matchDetails: string; // Stringified;
 };

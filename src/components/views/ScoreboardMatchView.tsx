@@ -3,9 +3,11 @@ import { Text, View } from 'react-native';
 
 import { Divider, ThemeManager, useTheme } from '@react-native-hello/ui';
 import { Button } from 'components/atoms/Button';
-import { useDocument } from 'firebase/firestore';
+import { updateDocument, useDocument } from 'firebase/firestore';
+import { formatMatchTime } from 'lib/formatMatchTime';
 import { getMatchState, getSetState } from 'lib/scoring';
-import { decodeSportEvent } from 'lib/sportEvent';
+import { decodeSportEvent, encodeSportEvent } from 'lib/sportEvent';
+import lodash from 'lodash';
 import { Player } from 'types/player';
 import { SportEventEncoded, TeamSides } from 'types/sportEvent';
 
@@ -16,7 +18,7 @@ export interface Props {
   round: number;
   court: number;
   showActions?: boolean;
-  onMatchActionPress: () => void;
+  onPressMatchAction: () => void;
 }
 
 const ScoreboardMatchView = (props: Props) => {
@@ -25,7 +27,7 @@ const ScoreboardMatchView = (props: Props) => {
     round: r,
     court: c,
     showActions,
-    onMatchActionPress,
+    onPressMatchAction,
   } = props;
 
   const theme = useTheme();
@@ -65,32 +67,71 @@ const ScoreboardMatchView = (props: Props) => {
     sportEvent.numberOfSets,
     sportEvent.numberOfGamesPerSet,
     sportEvent.schedule?.scores[r]?.[c],
+    sportEvent.schedule?.matchDetails[r]?.[c],
   );
+
+  const timer = sportEvent.schedule?.matchDetails[r]?.[c]?.timer;
 
   let matchStateLabel = '';
   let matchStateAction = '';
   let matchWinnerMessage = '';
 
-  switch (matchState.status) {
-    case 'not-started':
+  switch (timer?.state || 'initial') {
+    case 'initial':
       matchStateLabel = 'Match Not Started';
       matchStateAction = 'Begin Match';
       break;
-    case 'in-progress':
+    case 'running':
       matchStateLabel = 'Match In Progress';
-      matchStateAction = 'Resume Match';
+      matchStateAction = '';
       break;
-    case 'team1-wins':
-      matchStateLabel = 'Winner - Team 1';
-      matchStateAction = 'Ended';
-      matchWinnerMessage = `Congratulations ${playerNames(sportEvent.schedule!.rounds[r][c][team1Index])}`;
+    case 'paused':
+      matchStateLabel = 'Match In Progress';
+      matchStateAction = 'Resume';
       break;
-    case 'team2-wins':
-      matchStateLabel = 'Winner - Team 2';
+    case 'ended':
+      matchStateLabel = 'Match In Progress';
       matchStateAction = 'Ended';
-      matchWinnerMessage = `Congratulations ${playerNames(sportEvent.schedule!.rounds[r][c][team2Index])}`;
+
+      switch (matchState.status) {
+        case 'team1-wins':
+          matchStateLabel = 'Winner - Team 1';
+          matchStateAction = 'Ended';
+          matchWinnerMessage = `Congratulations ${playerNames(sportEvent.schedule!.rounds[r][c][team1Index])}`;
+          break;
+        case 'team2-wins':
+          matchStateLabel = 'Winner - Team 2';
+          matchStateAction = 'Ended';
+          matchWinnerMessage = `Congratulations ${playerNames(sportEvent.schedule!.rounds[r][c][team2Index])}`;
+          break;
+      }
+
+      break;
+    case 'abandoned':
+      matchStateLabel = 'Abandoned';
+      matchStateAction = '';
       break;
   }
+
+  const endMatch = () => {
+    // Set match timer to final state.
+    if (!sportEvent?.schedule) return;
+
+    const updated = lodash.cloneDeep(sportEvent?.schedule?.matchDetails) || [];
+    lodash.set(updated, `[${r}][${c}].timer.state`, 'abandoned');
+
+    // Update match timer.
+    updateDocument<SportEventEncoded>(
+      'SportEvents',
+      encodeSportEvent({
+        ...sportEvent,
+        schedule: {
+          ...sportEvent.schedule,
+          matchDetails: updated,
+        },
+      }),
+    );
+  };
 
   const renderHeader = () => {
     return (
@@ -98,17 +139,27 @@ const ScoreboardMatchView = (props: Props) => {
         text={`Court ${c + 1}`}
         subHeaderStyle={s.headerText}
         rightComponent={
-          matchState.status === 'not-started' ||
-          matchState.status === 'in-progress' ? (
-            <Button
-              title={matchStateAction}
-              titleStyle={theme.styles.buttonScreenHeaderTitle}
-              buttonStyle={theme.styles.dividerTextButton}
-              onPress={onMatchActionPress}
-            />
-          ) : (
-            <Text style={s.matchStatus}>{matchStateAction}</Text>
-          )
+          <View style={{ flexDirection: 'row' }}>
+            {matchState.status === 'in-progress' ? (
+              <Button
+                title={'End'}
+                titleStyle={theme.styles.buttonScreenHeaderTitle}
+                buttonStyle={theme.styles.dividerTextButton}
+                onPress={endMatch}
+              />
+            ) : null}
+            {matchState.status === 'not-started' ||
+            matchState.status === 'in-progress' ? (
+              <Button
+                title={matchStateAction}
+                titleStyle={theme.styles.buttonScreenHeaderTitle}
+                buttonStyle={theme.styles.dividerTextButton}
+                onPress={onPressMatchAction}
+              />
+            ) : (
+              <Text style={s.matchStatus}>{matchStateAction}</Text>
+            )}
+          </View>
         }
       />
     );
@@ -120,7 +171,11 @@ const ScoreboardMatchView = (props: Props) => {
       <View style={[s.container]}>
         <View style={s.header}>
           <Text style={s.playStatus}>{matchStateLabel}</Text>
-          <Text style={s.playTime}>{'2h 23m'}</Text>
+          <Text style={s.playTime}>
+            {formatMatchTime(
+              sportEvent?.schedule?.matchDetails?.[r]?.[c]?.timer,
+            )}
+          </Text>
         </View>
         {sportEvent.schedule?.rounds?.[r]?.[c]?.map((team, teamIndex) => (
           <View key={`team-${teamIndex}`} style={s.teamContainer}>

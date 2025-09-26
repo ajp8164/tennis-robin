@@ -95,6 +95,7 @@ export const uniquePartnerDoubles = (
     rounds: scheduleRounds,
     byes: resolved.byePlayers,
     scores: [],
+    matchDetails: [],
   };
 };
 

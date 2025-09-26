@@ -31,5 +31,6 @@ export const simpleMatchSingles = (
     rounds: r,
     byes: [],
     scores: [],
+    matchDetails: [],
   };
 };

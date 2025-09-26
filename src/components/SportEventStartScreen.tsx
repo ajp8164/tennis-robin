@@ -97,7 +97,7 @@ const SportEventStartScreen = ({ navigation, route }: Props) => {
                             round={r}
                             court={c}
                             showActions
-                            onMatchActionPress={() =>
+                            onPressMatchAction={() =>
                               navigation.navigate('MatchScoring', {
                                 sportEventId,
                                 round: r,

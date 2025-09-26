@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Text, View } from 'react-native';
 import {
   Directions,
@@ -13,13 +13,19 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Button } from 'components/atoms/Button';
 import { EmptyView } from 'components/molecules/EmptyView';
 import { updateDocument, useDocument } from 'firebase/firestore';
+import { formatMatchTime } from 'lib/formatMatchTime';
 import { getGameState, getMatchState, getSetState } from 'lib/scoring';
 import { decodeSportEvent, encodeSportEvent } from 'lib/sportEvent';
 import lodash from 'lodash';
 import { CircleX } from 'lucide-react-native';
 import { SportEventsNavigatorParamList } from 'types/navigation';
 import { Player } from 'types/player';
-import { SportEventEncoded, TeamSides } from 'types/sportEvent';
+import {
+  MatchTimerState,
+  SportEvent,
+  SportEventEncoded,
+  TeamSides,
+} from 'types/sportEvent';
 
 const setScoreBoxWidth = 30;
 
@@ -53,11 +59,9 @@ const MatchScoringScreen = ({ navigation, route }: Props) => {
   const [currentSet, setCurrentSet] = useState(
     sportEvent?.schedule?.scores.length || 0,
   );
-
   const [currentGame, setCurrentGame] = useState(
     sportEvent?.schedule?.scores[currentSet]?.length || 0,
   );
-
   const [matchEnded, setMatchEnded] = useState(false);
 
   const team1Scores = sportEvent?.schedule?.scores?.[r]?.[c]?.[currentSet]?.[
@@ -73,21 +77,87 @@ const MatchScoringScreen = ({ navigation, route }: Props) => {
   // A mesage to display for a team. [team1, team2].
   const [teamMessage, setTeamMessage] = useState<string[]>();
 
+  const matchTimerRef = useRef<NodeJS.Timeout>(null);
+  const sportEventRef = useRef<SportEvent | null>(null); // Needed for match timer.
+
+  // Pre-initialization for match timer.
+  useEffect(() => {
+    sportEventRef.current = sportEvent ?? null;
+
+    const timerIsRunning =
+      lodash.get(
+        sportEvent?.schedule?.matchDetails,
+        `[${r}][${c}].timer.state`,
+      ) === 'running';
+
+    if (sportEvent && !timerIsRunning) {
+      setTimerState('running');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sportEvent]);
+
+  // Start the match timer.
+  useEffect(() => {
+    matchTimerRef.current = setInterval(() => {
+      const sportEvent = sportEventRef.current;
+      if (!sportEvent?.schedule) return;
+
+      const updated = lodash.cloneDeep(sportEvent.schedule.matchDetails) || [];
+
+      const prev = lodash.get(updated, `[${r}][${c}].timer`) || {
+        hours: 0,
+        minutes: 0,
+      };
+
+      const updatedMinutes = prev.minutes + 1;
+      lodash.set(updated, `[${r}][${c}].timer.hours`, prev.hours);
+      lodash.set(updated, `[${r}][${c}].timer.minutes`, updatedMinutes);
+
+      if (updatedMinutes === 60) {
+        lodash.set(updated, `[${r}][${c}].timer.hours`, prev.hours + 1);
+        lodash.set(updated, `[${r}][${c}].timer.minutes`, 0);
+      }
+
+      lodash.set(updated, `[${r}][${c}].timer.state`, 'running');
+
+      // Update match time.
+      updateDocument<SportEventEncoded>(
+        'SportEvents',
+        encodeSportEvent({
+          ...sportEvent,
+          schedule: {
+            ...sportEvent.schedule,
+            matchDetails: updated,
+          },
+        }),
+      );
+    }, 60 * 1000); // Update every minute
+
+    return () => {
+      // Pause match timer on screen unmount.
+      setTimerState('paused');
+      clearInterval(matchTimerRef.current!);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Check for end of game or set or match.
   useEffect(() => {
+    if (!sportEvent?.schedule) return;
+
     const matchState = getMatchState(
-      sportEvent?.numberOfSets,
-      sportEvent?.numberOfGamesPerSet,
-      sportEvent?.schedule?.scores?.[r]?.[c],
+      sportEvent.numberOfSets,
+      sportEvent.numberOfGamesPerSet,
+      sportEvent.schedule.scores?.[r]?.[c],
     );
 
     const setState = getSetState(
-      sportEvent?.numberOfGamesPerSet,
-      sportEvent?.schedule?.scores?.[r]?.[c]?.[currentSet],
+      sportEvent.numberOfGamesPerSet,
+      sportEvent.schedule?.scores?.[r]?.[c]?.[currentSet],
     );
 
     const gameState = getGameState(
-      sportEvent?.schedule?.scores?.[r]?.[c]?.[currentSet]?.[currentGame],
+      sportEvent.schedule.scores?.[r]?.[c]?.[currentSet]?.[currentGame],
     );
 
     // Move to next game?
@@ -122,6 +192,7 @@ const MatchScoringScreen = ({ navigation, route }: Props) => {
       matchState.status === 'team2-wins'
     ) {
       setMatchEnded(true);
+      setTimerState('ended');
 
       if (matchState.status === 'team1-wins') {
         setTeamMessage(['Team 1 Wins Match', '']);
@@ -129,7 +200,28 @@ const MatchScoringScreen = ({ navigation, route }: Props) => {
         setTeamMessage(['', 'Team 2 Wins Match']);
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [c, currentGame, currentSet, r, sportEvent]);
+
+  const setTimerState = (state: MatchTimerState) => {
+    const sportEvent = sportEventRef.current;
+    if (!sportEvent?.schedule) return;
+
+    const updated = lodash.cloneDeep(sportEvent?.schedule?.matchDetails) || [];
+    lodash.set(updated, `[${r}][${c}].timer.state`, state);
+
+    // Update match timer.
+    updateDocument<SportEventEncoded>(
+      'SportEvents',
+      encodeSportEvent({
+        ...sportEvent,
+        schedule: {
+          ...sportEvent.schedule,
+          matchDetails: updated,
+        },
+      }),
+    );
+  };
 
   const playerNames = (players: Player[]) => {
     const player1 = players[0]
@@ -169,7 +261,7 @@ const MatchScoringScreen = ({ navigation, route }: Props) => {
 
     if (!sportEvent.schedule) return;
 
-    const workingScores = sportEvent.schedule?.scores;
+    const workingScores = sportEvent.schedule.scores;
 
     //Round, court, set, game, team, scores
     const teamAScores = workingScores?.[r]?.[c]?.[currentSet]?.[currentGame]?.[
@@ -305,12 +397,17 @@ const MatchScoringScreen = ({ navigation, route }: Props) => {
   return (
     <GestureDetector gesture={Gesture.Exclusive(swipe, swipeDown)}>
       <View style={[theme.styles.view, s.container]}>
-        <Button
-          buttonStyle={theme.styles.buttonScreenHeader}
-          containerStyle={s.closeButton}
-          icon={<CircleX color={theme.colors.stickyWhite} size={33} />}
-          onPress={() => navigation.goBack()}
-        />
+        <View style={s.header}>
+          <Text style={s.matchTime}>
+            {formatMatchTime(sportEvent.schedule.matchDetails?.[r]?.[c]?.timer)}
+          </Text>
+          <Button
+            buttonStyle={theme.styles.buttonScreenHeader}
+            containerStyle={s.closeButton}
+            icon={<CircleX color={theme.colors.stickyWhite} size={33} />}
+            onPress={() => navigation.goBack()}
+          />
+        </View>
         <View style={{ flex: 1 }}>
           {/* Team 2 */}
           <View style={s.team2}>
@@ -370,7 +467,6 @@ const useStyles = ThemeManager.createStyleSheet(({ device, theme }) => ({
     transform: [{ rotate: '180deg' }],
   },
   closeButton: {
-    height: device.insets.top + 40,
     alignSelf: 'flex-end',
     justifyContent: 'flex-end',
   },
@@ -384,6 +480,17 @@ const useStyles = ThemeManager.createStyleSheet(({ device, theme }) => ({
     fontWeight: '700',
     marginVertical: 10,
     lineHeight: 0,
+  },
+  header: {
+    flexDirection: 'row',
+    marginTop: device.insets.top,
+    alignItems: 'center',
+  },
+  matchTime: {
+    ...theme.text.xl,
+    color: theme.colors.stickyWhite,
+    marginLeft: 10,
+    flex: 1,
   },
   message: {
     ...theme.text.xl,

@@ -1,10 +1,13 @@
+import { MatchDetail } from 'types/sportEvent';
+
 import { getSetState } from './index';
 
 export type MatchStatus =
   | 'team1-wins'
   | 'team2-wins'
   | 'in-progress'
-  | 'not-started';
+  | 'not-started'
+  | 'ended';
 
 type MatchStateResult = {
   status: MatchStatus;
@@ -15,11 +18,16 @@ export const getMatchState = (
   maxSetsPerMatch: number,
   maxGamesPerSet: number,
   setGameTeamScores?: number[][][][],
+  matchDetail?: MatchDetail,
 ): MatchStateResult => {
   // Must have scores for sets, game and team otherwise the set has not yet started.
   if (!setGameTeamScores || !setGameTeamScores[0]) {
     return {
-      status: 'not-started',
+      status:
+        matchDetail?.timer.state === 'running' ||
+        matchDetail?.timer.state === 'paused'
+          ? 'in-progress'
+          : 'not-started',
       setScores: [0, 0], // No set wins in the match for either team
     };
   }
@@ -66,7 +74,9 @@ export const getMatchState = (
     ? 'team1-wins'
     : team2WinsMatch
       ? 'team2-wins'
-      : 'in-progress';
+      : matchDetail?.timer.state === 'ended'
+        ? 'ended'
+        : 'in-progress';
 
   return {
     status,
