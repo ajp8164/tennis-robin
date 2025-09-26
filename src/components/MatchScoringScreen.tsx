@@ -149,6 +149,7 @@ const MatchScoringScreen = ({ navigation, route }: Props) => {
       sportEvent.numberOfSetsPerMatch,
       sportEvent.numberOfGamesPerSet,
       sportEvent.schedule.scores?.[r]?.[c],
+      sportEvent.schedule.matchDetails?.[r]?.[c],
     );
 
     const setState = getSetState(

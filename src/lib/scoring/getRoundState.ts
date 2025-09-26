@@ -25,7 +25,16 @@ export const getRoundState = (
       sportEvent.numberOfSetsPerMatch,
       sportEvent.numberOfGamesPerSet,
       sportEvent.schedule?.scores[roundIndex]?.[c],
+      sportEvent.schedule?.matchDetails[roundIndex]?.[c],
     );
+    console.log(
+      matchState,
+      sportEvent.schedule?.matchDetails[roundIndex]?.[c],
+      sportEvent.schedule?.scores[roundIndex]?.[c],
+    );
+    if (matchState.status === 'ended' || matchState.status === 'abandoned') {
+      allRoundStatus.add('ended');
+    }
 
     if (matchState.status === 'not-started') {
       allRoundStatus.add('not-started');

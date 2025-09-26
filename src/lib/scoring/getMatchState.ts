@@ -7,7 +7,8 @@ export type MatchStatus =
   | 'team2-wins'
   | 'in-progress'
   | 'not-started'
-  | 'ended';
+  | 'ended'
+  | 'abandoned';
 
 type MatchStateResult = {
   status: MatchStatus;
@@ -27,7 +28,11 @@ export const getMatchState = (
         matchDetail?.timer.state === 'running' ||
         matchDetail?.timer.state === 'paused'
           ? 'in-progress'
-          : 'not-started',
+          : matchDetail?.timer.state === 'ended'
+            ? 'ended'
+            : matchDetail?.timer.state === 'abandoned'
+              ? 'abandoned'
+              : 'not-started',
       setScores: [0, 0], // No set wins in the match for either team
     };
   }
@@ -76,7 +81,9 @@ export const getMatchState = (
       ? 'team2-wins'
       : matchDetail?.timer.state === 'ended'
         ? 'ended'
-        : 'in-progress';
+        : matchDetail?.timer.state === 'abandoned'
+          ? 'abandoned'
+          : 'in-progress';
 
   return {
     status,

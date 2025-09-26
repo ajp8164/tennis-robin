@@ -90,8 +90,8 @@ const ScoreboardMatchView = (props: Props) => {
       matchStateAction = 'Resume';
       break;
     case 'ended':
-      matchStateLabel = 'Match In Progress';
-      matchStateAction = 'Ended';
+      matchStateLabel = 'Ended';
+      matchStateAction = '';
 
       switch (matchState.status) {
         case 'team1-wins':
