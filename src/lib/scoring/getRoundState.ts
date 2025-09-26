@@ -22,7 +22,7 @@ export const getRoundState = (
 
   matches.forEach((_, c) => {
     const matchState = getMatchState(
-      sportEvent.numberOfSets,
+      sportEvent.numberOfSetsPerMatch,
       sportEvent.numberOfGamesPerSet,
       sportEvent.schedule?.scores[roundIndex]?.[c],
     );

@@ -54,7 +54,7 @@ const MatchScoringScreen = ({ navigation, route }: Props) => {
   );
 
   // Set counter
-  const sets = new Array(sportEvent?.numberOfSets).fill('');
+  const sets = new Array(sportEvent?.numberOfSetsPerMatch).fill('');
 
   const [currentSet, setCurrentSet] = useState(
     sportEvent?.schedule?.scores.length || 0,
@@ -146,7 +146,7 @@ const MatchScoringScreen = ({ navigation, route }: Props) => {
     if (!sportEvent?.schedule) return;
 
     const matchState = getMatchState(
-      sportEvent.numberOfSets,
+      sportEvent.numberOfSetsPerMatch,
       sportEvent.numberOfGamesPerSet,
       sportEvent.schedule.scores?.[r]?.[c],
     );

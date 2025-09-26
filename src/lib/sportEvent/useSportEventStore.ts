@@ -36,7 +36,7 @@ const defaultSportEvent: SportEvent = {
   date: now,
   location: '',
   numberOfCourts: 1,
-  numberOfSets: 2,
+  numberOfSetsPerMatch: 2,
   numberOfGamesPerSet: 3,
   courtSurface: 'Other',
   owners: [],

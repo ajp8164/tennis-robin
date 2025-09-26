@@ -10,7 +10,7 @@ export type SportEvent = {
   date: string;
   location: string;
   numberOfCourts: number;
-  numberOfSets: number;
+  numberOfSetsPerMatch: number;
   numberOfGamesPerSet: number;
   courtSurface: CourtSurface;
   owners: string[];
@@ -126,7 +126,7 @@ export type SportEventEncoded = {
   date: string;
   location: string;
   numberOfCourts: number;
-  numberOfSets: number;
+  numberOfSetsPerMatch: number;
   numberOfGamesPerSet: number;
   courtSurface: CourtSurface;
   owners: string[];

@@ -97,7 +97,8 @@ type FormValues = {
   date: ISODateString;
   location: string;
   numberOfCourts: number;
-  numberOfSets: number;
+  numberOfSetsPerMatch: number;
+  numberOfGamesPerSet: number;
   courtSurface: CourtSurface;
   players: string[];
   scheduleRoundsVersion: number;
@@ -171,7 +172,8 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
       .toISO(),
     location: '',
     numberOfCourts: 1,
-    numberOfSets: 3,
+    numberOfSetsPerMatch: 3,
+    numberOfGamesPerSet: 3,
     courtSurface: 'Hard',
     players: [],
     scheduleRoundsVersion: 0,
@@ -183,7 +185,8 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
     date: Yup.string().required(),
     location: Yup.string(),
     numberOfCourts: Yup.number().min(1).required(),
-    numberOfSets: Yup.number().min(2).required(),
+    numberOfSetsPerMatch: Yup.number().min(1).required(),
+    numberOfGamesPerSet: Yup.number().min(1).required(),
     courtSurface: Yup.string().required(),
     players: Yup.array().of(Yup.string()),
     scheduleRoundsVersion: Yup.number(),
@@ -230,7 +233,8 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
           date: sportEvent.date,
           location: sportEvent.location,
           numberOfCourts: sportEvent.numberOfCourts,
-          numberOfSets: sportEvent.numberOfSets,
+          numberOfSetsPerMatch: sportEvent.numberOfSetsPerMatch,
+          numberOfGamesPerSet: sportEvent.numberOfGamesPerSet,
           courtSurface: sportEvent.courtSurface,
           players: sportEvent.players,
           scheduleRoundsVersion: 0,
@@ -412,7 +416,8 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
           date: values.date,
           location: values.location,
           numberOfCourts: values.numberOfCourts,
-          numberOfSets: values.numberOfSets,
+          numberOfSetsPerMatch: values.numberOfSetsPerMatch,
+          numberOfGamesPerSet: values.numberOfGamesPerSet,
           courtSurface: values.courtSurface,
           // Not updating owners here
           players: values.players,
@@ -427,7 +432,8 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
           date: values.date,
           location: values.location,
           numberOfCourts: values.numberOfCourts,
-          numberOfSets: values.numberOfSets,
+          numberOfSetsPerMatch: values.numberOfSetsPerMatch,
+          numberOfGamesPerSet: values.numberOfGamesPerSet,
           courtSurface: values.courtSurface,
           owners: userProfile ? [userProfile.id!] : [], // Should always be an id
           players: values.players,
@@ -556,7 +562,7 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
       date: next.values.date,
       location: next.values.location,
       numberOfCourts: next.values.numberOfCourts,
-      numberOfSets: next.values.numberOfSets,
+      numberOfSetsPerMatch: next.values.numberOfSetsPerMatch,
       courtSurface: next.values.courtSurface,
       players: next.values.players,
       schedule: changedFields.includes('schedulerId')
@@ -902,12 +908,24 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
                         }
                       />
                       <ListItemStepper
-                        title={'Number of Sets'}
-                        initialValue={values.numberOfSets}
-                        min={2}
+                        title={'Sets per Match'}
+                        initialValue={values.numberOfSetsPerMatch}
+                        min={1}
                         max={10}
                         position={['last']}
-                        onChange={value => setFieldValue('numberOfSets', value)}
+                        onChange={value =>
+                          setFieldValue('numberOfSetsPerMatch', value)
+                        }
+                      />
+                      <ListItemStepper
+                        title={'Games per Set'}
+                        initialValue={values.numberOfGamesPerSet}
+                        min={1}
+                        max={6}
+                        position={['last']}
+                        onChange={value =>
+                          setFieldValue('numberOfGamesPerSet', value)
+                        }
                       />
                     </View>
                   </ConditionalWrapper>

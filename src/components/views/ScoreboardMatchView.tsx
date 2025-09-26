@@ -47,7 +47,7 @@ const ScoreboardMatchView = (props: Props) => {
   const team2Index = TeamSides.indexOf('Team2');
 
   // Set counter
-  const sets = new Array(sportEvent?.numberOfSets).fill('');
+  const sets = new Array(sportEvent?.numberOfSetsPerMatch).fill('');
 
   const playerNames = (players: Player[]) => {
     const player1 = players[0]
@@ -64,7 +64,7 @@ const ScoreboardMatchView = (props: Props) => {
   }
 
   const matchState = getMatchState(
-    sportEvent.numberOfSets,
+    sportEvent.numberOfSetsPerMatch,
     sportEvent.numberOfGamesPerSet,
     sportEvent.schedule?.scores[r]?.[c],
     sportEvent.schedule?.matchDetails[r]?.[c],
