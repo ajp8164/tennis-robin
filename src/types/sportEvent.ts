@@ -16,7 +16,7 @@ export type SportEvent = {
   owners: string[];
   players: string[];
   schedule?: Schedule;
-  status: SportEventStatus;
+  state: SportEventState;
 };
 
 export const CourtSurfaces = ['Hard', 'Clay', 'Grass', 'Other'] as const;
@@ -50,6 +50,12 @@ export type MatchDetails = MatchDetail[][]; // Round, court
 
 export const MatchTypes = ['Singles', 'Doubles'] as const;
 export type MatchType = (typeof MatchTypes)[number];
+
+export type SportEventState = {
+  status: SportEventStatus;
+  startDate?: ISODateString;
+  endDate?: ISODateString;
+};
 
 export type SportEventStatus =
   | 'in-progress'
@@ -139,7 +145,7 @@ export type SportEventEncoded = {
   owners: string[];
   players: string[];
   schedule?: ScheduleEncoded;
-  status: SportEventStatus;
+  state: SportEventState;
 };
 
 export type ScheduleEncoded = {

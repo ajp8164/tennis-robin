@@ -18,6 +18,7 @@ import { getGameState, getMatchState, getSetState } from 'lib/scoring';
 import { decodeSportEvent, encodeSportEvent } from 'lib/sportEvent';
 import lodash from 'lodash';
 import { CircleX } from 'lucide-react-native';
+import { DateTime } from 'luxon';
 import { SportEventsNavigatorParamList } from 'types/navigation';
 import { Player } from 'types/player';
 import {
@@ -91,7 +92,7 @@ const MatchScoringScreen = ({ navigation, route }: Props) => {
       ) === 'running';
 
     if (sportEvent && !timerIsRunning) {
-      setTimerState('running');
+      updateMatchTimer('running');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sportEvent]);
@@ -103,11 +104,7 @@ const MatchScoringScreen = ({ navigation, route }: Props) => {
       if (!sportEvent?.schedule) return;
 
       const updated = lodash.cloneDeep(sportEvent.schedule.matchDetails) || [];
-
-      const prev = lodash.get(updated, `[${r}][${c}].timer`) || {
-        hours: 0,
-        minutes: 0,
-      };
+      const prev = lodash.get(updated, `[${r}][${c}].timer`);
 
       const updatedMinutes = prev.minutes + 1;
       lodash.set(updated, `[${r}][${c}].timer.hours`, prev.hours);
@@ -135,7 +132,7 @@ const MatchScoringScreen = ({ navigation, route }: Props) => {
 
     return () => {
       // Pause match timer on screen unmount.
-      setTimerState('paused');
+      updateMatchTimer('paused');
       clearInterval(matchTimerRef.current!);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -193,7 +190,7 @@ const MatchScoringScreen = ({ navigation, route }: Props) => {
       matchState.status === 'team2-wins'
     ) {
       setMatchEnded(true);
-      setTimerState('ended');
+      updateMatchTimer('ended');
 
       if (matchState.status === 'team1-wins') {
         setTeamMessage(['Team 1 Wins Match', '']);
@@ -204,18 +201,26 @@ const MatchScoringScreen = ({ navigation, route }: Props) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [c, currentGame, currentSet, r, sportEvent]);
 
-  const setTimerState = (state: MatchTimerState) => {
+  const updateMatchTimer = (state: MatchTimerState) => {
     const sportEvent = sportEventRef.current;
     if (!sportEvent?.schedule) return;
 
     const updated = lodash.cloneDeep(sportEvent?.schedule?.matchDetails) || [];
-    lodash.set(updated, `[${r}][${c}].timer.state`, state);
+    const timer = lodash.get(updated, `[${r}][${c}].timer`);
+
+    lodash.set(updated, `[${r}][${c}].timer`, {
+      ...timer,
+      state,
+      hours: timer?.hours || 0,
+      minutes: timer?.minutes || 0,
+    });
 
     // Start sport event.
     // The sport event status changes to in-progress when the first match begins.
-    let sportEventStatus = sportEvent.status;
-    if (state === 'running' && sportEventStatus !== 'in-progress') {
-      sportEventStatus = 'in-progress';
+    const sportEventState = { ...sportEvent.state };
+    if (state === 'running' && sportEventState.status !== 'in-progress') {
+      sportEventState.status = 'in-progress';
+      sportEventState.startDate = DateTime.now().toISO();
     }
 
     // Update match timer.
@@ -223,7 +228,7 @@ const MatchScoringScreen = ({ navigation, route }: Props) => {
       'SportEvents',
       encodeSportEvent({
         ...sportEvent,
-        status: sportEventStatus,
+        state: sportEventState,
         schedule: {
           ...sportEvent.schedule,
           matchDetails: updated,

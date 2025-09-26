@@ -431,7 +431,9 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
           courtSurface: values.courtSurface,
           // Not updating owners here
           players: values.players,
-          status: 'not-started',
+          state: {
+            status: 'not-started',
+          },
         }),
       );
     } else {
@@ -448,7 +450,9 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
           courtSurface: values.courtSurface,
           owners: userProfile ? [userProfile.id!] : [], // Should always be an id
           players: values.players,
-          status: 'not-started',
+          state: {
+            status: 'not-started',
+          },
         }),
       );
 

@@ -162,7 +162,7 @@ const SportEventsScreen = ({ navigation }: Props) => {
         rightContent={'info'}
         listEditor={listEditorRef.current}
         onPressRight={() => {
-          sportEvent.status === 'not-started'
+          sportEvent.state.status === 'not-started'
             ? navigation.navigate('SportEventEditor', {
                 sportEventId: sportEvent.id || '',
                 screenTitle: sportEvent.name,
