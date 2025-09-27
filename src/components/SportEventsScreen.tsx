@@ -1,9 +1,9 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
-  ListRenderItem,
   SectionList,
   SectionListData,
+  SectionListRenderItem,
   View,
 } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
@@ -137,8 +137,9 @@ const SportEventsScreen = ({ navigation }: Props) => {
     });
   };
 
-  const renderSportEvent: ListRenderItem<SportEvent> = ({
+  const renderSportEvent: SectionListRenderItem<SportEvent, Section> = ({
     item: sportEvent,
+    section,
     index,
   }) => {
     const playerCount = `${sportEvent.players.length} Player${sportEvent.players.length !== 1 ? 's' : ''}`;
@@ -164,7 +165,7 @@ const SportEventsScreen = ({ navigation }: Props) => {
           theme.text.medium,
           { color: theme.colors.listItemSubtitle },
         ]}
-        position={listItemPosition(index, allSportEvents.length)}
+        position={listItemPosition(index, section.data.length)}
         rightContent={'info'}
         listEditor={listEditorRef.current}
         onPressRight={() => {
