@@ -129,12 +129,16 @@ const SportEventsScreen = ({ navigation }: Props) => {
   const groupSportEvents = (
     sportEvents?: SportEvent[],
   ): SectionListData<SportEvent, Section>[] => {
-    return groupItems<SportEvent, Section>(sportEvents || [], sportEvents => {
-      const date = sportEvents.date;
-      return date
-        ? DateTime.fromISO(date).toFormat('MMMM yyyy').toUpperCase()
-        : '';
-    });
+    return groupItems<SportEvent, Section>(
+      sportEvents || [],
+      sportEvents => {
+        const date = sportEvents.date;
+        return date
+          ? DateTime.fromISO(date).toFormat('MMMM yyyy').toUpperCase()
+          : '';
+      },
+      { reverse: true },
+    );
   };
 
   const renderSportEvent: SectionListRenderItem<SportEvent, Section> = ({
@@ -247,7 +251,7 @@ const SportEventsScreen = ({ navigation }: Props) => {
           contentInsetAdjustmentBehavior={'automatic'}
           stickySectionHeadersEnabled={true}
           scrollEnabled={false}
-          sections={groupSportEvents([...allSportEvents].reverse())} // Most recent sportEvent at the top
+          sections={groupSportEvents([...allSportEvents])}
           keyExtractor={(item, index) => `${index}${item.id}`}
           renderItem={renderSportEvent}
           renderSectionHeader={({ section: { title } }) => (
