@@ -151,9 +151,9 @@ const MatchScoringScreen = ({ navigation, route }: Props) => {
     if (!sportEvent?.schedule || matchEnded) return;
 
     const playerCount = sportEvent.schedule!.rounds[r][c].length;
-    const gameWinner = `Game Winner${playerCount !== 1 ? 's' : ''}`;
-    const setWinner = `Set Winner${playerCount !== 1 ? 's' : ''}`;
-    const matchWinner = `Match Winner${playerCount !== 1 ? 's' : ''}`;
+    const gameWinner = `Game Winner!${playerCount !== 1 ? 's' : ''}`;
+    const setWinner = `Set Winner!${playerCount !== 1 ? 's' : ''}`;
+    const matchWinner = `Match Winner!${playerCount !== 1 ? 's' : ''}`;
 
     const matchState = getMatchState(
       sportEvent.numberOfSetsPerMatch,
