@@ -187,18 +187,27 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
     scheduleRoundsVersion: 0,
   });
 
-  const schema = Yup.object().shape({
-    schedulerId: Yup.string().min(1).required(),
-    name: Yup.string().required(),
-    date: Yup.string().required(),
-    location: Yup.string(),
-    numberOfCourts: Yup.number().min(1).required(),
-    numberOfSetsPerMatch: Yup.number().min(1).required(),
-    numberOfGamesPerSet: Yup.number().min(1).required(),
-    courtSurface: Yup.string().required(),
-    players: Yup.array().of(Yup.string()),
-    scheduleRoundsVersion: Yup.number(),
-  });
+  const schema = useMemo(
+    () =>
+      Yup.object({
+        schedulerId: Yup.string().min(1).required(),
+        name: Yup.string().required(),
+        date: Yup.string().required(),
+        location: Yup.string(),
+        numberOfCourts: Yup.number().min(1).required(),
+        numberOfSetsPerMatch: Yup.number().min(1).required(),
+        numberOfGamesPerSet: Yup.number().min(1).required(),
+        courtSurface: Yup.string().required(),
+        players: Yup.array()
+          .of(Yup.string().required())
+          .test('required-player-count', '', function (value) {
+            if (!scheduler || scheduler.requiredPlayerCount === -1) return true;
+            return value?.length === scheduler.requiredPlayerCount;
+          }),
+        scheduleRoundsVersion: Yup.number(),
+      }),
+    [scheduler],
+  );
 
   const [expandedDate, setExpandedDate] = useState(false);
 
@@ -670,6 +679,8 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
         <Divider text={'PLAYERS'} />
         <ListItem
           title={'Player 1'}
+          subtitle={!player1 ? 'Select player' : undefined}
+          subtitleStyle={s.requiredTextLi}
           position={['first']}
           rightContent={'chevron-right'}
           value={player1 ? `${player1.firstName} ${player1?.lastName}` : ''}
@@ -677,6 +688,8 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
         />
         <ListItem
           title={'Player 2'}
+          subtitle={!player2 ? 'Select player' : undefined}
+          subtitleStyle={s.requiredTextLi}
           position={['last']}
           rightContent={'chevron-right'}
           value={player2 ? `${player2.firstName} ${player2.lastName}` : ''}
@@ -697,6 +710,8 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
         <Divider text={'TEAM 1'} />
         <ListItem
           title={'Player 1'}
+          subtitle={!player1 ? 'Select player' : undefined}
+          subtitleStyle={s.requiredTextLi}
           position={['first']}
           rightContent={'chevron-right'}
           value={player1 ? `${player1.firstName} ${player1?.lastName}` : ''}
@@ -704,6 +719,8 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
         />
         <ListItem
           title={'Player 2'}
+          subtitle={!player2 ? 'Select player' : undefined}
+          subtitleStyle={s.requiredTextLi}
           position={['last']}
           rightContent={'chevron-right'}
           value={player2 ? `${player2.firstName} ${player2.lastName}` : ''}
@@ -712,6 +729,8 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
         <Divider text={'TEAM 2'} />
         <ListItem
           title={'Player 1'}
+          subtitle={!player3 ? 'Select player' : undefined}
+          subtitleStyle={s.requiredTextLi}
           position={['first']}
           rightContent={'chevron-right'}
           value={player3 ? `${player3.firstName} ${player3.lastName}` : ''}
@@ -719,6 +738,8 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
         />
         <ListItem
           title={'Player 2'}
+          subtitle={!player4 ? 'Select player' : undefined}
+          subtitleStyle={s.requiredTextLi}
           position={['last']}
           rightContent={'chevron-right'}
           value={player4 ? `${player4.firstName} ${player4.lastName}` : ''}
@@ -1025,6 +1046,10 @@ const useStyles = ThemeManager.createStyleSheet(({ theme }) => ({
     ...theme.text.small,
     color: theme.colors.assertive,
     marginLeft: 15,
+  },
+  requiredTextLi: {
+    ...theme.text.small,
+    color: theme.colors.assertive,
   },
 }));
 
