@@ -150,13 +150,10 @@ const MatchScoringScreen = ({ navigation, route }: Props) => {
   useEffect(() => {
     if (!sportEvent?.schedule || matchEnded) return;
 
-    const team1Names = playerNames(
-      sportEvent.schedule!.rounds[r][c][team1Index],
-    );
-
-    const team2Names = playerNames(
-      sportEvent.schedule!.rounds[r][c][team2Index],
-    );
+    const playerCount = sportEvent.schedule!.rounds[r][c].length;
+    const gameWinner = `Game Winner${playerCount !== 1 ? 's' : ''}`;
+    const setWinner = `Set Winner${playerCount !== 1 ? 's' : ''}`;
+    const matchWinner = `Match Winner${playerCount !== 1 ? 's' : ''}`;
 
     const matchState = getMatchState(
       sportEvent.numberOfSetsPerMatch,
@@ -182,9 +179,9 @@ const MatchScoringScreen = ({ navigation, route }: Props) => {
       setCurrentGame(currentGame => currentGame + 1);
 
       if (gameState.status === 'team1-wins') {
-        setTeamMessage([`${team1Names}\nWin Game`, '']);
+        setTeamMessage([gameWinner, '']);
       } else {
-        setTeamMessage(['', `${team2Names}\nWin Game`]);
+        setTeamMessage(['', gameWinner]);
       }
     }
 
@@ -194,9 +191,9 @@ const MatchScoringScreen = ({ navigation, route }: Props) => {
       setCurrentGame(0);
 
       if (setState.status === 'team1-wins') {
-        setTeamMessage([`${team1Names}\nWin Set`, '']);
+        setTeamMessage([setWinner, '']);
       } else {
-        setTeamMessage(['', `${team2Names}\nWin Set`]);
+        setTeamMessage(['', setWinner]);
       }
     }
 
@@ -209,9 +206,9 @@ const MatchScoringScreen = ({ navigation, route }: Props) => {
       updateMatchTimer('ended');
 
       if (matchState.status === 'team1-wins') {
-        setTeamMessage([`${team1Names}\nWin Match`, '']);
+        setTeamMessage([matchWinner, '']);
       } else {
-        setTeamMessage(['', `${team2Names}\nWin Match`]);
+        setTeamMessage(['', matchWinner]);
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
