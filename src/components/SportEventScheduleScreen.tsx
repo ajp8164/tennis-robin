@@ -1,11 +1,15 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { ScrollView } from 'react-native';
 
-import { Divider, ThemeManager, useTheme } from '@react-native-hello/ui';
+import { Divider, useTheme } from '@react-native-hello/ui';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { Button } from 'components/atoms/Button';
+import { InfoModal, InfoModalMethods } from 'components/modals/InfoModal';
 import { EmptyView } from 'components/molecules/EmptyView';
 import ScheduleRoundView from 'components/views/ScheduleRoundView';
+import eventScheduleExplainer from 'lib/content/eventScheduleExplainer.json';
 import { useSportEventStore } from 'lib/sportEvent';
+import { Info } from 'lucide-react-native';
 import { SportEventsNavigatorParamList } from 'types/navigation';
 
 export type Props = NativeStackScreenProps<
@@ -13,11 +17,30 @@ export type Props = NativeStackScreenProps<
   'SportEventSchedule'
 >;
 
-const SportEventScheduleScreen = () => {
+const SportEventScheduleScreen = ({ navigation }: Props) => {
   const theme = useTheme();
-  const s = useStyles();
 
   const { sportEvent } = useSportEventStore();
+
+  const infoModalRef = useRef<InfoModalMethods>(null);
+
+  useEffect(() => {
+    navigation.setOptions({
+      headerRight: () => {
+        return (
+          <Button
+            icon={
+              <Info color={theme.colors.screenHeaderButtonText} size={28} />
+            }
+            buttonStyle={theme.styles.buttonScreenHeader}
+            headerRight
+            onPress={() => infoModalRef.current?.present()}
+          />
+        );
+      },
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   if (!sportEvent || !sportEvent.schedule?.rounds) {
     return (
@@ -30,33 +53,26 @@ const SportEventScheduleScreen = () => {
   }
 
   return (
-    <ScrollView
-      style={theme.styles.view}
-      showsVerticalScrollIndicator={false}
-      contentInsetAdjustmentBehavior={'automatic'}>
-      <Divider
-        note
-        light
-        text={
-          'Change the schedule by swapping player assignments. Swap two players by tapping player 1 and then player 2.'
-        }
-        subHeaderStyle={s.divider}
+    <>
+      <ScrollView
+        style={theme.styles.view}
+        showsVerticalScrollIndicator={false}
+        contentInsetAdjustmentBehavior={'automatic'}>
+        <Divider />
+        {sportEvent.schedule
+          ? sportEvent.schedule.rounds?.map((_round, r) => (
+              <ScheduleRoundView key={`round-${r + 1}`} r={r} />
+            ))
+          : null}
+        <Divider />
+      </ScrollView>
+      <InfoModal
+        ref={infoModalRef}
+        title={'Event Schedule'}
+        text={eventScheduleExplainer}
       />
-      {sportEvent.schedule
-        ? sportEvent.schedule.rounds?.map((_round, r) => (
-            <ScheduleRoundView key={`round-${r + 1}`} r={r} />
-          ))
-        : null}
-      <Divider />
-    </ScrollView>
+    </>
   );
 };
-
-const useStyles = ThemeManager.createStyleSheet(({ theme }) => ({
-  divider: {
-    ...theme.text.medium,
-    marginTop: 0,
-  },
-}));
 
 export default SportEventScheduleScreen;
