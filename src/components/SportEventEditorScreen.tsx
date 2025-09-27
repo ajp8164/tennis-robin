@@ -928,7 +928,6 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
                         initialValue={values.numberOfSetsPerMatch}
                         min={1}
                         max={10}
-                        position={['last']}
                         onChange={value =>
                           setFieldValue('numberOfSetsPerMatch', value)
                         }
