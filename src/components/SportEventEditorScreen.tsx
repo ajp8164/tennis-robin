@@ -572,6 +572,10 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
 
     if (!changedFields.length) return;
 
+    navigation.setOptions({
+      title: next.values.name,
+    });
+
     const updatedSportEvent: SportEvent = {
       ...workingState.sportEvent,
       name: next.values.name,
