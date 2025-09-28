@@ -22,7 +22,7 @@ import {
 } from 'lib/scoring';
 import { decodeSportEvent, encodeSportEvent } from 'lib/sportEvent';
 import lodash from 'lodash';
-import { CircleX } from 'lucide-react-native';
+import { CircleX, Redo, Undo } from 'lucide-react-native';
 import { DateTime } from 'luxon';
 import { SportEventsNavigatorParamList } from 'types/navigation';
 import { Player } from 'types/player';
@@ -150,10 +150,19 @@ const MatchScoringScreen = ({ navigation, route }: Props) => {
   useEffect(() => {
     if (!sportEvent?.schedule || matchEnded) return;
 
+    // Don't process a game, set, match advance if working on an undo.
+    if (processingUndo.current) {
+      // Remove the message during undo.
+      setTeamMessage(['', '']);
+
+      processingUndo.current = false;
+      return;
+    }
+
     const playerCount = sportEvent.schedule!.rounds[r][c].length;
-    const gameWinner = `Game Winner!${playerCount !== 1 ? 's' : ''}`;
-    const setWinner = `Set Winner!${playerCount !== 1 ? 's' : ''}`;
-    const matchWinner = `Match Winner!${playerCount !== 1 ? 's' : ''}`;
+    const gameWinner = `Game Winner${playerCount !== 1 ? 's!' : '!'}`;
+    const setWinner = `Set Winner${playerCount !== 1 ? 's!' : '!'}`;
+    const matchWinner = `Match Winner${playerCount !== 1 ? 's!' : '!'}`;
 
     const matchState = getMatchState(
       sportEvent.numberOfSetsPerMatch,
@@ -375,6 +384,124 @@ const MatchScoringScreen = ({ navigation, route }: Props) => {
         },
       }),
     );
+
+    // Prevent a redo if we increase score on an undo state.
+    // Check if the undo buffer should be reset.
+    if (undoBuffer.current[0].length > 0) {
+      const newAScore = teamAScores[teamAScores.length - 1];
+      const newBScore = teamBScores[teamBScores.length - 1];
+
+      const teamAUndoIndex = undoBuffer.current[teamAIndex].length - 1;
+      const teamBUndoIndex = undoBuffer.current[teamBIndex].length - 1;
+
+      const currentABuf = undoBuffer.current[teamAIndex][teamAUndoIndex];
+      const currentBBuf = undoBuffer.current[teamBIndex][teamBUndoIndex];
+
+      // If the new score is advancing past the buffer value then reset the undo buffer.
+      if (newAScore >= currentABuf || newBScore >= currentBBuf) {
+        undoBuffer.current = [[], []];
+      }
+    }
+  };
+
+  const undoBuffer = useRef<number[][]>([[], []]);
+  const processingUndo = useRef(false);
+
+  const alterScore = (which: 'undo' | 'redo') => {
+    if (!sportEvent.schedule) return;
+
+    let updateScores = false;
+    const workingScores = sportEvent.schedule.scores;
+
+    // Must be more than one score to undo.
+    if (which === 'undo') {
+      // Undo in game.
+      if (team1Scores.length > 1 && team2Scores.length > 1) {
+        // Remove the last score from each team.
+        undoBuffer.current[team1Index].push(
+          team1Scores.splice(team1Scores.length - 1, 1)[0],
+        );
+        undoBuffer.current[team2Index].push(
+          team2Scores.splice(team2Scores.length - 1, 1)[0],
+        );
+        updateScores = true;
+      }
+
+      // Undo match win.
+      if (matchEnded) {
+        // Back to the last set.
+        setMatchEnded(false);
+        processingUndo.current = true;
+      }
+
+      // Undo set win.
+      if (
+        !matchEnded &&
+        currentSet > 0 &&
+        team1Scores.length === 1 &&
+        team2Scores.length === 1
+      ) {
+        // Back to the last set.
+        setCurrentSet(currentSet => currentSet - 1);
+        setCurrentGame(sportEvent.schedule.scores[r][c][currentSet - 1].length);
+        processingUndo.current = true;
+      }
+
+      // Undo game win.
+      if (
+        !matchEnded &&
+        currentGame > 0 &&
+        team1Scores.length === 1 &&
+        team2Scores.length === 1
+      ) {
+        // Back to the last game.
+        setCurrentGame(currentGame => currentGame - 1);
+        processingUndo.current = true;
+      }
+    }
+
+    // Must be a score in the undo buffer to redo.
+    if (which === 'redo' && undoBuffer.current.length > 0) {
+      // Move last buffered score into team scores.
+      const team1UndoIndex = undoBuffer.current[team1Index].length - 1;
+      const team2UndoIndex = undoBuffer.current[team2Index].length - 1;
+
+      team1Scores.push(undoBuffer.current[team1Index][team1UndoIndex]);
+      team2Scores.push(undoBuffer.current[team2Index][team2UndoIndex]);
+
+      // Remove undone scores from buffer.
+      undoBuffer.current[team1Index].splice(team1UndoIndex, 1);
+      undoBuffer.current[team2Index].splice(team2UndoIndex, 1);
+
+      updateScores = true;
+    }
+
+    if (updateScores) {
+      // Lodash set ensures whole path exists.
+      lodash.set(
+        workingScores,
+        `[${r}][${c}][${currentSet}][${currentGame}][${team1Index}]`,
+        team1Scores,
+      );
+
+      lodash.set(
+        workingScores,
+        `[${r}][${c}][${currentSet}][${currentGame}][${team2Index}]`,
+        team2Scores,
+      );
+
+      // Update scores
+      updateDocument<SportEventEncoded>(
+        'SportEvents',
+        encodeSportEvent({
+          ...sportEvent,
+          schedule: {
+            ...sportEvent.schedule,
+            scores: workingScores,
+          },
+        }),
+      );
+    }
   };
 
   // Resolve scoring value for display.
@@ -471,9 +598,30 @@ const MatchScoringScreen = ({ navigation, route }: Props) => {
           </Text>
           <Button
             buttonStyle={theme.styles.buttonScreenHeader}
-            containerStyle={s.closeButton}
             icon={<CircleX color={theme.colors.stickyWhite} size={33} />}
             onPress={() => navigation.goBack()}
+          />
+        </View>
+        <View style={s.footer}>
+          <Button
+            buttonStyle={theme.styles.buttonScreenHeader}
+            icon={<Undo color={theme.colors.stickyWhite} size={33} />}
+            disabledStyle={theme.styles.buttonScreenHeaderDisabled}
+            disabled={
+              currentSet === 0 &&
+              currentGame === 0 &&
+              team1CurrentScore === 0 &&
+              team2CurrentScore === 0
+            }
+            onPress={() => alterScore('undo')}
+          />
+          <Button
+            buttonStyle={theme.styles.buttonScreenHeader}
+            icon={<Redo color={theme.colors.stickyWhite} size={33} />}
+            disabledStyle={theme.styles.buttonScreenHeaderDisabled}
+            // Doesn't matter which buffer index we use (using 0).
+            disabled={undoBuffer.current[0].length === 0}
+            onPress={() => alterScore('redo')}
           />
         </View>
         <View style={{ flex: 1 }}>
@@ -534,13 +682,17 @@ const useStyles = ThemeManager.createStyleSheet(({ device, theme }) => ({
   chevronDown: {
     transform: [{ rotate: '180deg' }],
   },
-  closeButton: {
-    alignSelf: 'flex-end',
-    justifyContent: 'flex-end',
-  },
   container: {
     backgroundColor: theme.colors.brandSecondary,
     justifyContent: 'space-between',
+  },
+  footer: {
+    width: '100%',
+    position: 'absolute',
+    bottom: device.insets.bottom,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignSelf: 'center',
   },
   gameScore: {
     ...theme.text.h1,
