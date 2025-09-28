@@ -86,6 +86,9 @@ const MatchScoringScreen = ({ navigation, route }: Props) => {
   const matchTimerRef = useRef<NodeJS.Timeout>(null);
   const sportEventRef = useRef<SportEvent | null>(null); // Needed for match timer.
 
+  const undoBuffer = useRef<number[][]>([[], []]);
+  const processingUndo = useRef(false);
+
   // Pre-initialization for match timer.
   useEffect(() => {
     sportEventRef.current = sportEvent ?? null;
@@ -403,9 +406,6 @@ const MatchScoringScreen = ({ navigation, route }: Props) => {
       }
     }
   };
-
-  const undoBuffer = useRef<number[][]>([[], []]);
-  const processingUndo = useRef(false);
 
   const alterScore = (which: 'undo' | 'redo') => {
     if (!sportEvent.schedule) return;
