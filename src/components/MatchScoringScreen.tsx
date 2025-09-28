@@ -80,13 +80,13 @@ const MatchScoringScreen = ({ navigation, route }: Props) => {
   ]?.[team2Index] || [0];
   const team2CurrentScore = team2Scores[team2Scores.length - 1];
 
-  // A mesage to display for a team. [team1, team2].
+  // A message to display for a team. [team1, team2].
   const [teamMessage, setTeamMessage] = useState<string[]>();
 
   const matchTimerRef = useRef<NodeJS.Timeout>(null);
   const sportEventRef = useRef<SportEvent | null>(null); // Needed for match timer.
 
-  const undoBuffer = useRef<number[][]>([[], []]);
+  const undoBuffer = useRef<number[][]>([[], []]); // scores, [team1, team2]
   const processingUndo = useRef(false);
 
   // Pre-initialization for match timer.
