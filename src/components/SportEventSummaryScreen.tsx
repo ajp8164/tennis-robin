@@ -52,8 +52,7 @@ const SportEventSummaryScreen = ({ route }: Props) => {
           // Reverse the index so team2 set wins are on top.
           const reverseTeamIndex = arr.length - 1 - teamIndex;
           return (
-            // <View key={`team-${reverseTeamIndex}`} style={s.teamContainer}>
-            <View key={`team-${reverseTeamIndex}`}>
+            <View key={`team-${reverseTeamIndex}`} style={s.teamContainer}>
               <View
                 style={[
                   s.scoresContainer,
@@ -188,8 +187,8 @@ const SportEventSummaryScreen = ({ route }: Props) => {
                   theme.text.small,
                   { color: theme.colors.listItemSubtitle },
                 ]}>
-                {`hours: ${sportEvent.schedule?.matchDetails[r]?.[c].timer.hours}`}
-                {`minutes: ${sportEvent.schedule?.matchDetails[r]?.[c].timer.minutes}`}
+                {`hours: ${sportEvent.schedule?.matchDetails[r]?.[c]?.timer.hours}`}
+                {`minutes: ${sportEvent.schedule?.matchDetails[r]?.[c]?.timer.minutes}`}
               </Text>
             </View>
           )),
