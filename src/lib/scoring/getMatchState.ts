@@ -55,14 +55,12 @@ export const getMatchState = (
     }
   }
 
-  const setsPlayed = team1TeamWins + team2TeamWins;
-
   // Team 1 wins if...
   // Team 1 set wins > team 2 set wins AND
   // Team 1 set wins is greater than 50% of max sets (majority of sets won)
   if (
     team1TeamWins > team2TeamWins &&
-    setsPlayed > maxSetsPerMatch * 0.5 // Best n of m (e.g. 3 of 5)
+    team1TeamWins > maxSetsPerMatch * 0.5 // Best n of m (e.g. 3 of 5)
   ) {
     team1WinsMatch = true;
   }
@@ -70,7 +68,7 @@ export const getMatchState = (
   // Check team 2.
   if (
     team2TeamWins > team1TeamWins &&
-    setsPlayed > maxSetsPerMatch * 0.5 // Best n of m (e.g. 3 of 5)
+    team2TeamWins > maxSetsPerMatch * 0.5 // Best n of m (e.g. 3 of 5)
   ) {
     team2WinsMatch = true;
   }
