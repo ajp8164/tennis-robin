@@ -8,30 +8,41 @@ import {
 import Animated, { FadeOut } from 'react-native-reanimated';
 import { SvgXml } from 'react-native-svg';
 
-import { ThemeManager, getColoredSvg, useTheme } from '@react-native-hello/ui';
+import {
+  Divider,
+  ThemeManager,
+  getColoredSvg,
+  useTheme,
+} from '@react-native-hello/ui';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Button } from 'components/atoms/Button';
+import { InfoModal, InfoModalMethods } from 'components/modals/InfoModal';
 import { EmptyView } from 'components/molecules/EmptyView';
 import { updateDocument, useDocument } from 'firebase/firestore';
+import matchScoringExplainer from 'lib/content/matchScoringExplainer.json';
 import { formatMatchTime } from 'lib/formatMatchTime';
 import {
   getGameState,
   getMatchState,
   getSetState,
   getSportEventState,
+  useSharedMatchTimer,
 } from 'lib/scoring';
 import { decodeSportEvent, encodeSportEvent } from 'lib/sportEvent';
 import lodash from 'lodash';
-import { CircleX, Redo, Undo } from 'lucide-react-native';
+import {
+  CircleX,
+  Info,
+  Pause,
+  Play,
+  Redo,
+  Square,
+  Undo,
+} from 'lucide-react-native';
 import { DateTime } from 'luxon';
 import { SportEventsNavigatorParamList } from 'types/navigation';
 import { Player } from 'types/player';
-import {
-  MatchTimerState,
-  SportEvent,
-  SportEventEncoded,
-  TeamSides,
-} from 'types/sportEvent';
+import { SportEventEncoded, TeamSides } from 'types/sportEvent';
 
 const setScoreBoxWidth = 30;
 
@@ -48,6 +59,8 @@ const MatchScoringScreen = ({ navigation, route }: Props) => {
 
   const team1Index = TeamSides.indexOf('Team1');
   const team2Index = TeamSides.indexOf('Team2');
+
+  const matchTimer = useSharedMatchTimer({ sportEventId, round: r, court: c });
 
   const { doc: sportEventEncoded } = useDocument<SportEventEncoded>(
     'SportEvents',
@@ -83,71 +96,20 @@ const MatchScoringScreen = ({ navigation, route }: Props) => {
   // A message to display for a team. [team1, team2].
   const [teamMessage, setTeamMessage] = useState<string[]>();
 
-  const matchTimerRef = useRef<NodeJS.Timeout>(null);
-  const sportEventRef = useRef<SportEvent | null>(null); // Needed for match timer.
-
   const undoBuffer = useRef<number[][]>([[], []]); // scores, [team1, team2]
   const processingUndo = useRef(false);
 
-  // Pre-initialization for match timer.
+  const initialized = useRef(false);
+  const infoModalRef = useRef<InfoModalMethods>(null);
+
   useEffect(() => {
-    sportEventRef.current = sportEvent ?? null;
-
-    // This match can only proceed if the sport event is still in-progress.
-    if (sportEvent?.state?.status === 'ended') return;
-
-    const timerIsRunning =
-      lodash.get(
-        sportEvent?.schedule?.matchDetails,
-        `[${r}][${c}].timer.state`,
-      ) === 'running';
-
-    if (sportEvent && !timerIsRunning) {
-      updateMatchTimer('running');
+    if (!sportEvent || (sportEvent && initialized.current)) return;
+    if (sportEvent.schedule!.matchDetails[r][c].timer.status !== 'running') {
+      matchTimer.start();
     }
+    initialized.current = true;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sportEvent]);
-
-  // Start the match timer.
-  useEffect(() => {
-    matchTimerRef.current = setInterval(() => {
-      const sportEvent = sportEventRef.current;
-      if (!sportEvent?.schedule) return;
-
-      const updated = lodash.cloneDeep(sportEvent.schedule.matchDetails) || [];
-      const prev = lodash.get(updated, `[${r}][${c}].timer`);
-
-      const updatedMinutes = prev.minutes + 1;
-      lodash.set(updated, `[${r}][${c}].timer.hours`, prev.hours);
-      lodash.set(updated, `[${r}][${c}].timer.minutes`, updatedMinutes);
-
-      if (updatedMinutes === 60) {
-        lodash.set(updated, `[${r}][${c}].timer.hours`, prev.hours + 1);
-        lodash.set(updated, `[${r}][${c}].timer.minutes`, 0);
-      }
-
-      lodash.set(updated, `[${r}][${c}].timer.state`, 'running');
-
-      // Update match time.
-      updateDocument<SportEventEncoded>(
-        'SportEvents',
-        encodeSportEvent({
-          ...sportEvent,
-          schedule: {
-            ...sportEvent.schedule,
-            matchDetails: updated,
-          },
-        }),
-      );
-    }, 60 * 1000); // Update every minute
-
-    return () => {
-      // Pause match timer on screen unmount.
-      updateMatchTimer('paused');
-      clearInterval(matchTimerRef.current!);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   // Check for end of game or set or match.
   useEffect(() => {
@@ -215,7 +177,7 @@ const MatchScoringScreen = ({ navigation, route }: Props) => {
       matchState.status === 'team2-wins'
     ) {
       setMatchEnded(true);
-      updateMatchTimer('ended');
+      matchTimer.end();
 
       if (matchState.status === 'team1-wins') {
         setTeamMessage([matchWinner, '']);
@@ -252,43 +214,14 @@ const MatchScoringScreen = ({ navigation, route }: Props) => {
     }
   }, [sportEvent]);
 
-  const updateMatchTimer = (state: MatchTimerState) => {
-    const sportEvent = sportEventRef.current;
-    if (!sportEvent?.schedule) return;
-
-    const updated = lodash.cloneDeep(sportEvent?.schedule?.matchDetails) || [];
-    const timer = lodash.get(updated, `[${r}][${c}].timer`);
-
-    // Don't update if the match has already ended.
-    if (timer?.state === 'ended') return;
-
-    lodash.set(updated, `[${r}][${c}].timer`, {
-      ...timer,
-      state,
-      hours: timer?.hours || 0,
-      minutes: timer?.minutes || 0,
-    });
-
-    // Start sport event.
-    // The sport event status changes to in-progress when the first match begins.
-    const sportEventState = { ...sportEvent.state };
-    if (state === 'running' && sportEventState.status !== 'in-progress') {
-      sportEventState.status = 'in-progress';
-      sportEventState.startDate = DateTime.now().toISO();
-    }
-
-    // Update match timer.
-    updateDocument<SportEventEncoded>(
-      'SportEvents',
-      encodeSportEvent({
-        ...sportEvent,
-        state: sportEventState,
-        schedule: {
-          ...sportEvent.schedule,
-          matchDetails: updated,
-        },
-      }),
-    );
+  const pauseMatch = () => {
+    matchTimer.pause();
+  };
+  const resumeMatch = () => {
+    matchTimer.start();
+  };
+  const endMatch = () => {
+    matchTimer.abandon();
   };
 
   const playerNames = (players: Player[]) => {
@@ -590,91 +523,135 @@ const MatchScoringScreen = ({ navigation, route }: Props) => {
   }
 
   return (
-    <GestureDetector gesture={Gesture.Exclusive(swipe, swipeDown)}>
-      <View style={[theme.styles.view, s.container]}>
-        <View style={s.header}>
-          <Text style={s.matchTime}>
-            {formatMatchTime(sportEvent.schedule.matchDetails?.[r]?.[c]?.timer)}
-          </Text>
-          <Button
-            buttonStyle={theme.styles.buttonScreenHeader}
-            icon={<CircleX color={theme.colors.stickyWhite} size={33} />}
-            onPress={() => navigation.goBack()}
-          />
-        </View>
-        <View style={s.footer}>
-          <Button
-            buttonStyle={theme.styles.buttonScreenHeader}
-            icon={<Undo color={theme.colors.stickyWhite} size={33} />}
-            disabledStyle={theme.styles.buttonScreenHeaderDisabled}
-            disabled={
-              currentSet === 0 &&
-              currentGame === 0 &&
-              team1CurrentScore === 0 &&
-              team2CurrentScore === 0
-            }
-            onPress={() => alterScore('undo')}
-          />
-          <Button
-            buttonStyle={theme.styles.buttonScreenHeader}
-            icon={<Redo color={theme.colors.stickyWhite} size={33} />}
-            disabledStyle={theme.styles.buttonScreenHeaderDisabled}
-            // Doesn't matter which buffer index we use (using 0).
-            disabled={undoBuffer.current[0].length === 0}
-            onPress={() => alterScore('redo')}
-          />
-        </View>
-        <View style={{ flex: 1 }}>
-          {/* Team 2 */}
-          <View style={s.team2}>
-            <SvgXml
-              xml={getColoredSvg('chevronHandle')}
-              width={40}
-              color={theme.colors.whiteTransparentLight}
+    <>
+      <GestureDetector gesture={Gesture.Exclusive(swipe, swipeDown)}>
+        <View style={[theme.styles.view, s.container]}>
+          <View style={s.header}>
+            <Text style={s.matchTime}>
+              {formatMatchTime(matchTimer.elapsed)}
+            </Text>
+            <View style={{ flexDirection: 'row' }}>
+              <Button
+                buttonStyle={theme.styles.buttonScreenHeader}
+                icon={<CircleX color={theme.colors.stickyWhite} size={33} />}
+                onPress={() => navigation.goBack()}
+              />
+            </View>
+          </View>
+          {/* Match timer controls */}
+          <View style={s.controls}>
+            <Button
+              icon={<Play color={theme.colors.stickyWhite} size={33} />}
+              buttonStyle={theme.styles.buttonScreenHeader}
+              disabledStyle={theme.styles.buttonScreenHeaderDisabled}
+              disabled={matchTimer.status === 'running'}
+              onPress={() => resumeMatch()}
             />
-            <Text style={s.teamName}>
-              {playerNames(sportEvent.schedule!.rounds[r][c][team2Index])}
-            </Text>
-            <Text style={s.gameScore}>
-              {resolveDispayedScore(team2CurrentScore, team1CurrentScore)}
-            </Text>
-          </View>
-          {/* Team 2 message */}
-          <View style={s.messageContainer}>
-            {teamMessage && teamMessage[team2Index] ? (
-              <Animated.Text style={s.message} exiting={FadeOut}>
-                {teamMessage[team2Index]}
-              </Animated.Text>
-            ) : null}
-          </View>
-          {/* Set scores */}
-          <View style={s.setScoresContainer}>{renderSetScores()}</View>
-          {/* Team 1 message */}
-          <View style={s.messageContainer}>
-            {teamMessage && teamMessage[team1Index] ? (
-              <Animated.Text style={s.message} exiting={FadeOut}>
-                {teamMessage[team1Index]}
-              </Animated.Text>
-            ) : null}
-          </View>
-          {/* Team 1 */}
-          <View style={s.team1}>
-            <Text style={s.gameScore}>
-              {resolveDispayedScore(team1CurrentScore, team2CurrentScore)}
-            </Text>
-            <Text style={s.teamName}>
-              {playerNames(sportEvent.schedule!.rounds[r][c][team1Index])}
-            </Text>
-            <SvgXml
-              xml={getColoredSvg('chevronHandle')}
-              width={40}
-              color={theme.colors.whiteTransparentLight}
-              style={s.chevronDown}
+            <Button
+              icon={<Pause color={theme.colors.stickyWhite} size={33} />}
+              buttonStyle={theme.styles.buttonScreenHeader}
+              disabledStyle={theme.styles.buttonScreenHeaderDisabled}
+              disabled={matchTimer.status === 'paused'}
+              onPress={() => pauseMatch()}
+            />
+            <Button
+              icon={<Square color={theme.colors.stickyWhite} size={25} />}
+              buttonStyle={theme.styles.buttonScreenHeader}
+              disabledStyle={theme.styles.buttonScreenHeaderDisabled}
+              disabled={
+                matchTimer.status !== 'running' &&
+                matchTimer.status !== 'paused'
+              }
+              onPress={() => endMatch()}
+            />
+            <Divider />
+            <Button
+              buttonStyle={theme.styles.buttonScreenHeader}
+              icon={<Info color={theme.colors.stickyWhite} size={33} />}
+              onPress={() => infoModalRef.current?.present()}
             />
           </View>
+          {/* Undo / Redo */}
+          <View style={s.footer}>
+            <Button
+              buttonStyle={theme.styles.buttonScreenHeader}
+              icon={<Undo color={theme.colors.stickyWhite} size={33} />}
+              disabledStyle={theme.styles.buttonScreenHeaderDisabled}
+              disabled={
+                currentSet === 0 &&
+                currentGame === 0 &&
+                team1CurrentScore === 0 &&
+                team2CurrentScore === 0
+              }
+              onPress={() => alterScore('undo')}
+            />
+            <Button
+              buttonStyle={theme.styles.buttonScreenHeader}
+              icon={<Redo color={theme.colors.stickyWhite} size={33} />}
+              disabledStyle={theme.styles.buttonScreenHeaderDisabled}
+              // Doesn't matter which buffer index we use (using 0).
+              disabled={undoBuffer.current[0].length === 0}
+              onPress={() => alterScore('redo')}
+            />
+          </View>
+          <View style={{ flex: 1 }}>
+            {/* Team 2 */}
+            <View style={s.team2}>
+              <SvgXml
+                xml={getColoredSvg('chevronHandle')}
+                width={40}
+                color={theme.colors.whiteTransparentLight}
+              />
+              <Text style={s.teamName}>
+                {playerNames(sportEvent.schedule!.rounds[r][c][team2Index])}
+              </Text>
+              <Text style={s.gameScore}>
+                {resolveDispayedScore(team2CurrentScore, team1CurrentScore)}
+              </Text>
+            </View>
+            {/* Team 2 message */}
+            <View style={s.messageContainer}>
+              {teamMessage && teamMessage[team2Index] ? (
+                <Animated.Text style={s.message} exiting={FadeOut}>
+                  {teamMessage[team2Index]}
+                </Animated.Text>
+              ) : null}
+            </View>
+            {/* Set scores */}
+            <View style={s.setScoresContainer}>{renderSetScores()}</View>
+            {/* Team 1 message */}
+            <View style={s.messageContainer}>
+              {teamMessage && teamMessage[team1Index] ? (
+                <Animated.Text style={s.message} exiting={FadeOut}>
+                  {teamMessage[team1Index]}
+                </Animated.Text>
+              ) : null}
+            </View>
+            {/* Team 1 */}
+            <View style={s.team1}>
+              <Text style={s.gameScore}>
+                {resolveDispayedScore(team1CurrentScore, team2CurrentScore)}
+              </Text>
+              <Text style={s.teamName}>
+                {playerNames(sportEvent.schedule!.rounds[r][c][team1Index])}
+              </Text>
+              <SvgXml
+                xml={getColoredSvg('chevronHandle')}
+                width={40}
+                color={theme.colors.whiteTransparentLight}
+                style={s.chevronDown}
+              />
+            </View>
+          </View>
         </View>
-      </View>
-    </GestureDetector>
+      </GestureDetector>
+      <InfoModal
+        ref={infoModalRef}
+        title={'Scoring Matches'}
+        text={matchScoringExplainer}
+        snapPoints={['70%']}
+      />
+    </>
   );
 };
 
@@ -705,6 +682,16 @@ const useStyles = ThemeManager.createStyleSheet(({ device, theme }) => ({
     flexDirection: 'row',
     marginTop: device.insets.top,
     alignItems: 'center',
+  },
+  controls: {
+    position: 'absolute',
+    left: 5,
+    top: '25%',
+    alignItems: 'center',
+    paddingVertical: 5,
+    borderWidth: 1,
+    borderRadius: theme.radius.M,
+    borderColor: theme.colors.whiteTransparentMid,
   },
   matchTime: {
     ...theme.text.xl,

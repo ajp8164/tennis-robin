@@ -25,12 +25,12 @@ export const getMatchState = (
   if (!setGameTeamScores || !setGameTeamScores[0]) {
     return {
       status:
-        matchDetail?.timer.state === 'running' ||
-        matchDetail?.timer.state === 'paused'
+        matchDetail?.timer.status === 'running' ||
+        matchDetail?.timer.status === 'paused'
           ? 'in-progress'
-          : matchDetail?.timer.state === 'ended'
+          : matchDetail?.timer.status === 'ended'
             ? 'ended'
-            : matchDetail?.timer.state === 'abandoned'
+            : matchDetail?.timer.status === 'abandoned'
               ? 'abandoned'
               : 'not-started',
       setScores: [0, 0], // No set wins in the match for either team
@@ -77,9 +77,9 @@ export const getMatchState = (
     ? 'team1-wins'
     : team2WinsMatch
       ? 'team2-wins'
-      : matchDetail?.timer.state === 'ended'
+      : matchDetail?.timer.status === 'ended'
         ? 'ended'
-        : matchDetail?.timer.state === 'abandoned'
+        : matchDetail?.timer.status === 'abandoned'
           ? 'abandoned'
           : 'in-progress';
 

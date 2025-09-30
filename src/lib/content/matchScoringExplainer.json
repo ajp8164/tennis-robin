@@ -1,0 +1,12 @@
+[
+  "1. ADDING POINTS",
+  "Team 1 is at the bottom of the screen, Team 2 at the top.",
+  "• Swipe DOWN to increase Team 1 score.",
+  "• Swipe UP to increase Team 2 score.",
+  "2. UNDO SCORING",
+  "You can undo scoring if a mistake is made - back to the beginning of the match if needed.",
+  "• Undo - tap bottom LEFT arrow",
+  "• Redo - tap bottom RIGHT arrow",
+  "3. MATCH TIME",
+  "Match time is tracked automatically. You can pause, restart, and stop the match timer. Stopping the match timer ends the match early (the match is abandoned)."
+]

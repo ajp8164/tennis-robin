@@ -1,3 +1,4 @@
+import { Timestamp } from '@react-native-firebase/firestore';
 import { ISODateString } from '@react-native-hello/common';
 import { Player } from 'types/player';
 
@@ -22,6 +23,11 @@ export type SportEvent = {
 export const CourtSurfaces = ['Hard', 'Clay', 'Grass', 'Other'] as const;
 export type CourtSurface = (typeof CourtSurfaces)[number];
 
+export type ElapsedTime = {
+  hours: number;
+  minutes: number;
+};
+
 export const EventFormats = [
   'Single Elimination Match',
   'Round Robin',
@@ -34,9 +40,11 @@ export type MatchDetail = {
 };
 
 export type MatchTimer = {
-  hours: number;
-  minutes: number;
-  state: MatchTimerState;
+  elapsedTime: ElapsedTime;
+  resumeTime: ISODateString;
+  status: MatchTimerState;
+  controllerId: string | null; // User id of the user who controls the timer
+  controllerSince?: Timestamp | null;
 };
 
 export type MatchTimerState =

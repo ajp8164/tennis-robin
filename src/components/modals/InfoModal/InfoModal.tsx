@@ -1,7 +1,10 @@
 import React, { useImperativeHandle, useRef } from 'react';
 import { Text, View } from 'react-native';
 
-import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
+import {
+  BottomSheetModalProvider,
+  BottomSheetScrollView,
+} from '@gorhom/bottom-sheet';
 import { BottomSheetModalMethods } from '@gorhom/bottom-sheet/lib/typescript/types';
 import { Divider, Modal, ThemeManager, useTheme } from '@react-native-hello/ui';
 import { Info } from 'lucide-react-native';
@@ -28,34 +31,36 @@ const InfoModal = React.forwardRef<InfoModal, InfoModalProps>((props, ref) => {
   };
 
   return (
-    <Modal
-      ref={innerRef}
-      snapPoints={snapPoints}
-      backgroundStyle={s.modalBackground}
-      enableDynamicSizing={false}
-      handleIndicatorStyle={
-        ThemeManager.name === 'dark'
-          ? { backgroundColor: 'white' }
-          : { backgroundColor: 'black' }
-      }>
-      <BottomSheetScrollView style={[theme.styles.view, s.container]}>
-        <View style={s.titleContainer}>
-          <Info color={theme.colors.listItemIcon} />
-          <Text style={s.title}>{title}</Text>
-        </View>
-        {text?.map((paragraph, index) => {
-          values?.forEach((v, index) => {
-            paragraph = paragraph.replaceAll(`{${index}}`, v);
-          });
-          return (
-            <Text key={`${index}`} style={s.text}>
-              {paragraph}
-            </Text>
-          );
-        })}
-        <Divider />
-      </BottomSheetScrollView>
-    </Modal>
+    <BottomSheetModalProvider>
+      <Modal
+        ref={innerRef}
+        snapPoints={snapPoints}
+        backgroundStyle={s.modalBackground}
+        enableDynamicSizing={false}
+        handleIndicatorStyle={
+          ThemeManager.name === 'dark'
+            ? { backgroundColor: 'white' }
+            : { backgroundColor: 'black' }
+        }>
+        <BottomSheetScrollView style={[theme.styles.view, s.container]}>
+          <View style={s.titleContainer}>
+            <Info color={theme.colors.listItemIcon} />
+            <Text style={s.title}>{title}</Text>
+          </View>
+          {text?.map((paragraph, index) => {
+            values?.forEach((v, index) => {
+              paragraph = paragraph.replaceAll(`{${index}}`, v);
+            });
+            return (
+              <Text key={`${index}`} style={s.text}>
+                {paragraph}
+              </Text>
+            );
+          })}
+          <Divider />
+        </BottomSheetScrollView>
+      </Modal>
+    </BottomSheetModalProvider>
   );
 });
 

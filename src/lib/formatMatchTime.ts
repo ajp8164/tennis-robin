@@ -1,5 +1,5 @@
-import { MatchTimer } from 'types/sportEvent';
+import { ElapsedTime } from 'types/sportEvent';
 
-export const formatMatchTime = (timer?: MatchTimer) => {
-  return `${timer?.hours || 0}h ${timer?.minutes || 0}m`;
+export const formatMatchTime = (time?: ElapsedTime) => {
+  return `${time?.hours || 0}h ${time?.minutes || 0}m`;
 };
