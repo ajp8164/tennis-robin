@@ -1,10 +1,7 @@
 import React, { useImperativeHandle, useRef } from 'react';
 import { Text, View } from 'react-native';
 
-import {
-  BottomSheetModalProvider,
-  BottomSheetScrollView,
-} from '@gorhom/bottom-sheet';
+import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { BottomSheetModalMethods } from '@gorhom/bottom-sheet/lib/typescript/types';
 import { Divider, Modal, ThemeManager, useTheme } from '@react-native-hello/ui';
 import { Info } from 'lucide-react-native';
@@ -42,7 +39,7 @@ const InfoModal = React.forwardRef<InfoModal, InfoModalProps>((props, ref) => {
             ? { backgroundColor: 'white' }
             : { backgroundColor: 'black' }
         }>
-        <BottomSheetScrollView style={[theme.styles.view, s.container]}>
+        <View style={[theme.styles.view, s.container]}>
           <View style={s.titleContainer}>
             <Info color={theme.colors.listItemIcon} />
             <Text style={s.title}>{title}</Text>
@@ -58,7 +55,7 @@ const InfoModal = React.forwardRef<InfoModal, InfoModalProps>((props, ref) => {
             );
           })}
           <Divider />
-        </BottomSheetScrollView>
+        </View>
       </Modal>
     </BottomSheetModalProvider>
   );

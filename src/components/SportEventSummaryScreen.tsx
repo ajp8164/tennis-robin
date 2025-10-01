@@ -181,14 +181,23 @@ const SportEventSummaryScreen = ({ route }: Props) => {
                   ? `${court[1][1].firstName} ${court[1][1].lastName}`
                   : ''}
               </Text>
+              <Text
+                style={[
+                  theme.text.small,
+                  { color: theme.colors.listItemSubtitle },
+                ]}>
+                {sportEvent.schedule?.matchDetails[r]?.[c]
+                  ? `score keeper: ${sportEvent.schedule?.matchDetails[r]?.[c]?.scoreKeeper.name}`
+                  : 'None'}
+              </Text>
               {renderSetScores(r, c)}
               <Text
                 style={[
                   theme.text.small,
                   { color: theme.colors.listItemSubtitle },
                 ]}>
-                {`hours: ${sportEvent.schedule?.matchDetails[r]?.[c]?.timer.hours}`}
-                {`minutes: ${sportEvent.schedule?.matchDetails[r]?.[c]?.timer.minutes}`}
+                {`hours: ${sportEvent.schedule?.matchDetails[r]?.[c]?.timer.elapsedTime.hours}`}
+                {`minutes: ${sportEvent.schedule?.matchDetails[r]?.[c]?.timer.elapsedTime.minutes}`}
               </Text>
             </View>
           )),

@@ -36,6 +36,7 @@ export const EventFormats = [
 export type EventFormat = (typeof EventFormats)[number];
 
 export type MatchDetail = {
+  scoreKeeper: ScoreKeeper;
   timer: MatchTimer;
 };
 
@@ -58,6 +59,11 @@ export type MatchDetails = MatchDetail[][]; // Round, court
 
 export const MatchTypes = ['Singles', 'Doubles'] as const;
 export type MatchType = (typeof MatchTypes)[number];
+
+export type ScoreKeeper = {
+  name: string;
+  playerId: string;
+};
 
 export type SportEventState = {
   status: SportEventStatus;

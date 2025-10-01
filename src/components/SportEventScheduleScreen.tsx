@@ -42,13 +42,21 @@ const SportEventScheduleScreen = ({ navigation }: Props) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  if (!sportEvent || !sportEvent.schedule?.rounds) {
+  if (!sportEvent || !sportEvent.schedule?.rounds.length) {
     return (
-      <EmptyView
-        type={'info'}
-        message={'No Schedule'}
-        details={'Add players to your event to create a schedule.'}
-      />
+      <>
+        <EmptyView
+          type={'info'}
+          message={'No Schedule'}
+          details={'Add players to your event to create a schedule.'}
+        />
+        <InfoModal
+          ref={infoModalRef}
+          snapPoints={['92%']}
+          title={'Event Schedule'}
+          text={eventScheduleExplainer}
+        />
+      </>
     );
   }
 
@@ -68,6 +76,7 @@ const SportEventScheduleScreen = ({ navigation }: Props) => {
       </ScrollView>
       <InfoModal
         ref={infoModalRef}
+        snapPoints={['92%']}
         title={'Event Schedule'}
         text={eventScheduleExplainer}
       />

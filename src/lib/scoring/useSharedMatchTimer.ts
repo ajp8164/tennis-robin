@@ -48,10 +48,10 @@ export const useSharedMatchTimer = (props: Props) => {
   }, [status]);
 
   useEffect(() => {
-    const timer = sportEvent?.schedule?.matchDetails?.[r]?.[c].timer ?? {
+    const timer = sportEvent?.schedule?.matchDetails?.[r]?.[c]?.timer ?? {
       elapsedTime: { hours: 0, minutes: 0 },
       resumeTime: DateTime.now().toISO(),
-      status: 'running',
+      status: 'initial',
     };
 
     setStatus(timer.status);
@@ -64,15 +64,14 @@ export const useSharedMatchTimer = (props: Props) => {
     if (timer.status === 'initial' || timer.status === 'running') {
       tick();
       tickTimeoutRef.current && clearTimeout(tickTimeoutRef.current);
-      tickTimeoutRef.current = setTimeout(tick, 3 * 1000);
+      tickTimeoutRef.current = setTimeout(tick, 60 * 1000);
     } else {
-      setElapsed(timer.elapsedTime);
-
       if (timer.status === 'ended' || timer.status === 'abandoned') {
         cancel();
       }
     }
 
+    setElapsed(timer.elapsedTime);
     setLoading(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [r, c, sportEvent?.schedule?.matchDetails]);
@@ -91,7 +90,7 @@ export const useSharedMatchTimer = (props: Props) => {
       });
 
       tickTimeoutRef.current && clearTimeout(tickTimeoutRef.current);
-      tickTimeoutRef.current = setTimeout(tick, 3 * 1000);
+      tickTimeoutRef.current = setTimeout(tick, 60 * 1000);
     }
   };
 

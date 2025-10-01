@@ -142,10 +142,10 @@ export const getDocuments = async <
 
     if (whereInChunks.length) {
       // Chunked query.
-      for (const wiChunk of whereInChunks) {
-        // Always select from unarchived documents.
-        q.query = firestoreQuery(q.query, whereNotArchived);
+      // Always select from unarchived documents.
+      q.query = firestoreQuery(q.query, whereNotArchived);
 
+      for (const wiChunk of whereInChunks) {
         querySnapshot = await getDocsFn(firestoreQuery(q.query, wiChunk));
 
         docCount += querySnapshot.docs.length;

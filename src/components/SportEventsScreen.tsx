@@ -96,7 +96,6 @@ const SportEventsScreen = ({ navigation }: Props) => {
             icon={
               <Plus color={theme.colors.screenHeaderButtonText} size={28} />
             }
-            // onPress={() => navigation.navigate('NewSportEvent', {})}
             onPress={() =>
               navigation.navigate('NewSportEventNavigator', {
                 screen: 'NewSportEvent',

@@ -1,19 +1,28 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Alert, StyleProp, Text, View, ViewStyle } from 'react-native';
 
+import { documentId } from '@react-native-firebase/firestore';
+import { useEvent } from '@react-native-hello/core';
 import {
   Divider,
   ListItem,
   ThemeManager,
   useTheme,
 } from '@react-native-hello/ui';
+import { NavigationProp, useNavigation } from '@react-navigation/native';
+import { EnumPickerResult, EnumPickerValue } from 'components/EnumPickerScreen';
+import { getDocuments, useCollection } from 'firebase/firestore';
+import { usePlayerStatusDecoration } from 'lib/player';
 import {
   PlayerSwapPosition,
   schedulers,
   useSportEventStore,
 } from 'lib/sportEvent';
+import { useSelectedTeam } from 'lib/team';
 import lodash from 'lodash';
+import { MultipleNavigatorParamList } from 'types/navigation';
 import { Player } from 'types/player';
+import { ScoreKeeper } from 'types/sportEvent';
 
 export interface Props {
   containerStyle?: StyleProp<ViewStyle>;
@@ -25,9 +34,15 @@ const ScheduleRoundView = (props: Props) => {
 
   const theme = useTheme();
   const s = useStyles();
+
+  const event = useEvent();
+  const navigation: NavigationProp<MultipleNavigatorParamList> =
+    useNavigation();
+
   const {
     playerSwapPosition,
     sportEvent,
+    updateMatchDetails,
     updatePlayerSwapPosition,
     updateScheduleRounds,
   } = useSportEventStore();
@@ -38,11 +53,85 @@ const ScheduleRoundView = (props: Props) => {
 
   const scheduler = schedulers.find(s => s.id === schedule?.schedulerId);
   const isRound = scheduler?.eventFormat === 'Round Robin';
+  const { doc: selectedTeam } = useSelectedTeam();
 
-  // Player swap first selection.
-  // Not all users of this component may require the swap player swap feature.
-  // If not then this context won't be used (no provider is wrapping the use of
-  // this component).
+  // For building the player picker enum.
+  // Show all players on the selected team.
+  const [playersEnum, setPlayersEnum] = useState<EnumPickerValue[]>([]);
+  const playerStatusDecoration = usePlayerStatusDecoration();
+
+  const { docs: allPlayers } = useCollection<Player>('Players', {
+    where: [
+      {
+        fieldPath: documentId(),
+        opStr: 'in',
+        value: selectedTeam?.players || [],
+      },
+    ],
+    orderBy: [
+      { fieldPath: 'lastName', directionStr: 'asc' },
+      { fieldPath: 'firstName', directionStr: 'asc' },
+    ],
+  });
+
+  // Create an enumeration of players for selection into the sportEvent.
+  useEffect(() => {
+    const teamMembersEnum = allPlayers
+      .filter(p => p.user)
+      .map<EnumPickerValue>(p => {
+        return {
+          id: p.id!,
+          title: `${p.firstName} ${p.lastName}`,
+          subtitle: playerStatusDecoration[p.status].label,
+          leftIcon: {
+            icon: playerStatusDecoration[p.status].icon,
+            color: playerStatusDecoration[p.status].color,
+          },
+        };
+      });
+
+    setPlayersEnum(teamMembersEnum);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allPlayers]);
+
+  useEffect(() => {
+    // Event handlers for EnumPicker
+    event.on(`change-score-keeper-${r}`, onChangeScoreKeeper);
+
+    return () => {
+      event.removeListener(`change-score-keeper-${r}`, onChangeScoreKeeper);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const onChangeScoreKeeper = async (result: EnumPickerResult) => {
+    const { result: players } = await getDocuments<Player>('Players', {
+      where: [{ fieldPath: documentId(), opStr: 'in', value: result.value }],
+    });
+
+    if (players[0] && players[0].id) {
+      const scoreKeeper: ScoreKeeper = {
+        name: `${players[0].firstName} ${players[0].lastName}`,
+        playerId: players[0].id,
+      };
+
+      const r = result.extraData.r;
+      const c = result.extraData.c;
+
+      if (
+        sportEvent.schedule!.matchDetails?.[r]?.[c]?.scoreKeeper.playerId !==
+        scoreKeeper.playerId
+      ) {
+        const updated = lodash.set(
+          lodash.cloneDeep(sportEvent.schedule!.matchDetails),
+          `[${r}][${c}].scoreKeeper`,
+          scoreKeeper,
+        );
+
+        updateMatchDetails(updated);
+      }
+    }
+  };
 
   const setSwap = (position: PlayerSwapPosition) => {
     if (!playerSwapPosition) {
@@ -109,6 +198,22 @@ const ScheduleRoundView = (props: Props) => {
     }
   };
 
+  const onPressScoreKeeper = (r: number, c: number) => {
+    const selected =
+      sportEvent.schedule?.matchDetails?.[r]?.[c]?.scoreKeeper?.playerId;
+
+    navigation.navigate('EnumPicker', {
+      title: 'Score Keeper',
+      values: playersEnum,
+      selected: selected ? [selected] : [],
+      extraData: { r, c },
+      itemPlural: 'Team Members',
+      eventName: `change-score-keeper-${r}`,
+      mode: 'one',
+      closeOnSelect: true,
+    });
+  };
+
   const renderCourt = (r: number, c: number, court: Player[][]) => {
     // Argument court is teams on court [team-index 0-1][player-index 0-1]
     return (
@@ -123,6 +228,7 @@ const ScheduleRoundView = (props: Props) => {
               <Text style={s.team1Team2}>{'Team 2'}</Text>
             </View>
           }
+          footerContent={renderScoreKeeper(r, c)}
           mainContent={
             <View style={s.courtContainer}>
               <View style={s.court}>
@@ -136,7 +242,12 @@ const ScheduleRoundView = (props: Props) => {
                   <Text
                     style={[
                       s.player,
-                      lodash.isEqual(playerSwapPosition, { r, c, t: 0, p: 0 })
+                      lodash.isEqual(playerSwapPosition, {
+                        r,
+                        c,
+                        t: 0,
+                        p: 0,
+                      })
                         ? s.playerSelected
                         : {},
                     ]}
@@ -149,7 +260,12 @@ const ScheduleRoundView = (props: Props) => {
                     <Text
                       style={[
                         s.player,
-                        lodash.isEqual(playerSwapPosition, { r, c, t: 0, p: 1 })
+                        lodash.isEqual(playerSwapPosition, {
+                          r,
+                          c,
+                          t: 0,
+                          p: 1,
+                        })
                           ? s.playerSelected
                           : {},
                       ]}
@@ -165,7 +281,12 @@ const ScheduleRoundView = (props: Props) => {
                   <Text
                     style={[
                       s.player,
-                      lodash.isEqual(playerSwapPosition, { r, c, t: 1, p: 0 })
+                      lodash.isEqual(playerSwapPosition, {
+                        r,
+                        c,
+                        t: 1,
+                        p: 0,
+                      })
                         ? s.playerSelected
                         : {},
                     ]}
@@ -180,7 +301,12 @@ const ScheduleRoundView = (props: Props) => {
                     <Text
                       style={[
                         s.player,
-                        lodash.isEqual(playerSwapPosition, { r, c, t: 1, p: 1 })
+                        lodash.isEqual(playerSwapPosition, {
+                          r,
+                          c,
+                          t: 1,
+                          p: 1,
+                        })
                           ? s.playerSelected
                           : {},
                       ]}
@@ -231,6 +357,16 @@ const ScheduleRoundView = (props: Props) => {
             });
           })}
         </View>
+      </View>
+    );
+  };
+
+  const renderScoreKeeper = (r: number, c: number) => {
+    return (
+      <View style={s.scoreKeeperContainer}>
+        <Text style={[s.scoreKeeper]} onPress={() => onPressScoreKeeper(r, c)}>
+          {`${sportEvent.schedule?.matchDetails?.[r]?.[c]?.scoreKeeper?.name || 'Unassigned'}`}
+        </Text>
       </View>
     );
   };
@@ -340,6 +476,24 @@ const useStyles = ThemeManager.createStyleSheet(({ theme }) => ({
   },
   roundLabel: {
     marginTop: -10,
+  },
+  scoreKeeper: {
+    ...theme.text.medium,
+    color: theme.colors.midGray,
+    borderWidth: 1,
+    borderRadius: theme.radius.S,
+    paddingHorizontal: 5,
+    paddingVertical: 3,
+    fontWeight: '700',
+    marginRight: 10,
+    marginLeft: 5,
+    borderColor: theme.colors.brandSecondary,
+  },
+  scoreKeeperContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingBottom: 5,
   },
   team1: {
     alignItems: 'flex-start',

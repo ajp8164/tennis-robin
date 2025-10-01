@@ -1,11 +1,17 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Text, View } from 'react-native';
 
 import { Divider, ThemeManager, useTheme } from '@react-native-hello/ui';
 import { Button } from 'components/atoms/Button';
 import { useDocument } from 'firebase/firestore';
 import { formatMatchTime } from 'lib/formatMatchTime';
-import { getMatchState, getSetState, useSharedMatchTimer } from 'lib/scoring';
+import { useMyPlayer } from 'lib/player';
+import {
+  MatchStateResult,
+  getMatchState,
+  getSetState,
+  useSharedMatchTimer,
+} from 'lib/scoring';
 import { decodeSportEvent } from 'lib/sportEvent';
 import { Check } from 'lucide-react-native';
 import { DateTime } from 'luxon';
@@ -44,17 +50,35 @@ const ScoreboardMatchView = (props: Props) => {
     [sportEventEncoded],
   );
 
+  const { doc: myPlayer } = useMyPlayer();
   const matchTimer = useSharedMatchTimer({ sportEventId, round: r, court: c });
-
-  if (!sportEvent?.schedule) {
-    return null;
-  }
 
   const team1Index = TeamSides.indexOf('Team1');
   const team2Index = TeamSides.indexOf('Team2');
 
   // Set counter
   const sets = new Array(sportEvent?.numberOfSetsPerMatch).fill('');
+
+  const [matchState, setMatchState] = useState<MatchStateResult>();
+
+  useEffect(() => {
+    if (!sportEvent) return;
+
+    const updated = getMatchState(
+      sportEvent.numberOfSetsPerMatch,
+      sportEvent.numberOfGamesPerSet,
+      sportEvent.schedule?.scores[r]?.[c],
+      sportEvent.schedule?.matchDetails[r]?.[c],
+    );
+
+    setMatchState(updated);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    sportEvent?.numberOfGamesPerSet,
+    sportEvent?.numberOfSetsPerMatch,
+    sportEvent?.schedule?.matchDetails,
+    sportEvent?.schedule?.scores,
+  ]);
 
   const playerNames = (players: Player[]) => {
     const player1 = players[0]
@@ -66,13 +90,6 @@ const ScoreboardMatchView = (props: Props) => {
     return `${player1}${player2}`;
   };
 
-  const matchState = getMatchState(
-    sportEvent.numberOfSetsPerMatch,
-    sportEvent.numberOfGamesPerSet,
-    sportEvent.schedule.scores[r]?.[c],
-    sportEvent.schedule.matchDetails[r]?.[c],
-  );
-
   const renderHeader = () => {
     return (
       <Divider
@@ -80,7 +97,9 @@ const ScoreboardMatchView = (props: Props) => {
         subHeaderStyle={s.headerText}
         rightComponent={
           <View style={{ flexDirection: 'row' }}>
-            {matchState.status === 'in-progress' ? (
+            {/* Only the score keeper can start the match. */}
+            {sportEvent?.schedule?.matchDetails?.[r]?.[c]?.scoreKeeper
+              .playerId === myPlayer?.id ? (
               <Button
                 title={'Score this match'}
                 titleStyle={theme.styles.buttonScreenHeaderTitle}
@@ -93,6 +112,10 @@ const ScoreboardMatchView = (props: Props) => {
       />
     );
   };
+
+  if (!sportEvent?.schedule) {
+    return null;
+  }
 
   return (
     <>
@@ -114,9 +137,9 @@ const ScoreboardMatchView = (props: Props) => {
                 marginLeft: -7,
                 marginRight: 2,
                 opacity:
-                  (matchState.status === 'team1-wins' &&
+                  (matchState?.status === 'team1-wins' &&
                     teamIndex === team1Index) ||
-                  (matchState.status === 'team2-wins' &&
+                  (matchState?.status === 'team2-wins' &&
                     teamIndex === team2Index)
                     ? 1
                     : 0,

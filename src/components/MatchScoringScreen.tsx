@@ -81,7 +81,9 @@ const MatchScoringScreen = ({ navigation, route }: Props) => {
   const [currentGame, setCurrentGame] = useState(
     sportEvent?.schedule?.scores[currentSet]?.length || 0,
   );
-  const [matchEnded, setMatchEnded] = useState(false);
+  const [matchEnded, setMatchEnded] = useState(
+    matchTimer.status === 'ended' || matchTimer.status === 'abandoned',
+  );
 
   const team1Scores = sportEvent?.schedule?.scores?.[r]?.[c]?.[currentSet]?.[
     currentGame
@@ -99,17 +101,7 @@ const MatchScoringScreen = ({ navigation, route }: Props) => {
   const undoBuffer = useRef<number[][]>([[], []]); // scores, [team1, team2]
   const processingUndo = useRef(false);
 
-  const initialized = useRef(false);
   const infoModalRef = useRef<InfoModalMethods>(null);
-
-  useEffect(() => {
-    if (!sportEvent || (sportEvent && initialized.current)) return;
-    if (sportEvent.schedule!.matchDetails[r][c].timer.status !== 'running') {
-      matchTimer.start();
-    }
-    initialized.current = true;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sportEvent]);
 
   // Check for end of game or set or match.
   useEffect(() => {
@@ -128,6 +120,7 @@ const MatchScoringScreen = ({ navigation, route }: Props) => {
     const gameWinner = `Game Winner${playerCount !== 1 ? 's!' : '!'}`;
     const setWinner = `Set Winner${playerCount !== 1 ? 's!' : '!'}`;
     const matchWinner = `Match Winner${playerCount !== 1 ? 's!' : '!'}`;
+    const matchAbandoned = 'Match Ended';
 
     const matchState = getMatchState(
       sportEvent.numberOfSetsPerMatch,
@@ -174,19 +167,22 @@ const MatchScoringScreen = ({ navigation, route }: Props) => {
     // End match?
     if (
       matchState.status === 'team1-wins' ||
-      matchState.status === 'team2-wins'
+      matchState.status === 'team2-wins' ||
+      matchTimer.status === 'ended' ||
+      matchTimer.status === 'abandoned'
     ) {
       setMatchEnded(true);
       matchTimer.end();
 
       if (matchState.status === 'team1-wins') {
         setTeamMessage([matchWinner, '']);
-      } else {
+      } else if (matchState.status === 'team2-wins') {
         setTeamMessage(['', matchWinner]);
+      } else if (matchTimer.status === 'abandoned') {
+        setTeamMessage(['', matchAbandoned]);
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [c, currentGame, currentSet, r, sportEvent]);
+  }, [c, currentGame, currentSet, r, sportEvent, matchTimer, matchEnded]);
 
   // End of sport event?
   useEffect(() => {
@@ -237,18 +233,14 @@ const MatchScoringScreen = ({ navigation, route }: Props) => {
   const swipe = Gesture.Fling()
     .direction(Directions.UP)
     .onEnd(() => {
-      if (!matchEnded) {
-        increaseScoreTeam2();
-      }
+      increaseScoreTeam2();
     })
     .runOnJS(true);
 
   const swipeDown = Gesture.Fling()
     .direction(Directions.DOWN)
     .onEnd(() => {
-      if (!matchEnded) {
-        increaseScoreTeam1();
-      }
+      increaseScoreTeam1();
     })
     .runOnJS(true);
 
@@ -261,10 +253,20 @@ const MatchScoringScreen = ({ navigation, route }: Props) => {
   };
 
   const increaseScore = (teamAIndex: number, teamBIndex: number) => {
+    if (!sportEvent.schedule || matchEnded) return;
+
+    // If the match timer is not running then start it. This allows the timer to start automatically
+    // when the first score is entered or when entering a score when the match is paused.
+    if (matchTimer.status !== 'running') {
+      // Need to delay the update to allow the scores to update first otherwise the scoring update
+      // overwrites the timer update.
+      setTimeout(() => {
+        resumeMatch();
+      });
+    }
+
     // Reset message.
     setTeamMessage(undefined);
-
-    if (!sportEvent.schedule) return;
 
     const workingScores = sportEvent.schedule.scores;
 
@@ -544,14 +546,18 @@ const MatchScoringScreen = ({ navigation, route }: Props) => {
               icon={<Play color={theme.colors.stickyWhite} size={33} />}
               buttonStyle={theme.styles.buttonScreenHeader}
               disabledStyle={theme.styles.buttonScreenHeaderDisabled}
-              disabled={matchTimer.status === 'running'}
+              disabled={
+                matchTimer.status === 'running' ||
+                matchTimer.status === 'ended' ||
+                matchTimer.status === 'abandoned'
+              }
               onPress={() => resumeMatch()}
             />
             <Button
               icon={<Pause color={theme.colors.stickyWhite} size={33} />}
               buttonStyle={theme.styles.buttonScreenHeader}
               disabledStyle={theme.styles.buttonScreenHeaderDisabled}
-              disabled={matchTimer.status === 'paused'}
+              disabled={matchTimer.status !== 'running'}
               onPress={() => pauseMatch()}
             />
             <Button

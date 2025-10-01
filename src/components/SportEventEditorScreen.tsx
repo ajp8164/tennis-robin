@@ -109,7 +109,7 @@ type FormValues = {
   numberOfGamesPerSet: number;
   courtSurface: CourtSurface;
   players: string[];
-  scheduleRoundsVersion: number;
+  sportEventVersion: number;
 };
 
 const SportEventEditorScreen = ({ navigation, route }: Props) => {
@@ -184,7 +184,7 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
     numberOfGamesPerSet: 3,
     courtSurface: 'Hard',
     players: [],
-    scheduleRoundsVersion: 0,
+    sportEventVersion: 0,
   });
 
   const schema = useMemo(
@@ -204,7 +204,7 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
             if (!scheduler || scheduler.requiredPlayerCount === -1) return true;
             return value?.length === scheduler.requiredPlayerCount;
           }),
-        scheduleRoundsVersion: Yup.number(),
+        sportEventVersion: Yup.number(),
       }),
     [scheduler],
   );
@@ -254,7 +254,7 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
           numberOfGamesPerSet: sportEvent.numberOfGamesPerSet,
           courtSurface: sportEvent.courtSurface,
           players: sportEvent.players,
-          scheduleRoundsVersion: 0,
+          sportEventVersion: 0,
         });
 
         const scheduler = schedulers.find(s => s.id === schedulerId);
@@ -266,11 +266,8 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
 
   useEffect(() => {
     // Tell the form we've changed so the schedule updates.
-    formikRef.current?.setFieldValue(
-      'scheduleRoundsVersion',
-      workingState.scheduleRoundsVersion,
-    );
-  }, [workingState.scheduleRoundsVersion]);
+    formikRef.current?.setFieldValue('sportEventVersion', workingState.version);
+  }, [workingState.version]);
 
   useEffect(() => {
     if (!sportEventPlayersLoading) {
@@ -600,7 +597,7 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
     };
 
     // Run the scheduler function.
-    if (!changedFields.includes('scheduleRoundsVersion')) {
+    if (!changedFields.includes('sportEventVersion')) {
       const updated = scheduler?.fn(
         workingState.players,
         next.values.numberOfCourts,

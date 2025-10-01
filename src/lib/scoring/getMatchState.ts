@@ -10,7 +10,7 @@ export type MatchStatus =
   | 'ended'
   | 'abandoned';
 
-type MatchStateResult = {
+export type MatchStateResult = {
   status: MatchStatus;
   setScores: number[]; // [team1, team2]
 };
@@ -21,16 +21,16 @@ export const getMatchState = (
   setGameTeamScores?: number[][][][],
   matchDetail?: MatchDetail,
 ): MatchStateResult => {
-  // Must have scores for sets, game and team otherwise the set has not yet started.
+  // Must have scores for sets, game, and team otherwise the set has not yet started.
   if (!setGameTeamScores || !setGameTeamScores[0]) {
     return {
       status:
-        matchDetail?.timer.status === 'running' ||
-        matchDetail?.timer.status === 'paused'
+        matchDetail?.timer?.status === 'running' ||
+        matchDetail?.timer?.status === 'paused'
           ? 'in-progress'
-          : matchDetail?.timer.status === 'ended'
+          : matchDetail?.timer?.status === 'ended'
             ? 'ended'
-            : matchDetail?.timer.status === 'abandoned'
+            : matchDetail?.timer?.status === 'abandoned'
               ? 'abandoned'
               : 'not-started',
       setScores: [0, 0], // No set wins in the match for either team
@@ -77,9 +77,9 @@ export const getMatchState = (
     ? 'team1-wins'
     : team2WinsMatch
       ? 'team2-wins'
-      : matchDetail?.timer.status === 'ended'
+      : matchDetail?.timer?.status === 'ended'
         ? 'ended'
-        : matchDetail?.timer.status === 'abandoned'
+        : matchDetail?.timer?.status === 'abandoned'
           ? 'abandoned'
           : 'in-progress';
 

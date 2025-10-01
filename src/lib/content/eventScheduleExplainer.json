@@ -1,5 +1,9 @@
 [
-  "The event schedule is a list of when and where players will compete including round, court assignments, and opponent names.",
+  "The event schedule is a list of when and where players will compete including round, court assignments, opponent names, and score keeper.",
+  "COURT ASSIGNMENTS",
   "Court assignments may be changed by swapping players across courts.",
-  "• To swap two players tap player 1 and then player 2."
+  "• To swap two players tap player 1 and then player 2.",
+  "LIVE SCORING",
+  "If the match is using live scoring then the score keeper is responsible for entering scores during match play.",
+  "• Change the score keeper by tapping their name."
 ]
