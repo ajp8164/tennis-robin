@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Alert,
   SectionList,
@@ -25,13 +25,12 @@ import { Button } from 'components/atoms/Button';
 import { EmptyView } from 'components/molecules/EmptyView';
 import { archiveDocument, useCollection } from 'firebase/firestore';
 import { groupItems } from 'lib/sectionList';
-import { decodeSportEvent } from 'lib/sportEvent';
 import { useSelectedTeam } from 'lib/team';
 import { useConfirmAction } from 'lib/useConfirmAction';
 import { CircleMinus, Plus, Trash2 } from 'lucide-react-native';
 import { DateTime } from 'luxon';
 import { SportEventsNavigatorParamList } from 'types/navigation';
-import { SportEvent, SportEventEncoded } from 'types/sportEvent';
+import { SportEvent } from 'types/sportEvent';
 
 type Section = {
   title?: string;
@@ -50,7 +49,7 @@ const SportEventsScreen = ({ navigation }: Props) => {
 
   const { doc: selectedTeam } = useSelectedTeam();
 
-  const { docs: allSportEventsEncoded } = useCollection<SportEventEncoded>(
+  const { docs: allSportEvents } = useCollection<SportEvent>(
     'SportEvents',
     {
       where: [
@@ -62,11 +61,7 @@ const SportEventsScreen = ({ navigation }: Props) => {
       ],
       orderBy: [{ fieldPath: 'name', directionStr: 'asc' }],
     },
-  );
-
-  const allSportEvents = useMemo(
-    () => allSportEventsEncoded.map(se => decodeSportEvent(se)),
-    [allSportEventsEncoded],
+    [selectedTeam],
   );
 
   const listEditorRef = useRef<ListEditorMethods>(null);

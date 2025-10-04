@@ -1,7 +1,7 @@
-import { Timestamp } from '@react-native-firebase/firestore';
 import { ISODateString } from '@react-native-hello/common';
 import { Player } from 'types/player';
 
+// Doc path - /SportEvents/{eventId}
 export type SportEvent = {
   id?: string;
   createdOn?: ISODateString;
@@ -14,19 +14,15 @@ export type SportEvent = {
   numberOfSetsPerMatch: number;
   numberOfGamesPerSet: number;
   courtSurface: CourtSurface;
-  owners: string[];
-  players: string[];
+  owners: string[]; // ids
+  players: string[]; // ids
+  matches: string[]; // ids
   schedule?: Schedule;
   state: SportEventState;
 };
 
 export const CourtSurfaces = ['Hard', 'Clay', 'Grass', 'Other'] as const;
 export type CourtSurface = (typeof CourtSurfaces)[number];
-
-export type ElapsedTime = {
-  hours: number;
-  minutes: number;
-};
 
 export const EventFormats = [
   'Single Elimination Match',
@@ -35,35 +31,8 @@ export const EventFormats = [
 ] as const;
 export type EventFormat = (typeof EventFormats)[number];
 
-export type MatchDetail = {
-  scoreKeeper: ScoreKeeper;
-  timer: MatchTimer;
-};
-
-export type MatchTimer = {
-  elapsedTime: ElapsedTime;
-  resumeTime: ISODateString;
-  status: MatchTimerState;
-  controllerId: string | null; // User id of the user who controls the timer
-  controllerSince?: Timestamp | null;
-};
-
-export type MatchTimerState =
-  | 'initial'
-  | 'running'
-  | 'paused'
-  | 'ended'
-  | 'abandoned';
-
-export type MatchDetails = MatchDetail[][]; // Round, court
-
 export const MatchTypes = ['Singles', 'Doubles'] as const;
 export type MatchType = (typeof MatchTypes)[number];
-
-export type ScoreKeeper = {
-  name: string;
-  playerId: string;
-};
 
 export type SportEventState = {
   status: SportEventStatus;
@@ -80,94 +49,35 @@ export type SportEventStatus =
 export const TeamSides = ['Team1', 'Team2'] as const;
 export type TeamSide = (typeof TeamSides)[number];
 
-export type Rounds = Player[][][][]; // Round, court, team, player
-
-// Scores are an array of scoring progression.
-// [r][c][s][g][t][scores]
-//
-// [0][0][0][0][0] [0,  15, 30, 40, 40, 50] // Winner
-// [0][0][0][0][1] [0,   0,  0,  0,  0,  0]
-//
-// 50 is game winner if win is 50/30
-// [0][0][0][0][0] [0,  15, 30, 40, 40, 50] // Winner
-// [0][0][0][0][1] [15, 15, 15, 15, 30, 30]
-//
-// 60 is game winner if win is 60/40
-// [0][0][0][0][0] [0,  15, 30, 40, 40, 40, 50, 60] // Ad, winner
-// [0][0][0][0][1] [15, 15, 15, 15, 30, 40, 40, 40]
-//
-// 50/40 is ad, win is 60/40
-// [0][0][0][0][0] [0,  15, 30, 40, 40, 40, 50, 40, 50, 60] // Ad (x2), winner
-// [0][0][0][0][1] [15, 15, 15, 15, 30, 40, 40, 40, 40, 40]
-//
-// 3 game set example
-// [r][c][s][g][t] [scores]
-//
-// [0][0][0][0][0] [0,  15, 30, 40, 40, 50] // set 1, game 1 (0 index)
-// [0][0][0][0][1] [0,   0,  0,  0,  0,  0]
-//
-// [0][0][0][1][0] [0,  15, 30, 40, 40, 50] // set 1, game 2
-// [0][0][0][1][1] [0,   0,  0,  0,  0,  0]
-//
-// [0][0][0][2][0] [0,  15, 30, 40, 40, 50] // set 1, game 3
-// [0][0][0][2][1] [0,   0,  0,  0,  0,  0]
-//
-// [0][0][1][0][0] [0,  15, 30, 40, 40, 50] // set 2, game 1
-// [0][0][1][0][1] [0,   0,  0,  0,  0,  0]
-//
-// [0][0][1][1][0] [0,  15, 30, 40, 40, 50] // set 2, game 2
-// [0][0][1][1][1] [0,   0,  0,  0,  0,  0]
-//
-// [0][0][1][2][0] [0,  15, 30, 40, 40, 50] // set 2, game 3
-// [0][0][1][2][1] [0,   0,  0,  0,  0,  0]
-//
-// [0][0][2][0][0] [0,  15, 30, 40, 40, 50] // set 3, game 1
-// [0][0][2][0][1] [0,   0,  0,  0,  0,  0]
-//
-// [0][0][2][1][0] [0,  15, 30, 40, 40, 50] // set 3, game 2
-// [0][0][2][1][1] [0,   0,  0,  0,  0,  0]
-//
-// [0][0][2][2][0] [0,  15, 30, 40, 40, 50] // set 3, game 3
-// [0][0][2][2][1] [0,   0,  0,  0,  0,  0]
-
-export type Scores = number[][][][][][]; // Round, court, set, game, team, scores
-
 export type Schedule = {
   schedulerId: string;
   numberOfRounds: number;
   numberOfCourtsUsed: number;
-  rounds: Rounds; // Includes all player and bye-placeholder assignments on all courts.
-  byes: Player[][]; // Round, player
-  scores: Scores;
-  matchDetails: MatchDetails;
+  rounds: Rounds;
 };
 
-// Encoded types provide firestore compatibility since firestore does not allow next arrays.
-// Nested array are stringified for storage.
-export type SportEventEncoded = {
-  id?: string;
-  createdOn?: ISODateString;
-  updatedOn?: ISODateString;
-  archivedOn?: ISODateString;
+export type Rounds = Record<string, Round>; // key = round number
+export type Courts = Record<string, Court>; // key = court number
+export type Teams = Record<string, Team>; // key = team number
+export type Players = Record<string, Player>; // key = player number
+
+export type ScoreKeeper = {
   name: string;
-  date: string;
-  location: string;
-  numberOfCourts: number;
-  numberOfSetsPerMatch: number;
-  numberOfGamesPerSet: number;
-  courtSurface: CourtSurface;
-  owners: string[];
-  players: string[];
-  schedule?: ScheduleEncoded;
-  state: SportEventState;
+  playerId: string;
 };
 
-export type ScheduleEncoded = {
-  schedulerId: string;
-  numberOfRounds: number;
-  numberOfCourtsUsed: number;
-  rounds: string; // Stringified
-  byes: string; // Stringified
-  scores: string; // Stringified
-  matchDetails: string; // Stringified;
+export type Round = {
+  number?: number; // Round number for internal use only
+  courts: Courts;
+};
+
+export type Court = {
+  number?: number; // Court number for internal use only
+  teams: Teams;
+  byes?: Player[];
+  scoreKeeper?: ScoreKeeper;
+};
+
+export type Team = {
+  players: Players;
 };

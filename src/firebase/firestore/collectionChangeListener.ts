@@ -172,6 +172,10 @@ export const collectionChangeListener = <
       const unsubscribe = onSnapshot(
         qC,
         (snapshot: FirebaseFirestoreTypes.QuerySnapshot<T>) => {
+          log.debug(
+            `firestore - useCollection: ${collectionPath} chunk ${idx} (from cache = ${snapshot.metadata.fromCache})`,
+          );
+
           // Update this chunk’s results.
           chunkResults[idx] = snapshot.docs.map(
             doc => ({ id: doc.id, ...doc.data() }) as WithId<T>,
@@ -224,6 +228,10 @@ export const collectionChangeListener = <
       q.query,
       { includeMetadataChanges: true },
       (snapshot: FirebaseFirestoreTypes.QuerySnapshot<T>) => {
+        log.debug(
+          `firestore - useCollection: ${collectionPath} (from cache = ${snapshot.metadata.fromCache})`,
+        );
+
         const documents: WithId<T>[] = [];
         if (snapshot.size) {
           snapshot.forEach(doc => {

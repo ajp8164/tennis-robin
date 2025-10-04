@@ -8,7 +8,8 @@ import { InfoModal, InfoModalMethods } from 'components/modals/InfoModal';
 import { EmptyView } from 'components/molecules/EmptyView';
 import ScheduleRoundView from 'components/views/ScheduleRoundView';
 import eventScheduleExplainer from 'lib/content/eventScheduleExplainer.json';
-import { useSportEventStore } from 'lib/sportEvent';
+import { useSportEventStore } from 'lib/sportEvent/useSportEventStore';
+import { mapToArray } from 'lib/utils';
 import { Info } from 'lucide-react-native';
 import { SportEventsNavigatorParamList } from 'types/navigation';
 
@@ -42,7 +43,11 @@ const SportEventScheduleScreen = ({ navigation }: Props) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  if (!sportEvent || !sportEvent.schedule?.rounds.length) {
+  if (
+    !sportEvent ||
+    !sportEvent.schedule ||
+    !Object.keys(sportEvent.schedule.rounds).length
+  ) {
     return (
       <>
         <EmptyView
@@ -68,9 +73,14 @@ const SportEventScheduleScreen = ({ navigation }: Props) => {
         contentInsetAdjustmentBehavior={'automatic'}>
         <Divider />
         {sportEvent.schedule
-          ? sportEvent.schedule.rounds?.map((_round, r) => (
-              <ScheduleRoundView key={`round-${r + 1}`} r={r} />
-            ))
+          ? mapToArray(sportEvent.schedule.rounds)?.map((round, r) => {
+              return (
+                <ScheduleRoundView
+                  key={`round-${r + 1}`}
+                  round={{ ...round, number: r }}
+                />
+              );
+            })
           : null}
         <Divider />
       </ScrollView>

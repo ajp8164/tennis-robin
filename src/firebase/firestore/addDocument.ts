@@ -42,6 +42,7 @@ export const addDocument = async <T>(
 
     await setDoc(docRef, added);
     const snapshot = await getDoc(docRef);
+    log.debug(`firestore - addDocument: ${path}`);
 
     return { id: snapshot.id, ...snapshot.data() } as T;
   } catch (e) {

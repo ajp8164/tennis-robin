@@ -22,3 +22,17 @@ export const uuidv4 = () => {
     return v.toString(16);
   });
 };
+
+export const mapToArray = <T>(obj?: Record<string, T>): T[] => {
+  if (!obj) return [];
+  return (
+    Object.keys(obj)
+      // .sort((a, b) => Number(a) - Number(b))
+      .sort((a, b) => {
+        const numA = parseInt(a.replace(/\D/g, ''), 10); // strip non-digits
+        const numB = parseInt(b.replace(/\D/g, ''), 10);
+        return numA - numB;
+      })
+      .map(key => obj[key])
+  );
+};

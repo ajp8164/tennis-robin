@@ -1,9 +1,8 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Text, View } from 'react-native';
 
 import { Divider, ThemeManager, useTheme } from '@react-native-hello/ui';
 import { Button } from 'components/atoms/Button';
-import { useDocument } from 'firebase/firestore';
 import { formatMatchTime } from 'lib/formatMatchTime';
 import { useMyPlayer } from 'lib/player';
 import {
@@ -12,16 +11,17 @@ import {
   getSetState,
   useSharedMatchTimer,
 } from 'lib/scoring';
-import { decodeSportEvent } from 'lib/sportEvent';
+import { mapToArray } from 'lib/utils';
 import { Check } from 'lucide-react-native';
 import { DateTime } from 'luxon';
-import { Player } from 'types/player';
-import { SportEventEncoded, TeamSides } from 'types/sportEvent';
+import { Match } from 'types/match';
+import { Players, SportEvent, TeamSides } from 'types/sportEvent';
 
 const setScoreBoxWidth = 30;
 
 export interface Props {
-  sportEventId: string;
+  sportEvent: SportEvent;
+  match: Match;
   round: number;
   court: number;
   showActions?: boolean;
@@ -30,7 +30,8 @@ export interface Props {
 
 const ScoreboardMatchView = (props: Props) => {
   const {
-    sportEventId,
+    sportEvent,
+    match,
     round: r,
     court: c,
     showActions,
@@ -40,18 +41,8 @@ const ScoreboardMatchView = (props: Props) => {
   const theme = useTheme();
   const s = useStyles();
 
-  const { doc: sportEventEncoded } = useDocument<SportEventEncoded>(
-    'SportEvents',
-    sportEventId,
-  );
-
-  const sportEvent = useMemo(
-    () => decodeSportEvent(sportEventEncoded),
-    [sportEventEncoded],
-  );
-
   const { doc: myPlayer } = useMyPlayer();
-  const matchTimer = useSharedMatchTimer({ sportEventId, round: r, court: c });
+  const matchTimer = useSharedMatchTimer({ match });
 
   const team1Index = TeamSides.indexOf('Team1');
   const team2Index = TeamSides.indexOf('Team2');
@@ -67,25 +58,23 @@ const ScoreboardMatchView = (props: Props) => {
     const updated = getMatchState(
       sportEvent.numberOfSetsPerMatch,
       sportEvent.numberOfGamesPerSet,
-      sportEvent.schedule?.scores[r]?.[c],
-      sportEvent.schedule?.matchDetails[r]?.[c],
+      match,
     );
 
     setMatchState(updated);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
+    match,
     sportEvent?.numberOfGamesPerSet,
     sportEvent?.numberOfSetsPerMatch,
-    sportEvent?.schedule?.matchDetails,
-    sportEvent?.schedule?.scores,
   ]);
 
-  const playerNames = (players: Player[]) => {
-    const player1 = players[0]
-      ? `${players[0].firstName.slice(0, 1)}. ${players[0].lastName}`
+  const playerNames = (players: Players) => {
+    const player1 = players['0']
+      ? `${players['0'].firstName.slice(0, 1)}. ${players['0'].lastName}`
       : '';
-    const player2 = players[1]
-      ? ` / ${players[1].firstName.slice(0, 1)}. ${players[1].lastName}`
+    const player2 = players['1']
+      ? ` / ${players['1'].firstName.slice(0, 1)}. ${players['1'].lastName}`
       : '';
     return `${player1}${player2}`;
   };
@@ -98,8 +87,10 @@ const ScoreboardMatchView = (props: Props) => {
         rightComponent={
           <View style={{ flexDirection: 'row' }}>
             {/* Only the score keeper can start the match. */}
-            {sportEvent?.schedule?.matchDetails?.[r]?.[c]?.scoreKeeper
-              .playerId === myPlayer?.id ? (
+            {sportEvent.schedule?.rounds[r].courts[c].scoreKeeper?.playerId ===
+              myPlayer?.id &&
+            match?.timer.status !== 'ended' &&
+            match?.timer.status !== 'abandoned' ? (
               <Button
                 title={'Score this match'}
                 titleStyle={theme.styles.buttonScreenHeaderTitle}
@@ -127,65 +118,70 @@ const ScoreboardMatchView = (props: Props) => {
           </Text>
           <Text style={s.location}>{sportEvent.location}</Text>
         </View>
-        {sportEvent.schedule.rounds?.[r]?.[c]?.map((team, teamIndex) => (
-          <View key={`team-${teamIndex}`} style={s.teamContainer}>
-            <Check
-              color={theme.colors.success}
-              size={16}
-              strokeWidth={4}
-              style={{
-                marginLeft: -7,
-                marginRight: 2,
-                opacity:
-                  (matchState?.status === 'team1-wins' &&
-                    teamIndex === team1Index) ||
-                  (matchState?.status === 'team2-wins' &&
-                    teamIndex === team2Index)
-                    ? 1
-                    : 0,
-              }}
-            />
-            <View style={[s.playerNamesContainer]}>
-              <Text style={s.playerName}>{playerNames(team)}</Text>
+        {mapToArray(sportEvent.schedule.rounds?.[r]?.courts[c].teams)?.map(
+          (team, teamIndex) => (
+            <View key={`team-${teamIndex}`} style={s.teamContainer}>
+              <Check
+                color={theme.colors.success}
+                size={16}
+                strokeWidth={4}
+                style={{
+                  marginLeft: -7,
+                  marginRight: 2,
+                  opacity:
+                    (matchState?.status === 'team1-wins' &&
+                      teamIndex === team1Index) ||
+                    (matchState?.status === 'team2-wins' &&
+                      teamIndex === team2Index)
+                      ? 1
+                      : 0,
+                }}
+              />
+              <View style={[s.playerNamesContainer]}>
+                <Text style={s.playerName}>{playerNames(team.players)}</Text>
+              </View>
+              {/* Set scores */}
+              <View
+                style={[
+                  s.scoresContainer,
+                  teamIndex === team1Index ? s.team1Scores : s.team2Scores,
+                  { width: sets.length * setScoreBoxWidth * 1.05 },
+                ]}>
+                {sets.map((_set, setIndex) => {
+                  const setState = getSetState(
+                    setIndex,
+                    sportEvent.numberOfGamesPerSet,
+                    match,
+                  );
+                  return (
+                    <Text
+                      key={`set-${setIndex}`}
+                      style={[
+                        s.score,
+                        (teamIndex === team1Index &&
+                          setState.status === 'team1-wins') ||
+                        (teamIndex === team2Index &&
+                          setState.status === 'team2-wins')
+                          ? s.scoreWin
+                          : s.scoreLose,
+                        setState.status === 'in-progress'
+                          ? s.scoreInProgress
+                          : {},
+                      ]}>
+                      {setState.gameWins[teamIndex]}
+                    </Text>
+                  );
+                })}
+              </View>
             </View>
-            <View
-              style={[
-                s.scoresContainer,
-                teamIndex === team1Index ? s.team1Scores : s.team2Scores,
-                { width: sets.length * setScoreBoxWidth * 1.05 },
-              ]}>
-              {sets.map((_set, setIndex) => {
-                const setState = getSetState(
-                  sportEvent.numberOfGamesPerSet,
-                  sportEvent.schedule?.scores[r]?.[c]?.[setIndex],
-                );
-                return (
-                  <Text
-                    key={`set-${setIndex}`}
-                    style={[
-                      s.score,
-                      (teamIndex === team1Index &&
-                        setState.status === 'team1-wins') ||
-                      (teamIndex === team2Index &&
-                        setState.status === 'team2-wins')
-                        ? s.scoreWin
-                        : s.scoreLose,
-                      setState.status === 'in-progress'
-                        ? s.scoreInProgress
-                        : {},
-                    ]}>
-                    {setState.gameScores[teamIndex]}
-                  </Text>
-                );
-              })}
-            </View>
-          </View>
-        ))}
+          ),
+        )}
         <View style={s.footer}>
-          <Text
-            style={
-              s.result
-            }>{`Match time: ${formatMatchTime(matchTimer.elapsed)}`}</Text>
+          <Text style={s.result}>
+            {matchState?.status === 'not-started'
+              ? 'Not Started'
+              : `${matchState?.status === 'in-progress' ? 'In Progress' : 'Ended'}: ${formatMatchTime(matchTimer.elapsed)}`}
+          </Text>
         </View>
       </View>
     </>

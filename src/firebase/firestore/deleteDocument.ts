@@ -15,6 +15,7 @@ export const deleteDocument = async (path: string, id: string) => {
 
   try {
     await deleteDoc(docRef);
+    log.debug(`firestore - deleteDocument: ${path}`);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (e: any) {
     if (e instanceof Error) {

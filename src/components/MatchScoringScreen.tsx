@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Text, View } from 'react-native';
 import {
   Directions,
@@ -18,17 +18,22 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Button } from 'components/atoms/Button';
 import { InfoModal, InfoModalMethods } from 'components/modals/InfoModal';
 import { EmptyView } from 'components/molecules/EmptyView';
-import { updateDocument, useDocument } from 'firebase/firestore';
+import {
+  addDocument,
+  updateDocument,
+  useCollection,
+  useDocument,
+} from 'firebase/firestore';
 import matchScoringExplainer from 'lib/content/matchScoringExplainer.json';
 import { formatMatchTime } from 'lib/formatMatchTime';
+import { flattenPlayers } from 'lib/player';
 import {
   getGameState,
   getMatchState,
   getSetState,
-  getSportEventState,
   useSharedMatchTimer,
 } from 'lib/scoring';
-import { decodeSportEvent, encodeSportEvent } from 'lib/sportEvent';
+import { mapToArray } from 'lib/utils';
 import lodash from 'lodash';
 import {
   CircleX,
@@ -40,9 +45,9 @@ import {
   Undo,
 } from 'lucide-react-native';
 import { DateTime } from 'luxon';
+import { Match, Point } from 'types/match';
 import { SportEventsNavigatorParamList } from 'types/navigation';
-import { Player } from 'types/player';
-import { SportEventEncoded, TeamSides } from 'types/sportEvent';
+import { Players, SportEvent, TeamSides } from 'types/sportEvent';
 
 const setScoreBoxWidth = 30;
 
@@ -60,63 +65,116 @@ const MatchScoringScreen = ({ navigation, route }: Props) => {
   const team1Index = TeamSides.indexOf('Team1');
   const team2Index = TeamSides.indexOf('Team2');
 
-  const matchTimer = useSharedMatchTimer({ sportEventId, round: r, court: c });
-
-  const { doc: sportEventEncoded } = useDocument<SportEventEncoded>(
+  const { doc: sportEvent } = useDocument<SportEvent>(
     'SportEvents',
     sportEventId,
   );
 
-  const sportEvent = useMemo(
-    () => decodeSportEvent(sportEventEncoded),
-    [sportEventEncoded],
+  const { docs: matches, loading: matchesLoading } = useCollection<Match>(
+    'Matches',
+    {
+      where: [
+        {
+          fieldPath: 'sportEventId',
+          opStr: '==',
+          value: sportEventId,
+        },
+        {
+          fieldPath: 'roundNumber',
+          opStr: '==',
+          value: r,
+        },
+        {
+          fieldPath: 'courtNumber',
+          opStr: '==',
+          value: c,
+        },
+      ],
+    },
   );
+
+  const [match, setMatch] = useState<Match>();
+  const matchTimer = useSharedMatchTimer({ match });
 
   // Set counter
   const sets = new Array(sportEvent?.numberOfSetsPerMatch).fill('');
 
   const [currentSet, setCurrentSet] = useState(
-    sportEvent?.schedule?.scores.length || 0,
+    mapToArray(match?.sets).length || 0,
   );
   const [currentGame, setCurrentGame] = useState(
-    sportEvent?.schedule?.scores[currentSet]?.length || 0,
+    mapToArray(match?.sets?.[`s${currentSet}`]).length || 0,
   );
   const [matchEnded, setMatchEnded] = useState(
     matchTimer.status === 'ended' || matchTimer.status === 'abandoned',
   );
 
-  const team1Scores = sportEvent?.schedule?.scores?.[r]?.[c]?.[currentSet]?.[
-    currentGame
-  ]?.[team1Index] || [0];
-  const team1CurrentScore = team1Scores[team1Scores.length - 1];
+  const team1Points = match?.sets?.[`s${currentSet}`]?.games?.[
+    `g${currentGame}`
+  ]?.teams?.[`t${team1Index}`].points || [{ v: 0 }];
+  const team1CurrentPoint = team1Points[team1Points.length - 1];
 
-  const team2Scores = sportEvent?.schedule?.scores?.[r]?.[c]?.[currentSet]?.[
-    currentGame
-  ]?.[team2Index] || [0];
-  const team2CurrentScore = team2Scores[team2Scores.length - 1];
+  const team2Points = match?.sets?.[`s${currentSet}`]?.games?.[
+    `g${currentGame}`
+  ]?.teams?.[`t${team2Index}`].points || [{ v: 0 }];
+  const team2CurrentPoint = team2Points[team2Points.length - 1];
 
   // A message to display for a team. [team1, team2].
   const [teamMessage, setTeamMessage] = useState<string[]>();
 
-  const undoBuffer = useRef<number[][]>([[], []]); // scores, [team1, team2]
+  const undoBuffer = useRef<Point[][]>([[], []]); // points, [team1, team2]
   const processingUndo = useRef(false);
 
   const infoModalRef = useRef<InfoModalMethods>(null);
 
+  // Load the match or create a new match.
+  useEffect(() => {
+    if (sportEvent && !matchesLoading) {
+      if (matches?.[0]) {
+        setMatch(matches[0]);
+      } else {
+        const newMatch: Match = {
+          courtNumber: c,
+          roundNumber: r,
+          sets: {},
+          sportEventId,
+          timer: {
+            elapsedTime: { hours: 0, minutes: 0 },
+            resumeTime: DateTime.now().toISO(),
+            status: 'initial',
+          },
+        };
+
+        addDocument<Match>('Matches', newMatch).then(match => {
+          // Add the match doc id to the sport event.
+          const matchIds = new Set(sportEvent?.matches);
+          matchIds.add(match.id!);
+          updateDocument('SportEvents', {
+            ...sportEvent,
+            matches: [...matchIds],
+          });
+        });
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [matches, matchesLoading, sportEvent]);
+
   // Check for end of game or set or match.
   useEffect(() => {
-    if (!sportEvent?.schedule || matchEnded) return;
+    if (!sportEvent?.schedule || !match || matchEnded) return;
 
     // Don't process a game, set, match advance if working on an undo.
     if (processingUndo.current) {
       // Remove the message during undo.
       setTeamMessage(['', '']);
-
       processingUndo.current = false;
       return;
     }
 
-    const playerCount = sportEvent.schedule!.rounds[r][c].length;
+    const playerCount = flattenPlayers(
+      sportEvent.schedule!.rounds[r].courts[c].teams,
+    ).length;
+
     const gameWinner = `Game Winner${playerCount !== 1 ? 's!' : '!'}`;
     const setWinner = `Set Winner${playerCount !== 1 ? 's!' : '!'}`;
     const matchWinner = `Match Winner${playerCount !== 1 ? 's!' : '!'}`;
@@ -125,18 +183,16 @@ const MatchScoringScreen = ({ navigation, route }: Props) => {
     const matchState = getMatchState(
       sportEvent.numberOfSetsPerMatch,
       sportEvent.numberOfGamesPerSet,
-      sportEvent.schedule.scores?.[r]?.[c],
-      sportEvent.schedule.matchDetails?.[r]?.[c],
+      match,
     );
 
     const setState = getSetState(
+      currentSet,
       sportEvent.numberOfGamesPerSet,
-      sportEvent.schedule?.scores?.[r]?.[c]?.[currentSet],
+      match,
     );
 
-    const gameState = getGameState(
-      sportEvent.schedule.scores?.[r]?.[c]?.[currentSet]?.[currentGame],
-    );
+    const gameState = getGameState(currentGame, currentSet, match);
 
     // Move to next game?
     if (
@@ -182,33 +238,16 @@ const MatchScoringScreen = ({ navigation, route }: Props) => {
         setTeamMessage(['', matchAbandoned]);
       }
     }
-  }, [c, currentGame, currentSet, r, sportEvent, matchTimer, matchEnded]);
-
-  // End of sport event?
-  useEffect(() => {
-    if (!sportEvent) return;
-    const sportEventState = getSportEventState(sportEvent);
-
-    if (
-      sportEventState.status === 'ended' && // Reported status
-      sportEvent.state.status !== 'ended' // Saved status
-    ) {
-      const updatedSportEventState = sportEvent.state;
-
-      if (sportEventState.status === 'ended') {
-        updatedSportEventState.status = sportEventState.status;
-        updatedSportEventState.endDate = DateTime.now().toISO();
-      }
-
-      updateDocument<SportEventEncoded>(
-        'SportEvents',
-        encodeSportEvent({
-          ...sportEvent,
-          state: updatedSportEventState,
-        }),
-      );
-    }
-  }, [sportEvent]);
+  }, [
+    r,
+    c,
+    currentGame,
+    currentSet,
+    match,
+    matchEnded,
+    matchTimer,
+    sportEvent,
+  ]);
 
   const pauseMatch = () => {
     matchTimer.pause();
@@ -220,12 +259,12 @@ const MatchScoringScreen = ({ navigation, route }: Props) => {
     matchTimer.abandon();
   };
 
-  const playerNames = (players: Player[]) => {
-    const player1 = players[0]
-      ? `${players[0].lastName} ${players[0].firstName.slice(0, 1)}.`
+  const playerNames = (players: Players) => {
+    const player1 = players['0']
+      ? `${players['0'].lastName} ${players['0'].firstName.slice(0, 1)}.`
       : '';
     const player2 = players[1]
-      ? ` / ${players[1].lastName} ${players[1].firstName.slice(0, 1)}.`
+      ? ` / ${players['1'].lastName} ${players['1'].firstName.slice(0, 1)}.`
       : '';
     return `${player1}${player2}`;
   };
@@ -253,12 +292,12 @@ const MatchScoringScreen = ({ navigation, route }: Props) => {
   };
 
   const increaseScore = (teamAIndex: number, teamBIndex: number) => {
-    if (!sportEvent.schedule || matchEnded) return;
+    if (!sportEvent?.schedule || !match || matchEnded) return;
 
     // If the match timer is not running then start it. This allows the timer to start automatically
-    // when the first score is entered or when entering a score when the match is paused.
+    // when the first point value is entered or when entering a point value when the match is paused.
     if (matchTimer.status !== 'running') {
-      // Need to delay the update to allow the scores to update first otherwise the scoring update
+      // Need to delay the update to allow the point values to update first otherwise the point values update
       // overwrites the timer update.
       setTimeout(() => {
         resumeMatch();
@@ -268,66 +307,57 @@ const MatchScoringScreen = ({ navigation, route }: Props) => {
     // Reset message.
     setTeamMessage(undefined);
 
-    const workingScores = sportEvent.schedule.scores;
+    const workingSets = lodash.cloneDeep(match?.sets || {});
+    const teamAPath = `s${currentSet}.games.g${currentGame}.teams.t${teamAIndex}.points`;
+    const teamBPath = `s${currentSet}.games.g${currentGame}.teams.t${teamBIndex}.points`;
 
-    //Round, court, set, game, team, scores
-    const teamAScores = workingScores?.[r]?.[c]?.[currentSet]?.[currentGame]?.[
-      teamAIndex
-    ] || [0];
+    // Ensure team A points array exists.
+    let teamAPoints = lodash.get(workingSets, teamAPath, []) as Point[];
 
-    const teamBScores = workingScores?.[r]?.[c]?.[currentSet]?.[currentGame]?.[
-      teamBIndex
-    ] || [0];
-
-    const currentScore = teamAScores[teamAScores.length - 1];
-
-    if (currentScore === 0) {
-      teamAScores?.push(15);
-    } else if (currentScore === 15) {
-      teamAScores?.push(30);
-    } else if (currentScore === 30) {
-      teamAScores?.push(40);
-    } else if (currentScore === 40) {
-      teamAScores?.push(50); // Win if by 2
-    } else if (currentScore >= 50) {
-      // Continue adding 10 until the game ends.
-      // Scores over 40 are shown as deuce (40 all) or Ad, 40.
-      teamAScores?.push(currentScore + 10); // Win in tie breaker
+    if (teamAPoints.length === 0) {
+      teamAPoints = [{ v: 0 }];
     }
 
-    // Lodash set ensures whole path exists.
-    lodash.set(
-      workingScores,
-      `[${r}][${c}][${currentSet}][${currentGame}][${teamAIndex}]`,
-      teamAScores,
-    );
+    // Ensure team B points array exists.
+    let teamBPoints = lodash.get(workingSets, teamBPath, []) as Point[];
 
-    // Extend team B score unchanged.
-    teamBScores?.push(teamBScores[teamBScores?.length - 1]);
+    if (teamBPoints.length === 0) {
+      teamBPoints = [{ v: 0 }];
+    }
 
-    lodash.set(
-      workingScores,
-      `[${r}][${c}][${currentSet}][${currentGame}][${teamBIndex}]`,
-      teamBScores,
-    );
+    const currentPoint = teamAPoints[teamAPoints.length - 1];
 
-    // Update scores
-    updateDocument<SportEventEncoded>(
-      'SportEvents',
-      encodeSportEvent({
-        ...sportEvent,
-        schedule: {
-          ...sportEvent.schedule,
-          scores: workingScores,
-        },
-      }),
-    );
+    // Push the next score for Team A.
+    if (currentPoint.v === 0) {
+      teamAPoints.push({ v: 15 });
+    } else if (currentPoint.v === 15) {
+      teamAPoints.push({ v: 30 });
+    } else if (currentPoint.v === 30) {
+      teamAPoints.push({ v: 40 });
+    } else if (currentPoint.v === 40) {
+      teamAPoints.push({ v: 50 }); // Win if by 2
+    } else if (currentPoint.v >= 50) {
+      teamAPoints.push({ v: currentPoint.v + 10 }); // Tiebreaker
+    }
 
-    // Prevent a redo if we increase score on an undo state.
+    // Commit updates back into workingSets.
+    lodash.set(workingSets, teamAPath, teamAPoints);
+
+    // Extend team B points unchanged (repeat last value).
+    teamBPoints.push(teamBPoints[teamBPoints.length - 1]);
+    lodash.set(workingSets, teamBPath, teamBPoints);
+
+    // Update set scores.
+    updateDocument<Match>('Matches', {
+      ...match,
+      sets: workingSets,
+    });
+
+    // Prevent a redo if we increase point value on an undo state.
     // Check if the undo buffer should be reset.
     if (undoBuffer.current[0].length > 0) {
-      const newAScore = teamAScores[teamAScores.length - 1];
-      const newBScore = teamBScores[teamBScores.length - 1];
+      const newAPoint = teamAPoints[teamAPoints.length - 1];
+      const newBPoint = teamBPoints[teamBPoints.length - 1];
 
       const teamAUndoIndex = undoBuffer.current[teamAIndex].length - 1;
       const teamBUndoIndex = undoBuffer.current[teamBIndex].length - 1;
@@ -335,29 +365,29 @@ const MatchScoringScreen = ({ navigation, route }: Props) => {
       const currentABuf = undoBuffer.current[teamAIndex][teamAUndoIndex];
       const currentBBuf = undoBuffer.current[teamBIndex][teamBUndoIndex];
 
-      // If the new score is advancing past the buffer value then reset the undo buffer.
-      if (newAScore >= currentABuf || newBScore >= currentBBuf) {
+      // If the new point value is advancing past the buffer value then reset the undo buffer.
+      if (newAPoint.v >= currentABuf.v || newBPoint.v >= currentBBuf.v) {
         undoBuffer.current = [[], []];
       }
     }
   };
 
   const alterScore = (which: 'undo' | 'redo') => {
-    if (!sportEvent.schedule) return;
+    if (!sportEvent?.schedule || !match) return;
 
     let updateScores = false;
-    const workingScores = sportEvent.schedule.scores;
+    const workingSets = match.sets;
 
     // Must be more than one score to undo.
     if (which === 'undo') {
       // Undo in game.
-      if (team1Scores.length > 1 && team2Scores.length > 1) {
+      if (team1Points.length > 1 && team2Points.length > 1) {
         // Remove the last score from each team.
         undoBuffer.current[team1Index].push(
-          team1Scores.splice(team1Scores.length - 1, 1)[0],
+          team1Points.splice(team1Points.length - 1, 1)[0],
         );
         undoBuffer.current[team2Index].push(
-          team2Scores.splice(team2Scores.length - 1, 1)[0],
+          team2Points.splice(team2Points.length - 1, 1)[0],
         );
         updateScores = true;
       }
@@ -373,12 +403,14 @@ const MatchScoringScreen = ({ navigation, route }: Props) => {
       if (
         !matchEnded &&
         currentSet > 0 &&
-        team1Scores.length === 1 &&
-        team2Scores.length === 1
+        team1Points.length === 1 &&
+        team2Points.length === 1
       ) {
         // Back to the last set.
         setCurrentSet(currentSet => currentSet - 1);
-        setCurrentGame(sportEvent.schedule.scores[r][c][currentSet - 1].length);
+        setCurrentGame(
+          mapToArray(match.sets[`s${currentSet - 1}`]?.games).length,
+        );
         processingUndo.current = true;
       }
 
@@ -386,8 +418,8 @@ const MatchScoringScreen = ({ navigation, route }: Props) => {
       if (
         !matchEnded &&
         currentGame > 0 &&
-        team1Scores.length === 1 &&
-        team2Scores.length === 1
+        team1Points.length === 1 &&
+        team2Points.length === 1
       ) {
         // Back to the last game.
         setCurrentGame(currentGame => currentGame - 1);
@@ -401,8 +433,8 @@ const MatchScoringScreen = ({ navigation, route }: Props) => {
       const team1UndoIndex = undoBuffer.current[team1Index].length - 1;
       const team2UndoIndex = undoBuffer.current[team2Index].length - 1;
 
-      team1Scores.push(undoBuffer.current[team1Index][team1UndoIndex]);
-      team2Scores.push(undoBuffer.current[team2Index][team2UndoIndex]);
+      team1Points.push(undoBuffer.current[team1Index][team1UndoIndex]);
+      team2Points.push(undoBuffer.current[team2Index][team2UndoIndex]);
 
       // Remove undone scores from buffer.
       undoBuffer.current[team1Index].splice(team1UndoIndex, 1);
@@ -414,59 +446,56 @@ const MatchScoringScreen = ({ navigation, route }: Props) => {
     if (updateScores) {
       // Lodash set ensures whole path exists.
       lodash.set(
-        workingScores,
-        `[${r}][${c}][${currentSet}][${currentGame}][${team1Index}]`,
-        team1Scores,
+        workingSets,
+        `s${currentSet}.games.g${currentGame}.teams.t${team1Index}.points`,
+        team1Points,
       );
 
       lodash.set(
-        workingScores,
-        `[${r}][${c}][${currentSet}][${currentGame}][${team2Index}]`,
-        team2Scores,
+        workingSets,
+        `s${currentSet}.games.g${currentGame}.teams.t${team2Index}.points`,
+        team2Points,
       );
 
-      // Update scores
-      updateDocument<SportEventEncoded>(
-        'SportEvents',
-        encodeSportEvent({
-          ...sportEvent,
-          schedule: {
-            ...sportEvent.schedule,
-            scores: workingScores,
-          },
-        }),
-      );
+      // Update set scores.
+      updateDocument<Match>('Matches', {
+        ...match,
+        sets: workingSets,
+      });
     }
   };
 
   // Resolve scoring value for display.
-  const resolveDispayedScore = (score: number, otherScore: number) => {
+  const resolveDispayedScore = (
+    pointValue: number,
+    otherPointValue: number,
+  ) => {
     if (matchEnded) {
       return '';
     }
 
     // Not in tie break?
-    if (score <= 40 && otherScore <= 40) {
-      return score;
+    if (pointValue <= 40 && otherPointValue <= 40) {
+      return pointValue;
     }
 
-    if (score > 40 && otherScore < 40) {
+    if (pointValue > 40 && otherPointValue < 40) {
       return 40;
     }
 
-    if (otherScore > 40 && score < 40) {
-      return score;
+    if (otherPointValue > 40 && pointValue < 40) {
+      return pointValue;
     }
 
     // In tie break
 
     // Deuce?
-    if (score === otherScore) {
+    if (pointValue === otherPointValue) {
       return 40;
     }
 
     // Who's advantage?
-    if (score > otherScore) {
+    if (pointValue > otherPointValue) {
       return 'Ad';
     } else {
       return 40;
@@ -474,48 +503,52 @@ const MatchScoringScreen = ({ navigation, route }: Props) => {
   };
 
   const renderSetScores = () => {
+    if (!sportEvent || !match) return null;
     return (
       <>
-        {sportEvent?.schedule?.rounds[r][c].map((_, teamIndex, arr) => {
-          // Top of the screen is team2, bottom is team1.
-          // Reverse the index so team2 set wins are on top.
-          const reverseTeamIndex = arr.length - 1 - teamIndex;
-          return (
-            <View key={`team-${reverseTeamIndex}`} style={s.teamContainer}>
-              <View
-                style={[
-                  s.scoresContainer,
-                  teamIndex === team1Index ? s.team1Scores : s.team2Scores,
-                  { width: sets.length * setScoreBoxWidth * 1.05 },
-                ]}>
-                {sets.map((_set, setIndex) => {
-                  const setState = getSetState(
-                    sportEvent.numberOfGamesPerSet,
-                    sportEvent.schedule?.scores[r]?.[c]?.[setIndex],
-                  );
-                  return (
-                    <Text
-                      key={`set-${setIndex}`}
-                      style={[
-                        s.score,
-                        (reverseTeamIndex === team1Index &&
-                          setState.status === 'team1-wins') ||
-                        (reverseTeamIndex === team2Index &&
-                          setState.status === 'team2-wins')
-                          ? s.scoreWin
-                          : s.scoreLose,
-                        setState.status === 'in-progress'
-                          ? s.scoreInProgress
-                          : {},
-                      ]}>
-                      {setState.gameScores[reverseTeamIndex]}
-                    </Text>
-                  );
-                })}
+        {mapToArray(sportEvent.schedule?.rounds[r].courts[c].teams).map(
+          (_, teamIndex, arr) => {
+            // Top of the screen is team2, bottom is team1.
+            // Reverse the index so team2 set wins are on top.
+            const reverseTeamIndex = arr.length - 1 - teamIndex;
+            return (
+              <View key={`team-${reverseTeamIndex}`} style={s.teamContainer}>
+                <View
+                  style={[
+                    s.scoresContainer,
+                    teamIndex === team1Index ? s.team1Scores : s.team2Scores,
+                    { width: sets.length * setScoreBoxWidth * 1.05 },
+                  ]}>
+                  {sets.map((_set, setIndex) => {
+                    const setState = getSetState(
+                      setIndex,
+                      sportEvent.numberOfGamesPerSet,
+                      match,
+                    );
+                    return (
+                      <Text
+                        key={`set-${setIndex}`}
+                        style={[
+                          s.score,
+                          (reverseTeamIndex === team1Index &&
+                            setState.status === 'team1-wins') ||
+                          (reverseTeamIndex === team2Index &&
+                            setState.status === 'team2-wins')
+                            ? s.scoreWin
+                            : s.scoreLose,
+                          setState.status === 'in-progress'
+                            ? s.scoreInProgress
+                            : {},
+                        ]}>
+                        {setState.gameWins[reverseTeamIndex]}
+                      </Text>
+                    );
+                  })}
+                </View>
               </View>
-            </View>
-          );
-        })}
+            );
+          },
+        )}
       </>
     );
   };
@@ -586,8 +619,8 @@ const MatchScoringScreen = ({ navigation, route }: Props) => {
               disabled={
                 currentSet === 0 &&
                 currentGame === 0 &&
-                team1CurrentScore === 0 &&
-                team2CurrentScore === 0
+                team1CurrentPoint.v === 0 &&
+                team2CurrentPoint.v === 0
               }
               onPress={() => alterScore('undo')}
             />
@@ -609,10 +642,13 @@ const MatchScoringScreen = ({ navigation, route }: Props) => {
                 color={theme.colors.whiteTransparentLight}
               />
               <Text style={s.teamName}>
-                {playerNames(sportEvent.schedule!.rounds[r][c][team2Index])}
+                {playerNames(
+                  sportEvent.schedule!.rounds[r].courts[c].teams[team2Index]
+                    .players,
+                )}
               </Text>
               <Text style={s.gameScore}>
-                {resolveDispayedScore(team2CurrentScore, team1CurrentScore)}
+                {resolveDispayedScore(team2CurrentPoint.v, team1CurrentPoint.v)}
               </Text>
             </View>
             {/* Team 2 message */}
@@ -636,10 +672,13 @@ const MatchScoringScreen = ({ navigation, route }: Props) => {
             {/* Team 1 */}
             <View style={s.team1}>
               <Text style={s.gameScore}>
-                {resolveDispayedScore(team1CurrentScore, team2CurrentScore)}
+                {resolveDispayedScore(team1CurrentPoint.v, team2CurrentPoint.v)}
               </Text>
               <Text style={s.teamName}>
-                {playerNames(sportEvent.schedule!.rounds[r][c][team1Index])}
+                {playerNames(
+                  sportEvent.schedule!.rounds[r].courts[c].teams[team1Index]
+                    .players,
+                )}
               </Text>
               <SvgXml
                 xml={getColoredSvg('chevronHandle')}

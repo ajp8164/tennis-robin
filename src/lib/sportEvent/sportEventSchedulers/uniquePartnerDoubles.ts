@@ -1,5 +1,8 @@
+import { flattenPlayers } from 'lib/player';
+import { mapToArray } from 'lib/utils';
+import lodash from 'lodash';
 import { Player } from 'types/player';
-import { Rounds, Schedule } from 'types/sportEvent';
+import { Round, Rounds, Schedule } from 'types/sportEvent';
 
 export const uniquePartnerDoubles = (
   players: Player[],
@@ -33,7 +36,8 @@ export const uniquePartnerDoubles = (
   }
 
   // Split into court-limited subrounds.
-  const scheduleRounds: Rounds = [];
+  let roundNumber = 0;
+  const scheduleRounds: Rounds = {};
   for (const round of rounds) {
     const playablePairs: Player[][] = [];
     const byePlayers: Player[] = [];
@@ -51,7 +55,7 @@ export const uniquePartnerDoubles = (
     // Slice into courts
     for (let i = 0; i < playablePairs.length; i += courts * 2) {
       const subroundPairs = playablePairs.slice(i, i + courts * 2);
-      const subround: Player[][][] = [];
+      const subround: Player[][][] = []; // Court, team, player
 
       for (let j = 0; j < subroundPairs.length; j += 2) {
         const team1 = subroundPairs[j];
@@ -81,7 +85,8 @@ export const uniquePartnerDoubles = (
       }
 
       if (subround.length > 0) {
-        scheduleRounds.push(subround);
+        scheduleRounds[`${roundNumber}`] = toRoundMap(subround);
+        roundNumber++;
       }
     }
   }
@@ -90,12 +95,12 @@ export const uniquePartnerDoubles = (
 
   return {
     schedulerId: 'unique-partner-doubles',
-    numberOfRounds: scheduleRounds.length,
+    numberOfRounds: mapToArray(scheduleRounds).length,
     numberOfCourtsUsed: resolved.maxCourtsUsed,
     rounds: scheduleRounds,
-    byes: resolved.byePlayers,
-    scores: [],
-    matchDetails: [],
+    // byes: resolved.byePlayers,
+    // scores: [],
+    // matchDetails: [],
   };
 };
 
@@ -103,10 +108,11 @@ const resolveByesByRound = (scheduleRounds: Rounds) => {
   const byePlayers: Player[][] = [];
   let maxCourtsUsed = 0;
 
-  scheduleRounds.forEach((round, r) => {
+  mapToArray(scheduleRounds).forEach((round, r) => {
     let thisRoundCourtsUsed = 0;
-    round.forEach((court, _c) => {
-      const courtPlayers = court.flat();
+    mapToArray(round.courts).forEach((court, _c) => {
+      flattenPlayers(court.teams);
+      const courtPlayers = flattenPlayers(court.teams);
 
       // If at least one bye-placeholder player exists on this court/round then all
       // real players are bye for this round.
@@ -127,4 +133,19 @@ const resolveByesByRound = (scheduleRounds: Rounds) => {
   });
 
   return { byePlayers, maxCourtsUsed };
+};
+
+const toRoundMap = (round: Player[][][]) => {
+  const roundMap: Round = {
+    courts: {},
+  };
+  round.forEach((court, c) => {
+    court.forEach((team, t) => {
+      team.forEach((player, p) => {
+        lodash.set(roundMap, `courts[${c}].teams[${t}].players[${p}]`, player);
+      });
+    });
+  });
+
+  return roundMap;
 };

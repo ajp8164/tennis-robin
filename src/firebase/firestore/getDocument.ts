@@ -16,6 +16,8 @@ export const getDocument = async <T>(
   try {
     const docRef = FSDoc(db, collectionPath, id);
     const documentSnapshot = await getDoc(docRef);
+    log.debug(`firestore - getDocument: ${collectionPath}`);
+
     if (documentSnapshot.exists()) {
       const result = {
         ...documentSnapshot.data(),

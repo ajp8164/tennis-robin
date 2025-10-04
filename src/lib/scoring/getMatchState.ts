@@ -1,4 +1,5 @@
-import { MatchDetail } from 'types/sportEvent';
+import { mapToArray } from 'lib/utils';
+import { Match } from 'types/match';
 
 import { getSetState } from './index';
 
@@ -18,19 +19,18 @@ export type MatchStateResult = {
 export const getMatchState = (
   maxSetsPerMatch: number,
   maxGamesPerSet: number,
-  setGameTeamScores?: number[][][][],
-  matchDetail?: MatchDetail,
+  match?: Match,
 ): MatchStateResult => {
   // Must have scores for sets, game, and team otherwise the set has not yet started.
-  if (!setGameTeamScores || !setGameTeamScores[0]) {
+  // Here we use the timer status to provide match status before any scores are entered.
+  if (!mapToArray(match?.sets?.['s0']?.games?.['g0'].teams?.['t0'])?.length) {
     return {
       status:
-        matchDetail?.timer?.status === 'running' ||
-        matchDetail?.timer?.status === 'paused'
+        match?.timer?.status === 'running' || match?.timer?.status === 'paused'
           ? 'in-progress'
-          : matchDetail?.timer?.status === 'ended'
+          : match?.timer?.status === 'ended'
             ? 'ended'
-            : matchDetail?.timer?.status === 'abandoned'
+            : match?.timer?.status === 'abandoned'
               ? 'abandoned'
               : 'not-started',
       setScores: [0, 0], // No set wins in the match for either team
@@ -43,8 +43,8 @@ export const getMatchState = (
   let team2WinsMatch = false;
 
   // For each set in the match count up the number of wins for each team.
-  for (let s = 0; s < maxSetsPerMatch; s++) {
-    const setState = getSetState(maxGamesPerSet, setGameTeamScores[s]);
+  for (let s = 0; s < mapToArray(match?.sets).length; s++) {
+    const setState = getSetState(s, maxGamesPerSet, match);
 
     if (setState.status === 'team1-wins') {
       team1TeamWins = team1TeamWins + 1;
@@ -77,9 +77,9 @@ export const getMatchState = (
     ? 'team1-wins'
     : team2WinsMatch
       ? 'team2-wins'
-      : matchDetail?.timer?.status === 'ended'
+      : match?.timer?.status === 'ended'
         ? 'ended'
-        : matchDetail?.timer?.status === 'abandoned'
+        : match?.timer?.status === 'abandoned'
           ? 'abandoned'
           : 'in-progress';
 

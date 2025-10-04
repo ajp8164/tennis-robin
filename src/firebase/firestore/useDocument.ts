@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 
 import { FirebaseFirestoreTypes } from '@react-native-firebase/firestore';
+import { log } from '@react-native-hello/core';
 
 import { WithId, documentChangeListener } from './index';
 
@@ -20,6 +21,10 @@ export const useDocument = <T extends FirebaseFirestoreTypes.DocumentData>(
       collectionPath,
       documentPath,
       snapshot => {
+        log.debug(
+          `firestore - useDocument: ${collectionPath} (from cache = ${snapshot.metadata.fromCache})`,
+        );
+
         if (snapshot.exists()) {
           setDocument({ id: snapshot.id, ...snapshot.data() } as WithId<T>);
         } else {

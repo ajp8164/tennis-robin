@@ -1,15 +1,17 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { ScrollView, Text, View } from 'react-native';
 
+import { documentId } from '@react-native-firebase/firestore';
 import { Divider, ThemeManager, useTheme } from '@react-native-hello/ui';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { EmptyView } from 'components/molecules/EmptyView';
-import { useDocument } from 'firebase/firestore';
+import { useCollection, useDocument } from 'firebase/firestore';
 import { getSetState } from 'lib/scoring';
-import { decodeSportEvent } from 'lib/sportEvent';
+import { mapToArray } from 'lib/utils';
 import { DateTime } from 'luxon';
+import { Match } from 'types/match';
 import { SportEventsNavigatorParamList } from 'types/navigation';
-import { SportEventEncoded, TeamSides } from 'types/sportEvent';
+import { SportEvent, TeamSides } from 'types/sportEvent';
 
 const setScoreBoxWidth = 30;
 
@@ -29,15 +31,24 @@ const SportEventSummaryScreen = ({ route }: Props) => {
 
   // *** Live sportEvent data ***
   //
-  const { doc: sportEventEncoded } = useDocument<SportEventEncoded>(
+  const { doc: sportEvent } = useDocument<SportEvent>(
     'SportEvents',
     sportEventId,
   );
 
-  const sportEvent = useMemo(
-    () => decodeSportEvent(sportEventEncoded),
-    [sportEventEncoded],
-  );
+  const { docs: matches } = useCollection<Match>('Matches', {
+    where: [
+      {
+        fieldPath: documentId(),
+        opStr: 'in',
+        value: sportEvent?.matches || [],
+      },
+    ],
+    orderBy: [
+      { fieldPath: 'roundNumber', directionStr: 'asc' },
+      { fieldPath: 'courtNumber', directionStr: 'asc' },
+    ],
+  });
   //
   // ***
 
@@ -47,46 +58,52 @@ const SportEventSummaryScreen = ({ route }: Props) => {
   const renderSetScores = (r: number, c: number) => {
     return (
       <>
-        {sportEvent?.schedule?.rounds[r][c].map((_, teamIndex, arr) => {
-          // Top of the screen is team2, bottom is team1.
-          // Reverse the index so team2 set wins are on top.
-          const reverseTeamIndex = arr.length - 1 - teamIndex;
-          return (
-            <View key={`team-${reverseTeamIndex}`} style={s.teamContainer}>
-              <View
-                style={[
-                  s.scoresContainer,
-                  teamIndex === team1Index ? s.team1Scores : s.team2Scores,
-                  { width: sets.length * setScoreBoxWidth * 1.05 },
-                ]}>
-                {sets.map((_set, setIndex) => {
-                  const setState = getSetState(
-                    sportEvent.numberOfGamesPerSet,
-                    sportEvent.schedule?.scores[r]?.[c]?.[setIndex],
-                  );
-                  return (
-                    <Text
-                      key={`set-${setIndex}`}
-                      style={[
-                        s.score,
-                        (reverseTeamIndex === team1Index &&
-                          setState.status === 'team1-wins') ||
-                        (reverseTeamIndex === team2Index &&
-                          setState.status === 'team2-wins')
-                          ? s.scoreWin
-                          : s.scoreLose,
-                        setState.status === 'in-progress'
-                          ? s.scoreInProgress
-                          : {},
-                      ]}>
-                      {setState.gameScores[reverseTeamIndex]}
-                    </Text>
-                  );
-                })}
+        {mapToArray(sportEvent?.schedule?.rounds[r].courts[c].teams).map(
+          (_, teamIndex, arr) => {
+            // Top of the screen is team2, bottom is team1.
+            // Reverse the index so team2 set wins are on top.
+            const reverseTeamIndex = arr.length - 1 - teamIndex;
+            const match = matches.find(
+              m => m.roundNumber === r && m.courtNumber === c,
+            );
+            return (
+              <View key={`team-${reverseTeamIndex}`} style={s.teamContainer}>
+                <View
+                  style={[
+                    s.scoresContainer,
+                    teamIndex === team1Index ? s.team1Scores : s.team2Scores,
+                    { width: sets.length * setScoreBoxWidth * 1.05 },
+                  ]}>
+                  {sets.map((_set, setIndex) => {
+                    const setState = getSetState(
+                      setIndex,
+                      sportEvent?.numberOfGamesPerSet || 0,
+                      match,
+                    );
+                    return (
+                      <Text
+                        key={`set-${setIndex}`}
+                        style={[
+                          s.score,
+                          (reverseTeamIndex === team1Index &&
+                            setState.status === 'team1-wins') ||
+                          (reverseTeamIndex === team2Index &&
+                            setState.status === 'team2-wins')
+                            ? s.scoreWin
+                            : s.scoreLose,
+                          setState.status === 'in-progress'
+                            ? s.scoreInProgress
+                            : {},
+                        ]}>
+                        {setState.gameWins[reverseTeamIndex]}
+                      </Text>
+                    );
+                  })}
+                </View>
               </View>
-            </View>
-          );
-        })}
+            );
+          },
+        )}
       </>
     );
   };
@@ -152,55 +169,60 @@ const SportEventSummaryScreen = ({ route }: Props) => {
           style={[theme.text.small, { color: theme.colors.listItemSubtitle }]}>
           {`${sportEvent.numberOfGamesPerSet} Game${sportEvent.numberOfGamesPerSet !== 1 ? 's' : ''} per Set`}
         </Text>
-        {sportEvent.schedule?.rounds.map((round, r) =>
-          round.map((court, c) => (
-            <View key={`round-${r}-court-${c}`}>
-              <Text
-                style={[
-                  theme.text.small,
-                  { color: theme.colors.listItemSubtitle },
-                ]}>
-                {'Team 1: '}
-                {court[0][0]
-                  ? `${court[0][0].firstName} ${court[0][0].lastName}`
-                  : ''}
-                {court[0][1]
-                  ? `${court[0][1].firstName} ${court[0][1].lastName}`
-                  : ''}
-              </Text>
-              <Text
-                style={[
-                  theme.text.small,
-                  { color: theme.colors.listItemSubtitle },
-                ]}>
-                {'Team 2: '}
-                {court[1][0]
-                  ? `${court[1][0].firstName} ${court[1][0].lastName}`
-                  : ''}
-                {court[1][1]
-                  ? `${court[1][1].firstName} ${court[1][1].lastName}`
-                  : ''}
-              </Text>
-              <Text
-                style={[
-                  theme.text.small,
-                  { color: theme.colors.listItemSubtitle },
-                ]}>
-                {sportEvent.schedule?.matchDetails[r]?.[c]
-                  ? `score keeper: ${sportEvent.schedule?.matchDetails[r]?.[c]?.scoreKeeper.name}`
-                  : 'None'}
-              </Text>
-              {renderSetScores(r, c)}
-              <Text
-                style={[
-                  theme.text.small,
-                  { color: theme.colors.listItemSubtitle },
-                ]}>
-                {`hours: ${sportEvent.schedule?.matchDetails[r]?.[c]?.timer.elapsedTime.hours}`}
-                {`minutes: ${sportEvent.schedule?.matchDetails[r]?.[c]?.timer.elapsedTime.minutes}`}
-              </Text>
-            </View>
-          )),
+        {mapToArray(sportEvent.schedule?.rounds).map((round, r) =>
+          mapToArray(round.courts).map((court, c) => {
+            const match = matches.find(
+              m => m.roundNumber === r && m.courtNumber === c,
+            );
+            return (
+              <View key={`round-${r}-court-${c}`}>
+                <Text
+                  style={[
+                    theme.text.small,
+                    { color: theme.colors.listItemSubtitle },
+                  ]}>
+                  {'Team 1: '}
+                  {court.teams['0'].players['0']
+                    ? `${court.teams['0'].players['0'].firstName} ${court.teams['0'].players['0'].lastName}`
+                    : ''}
+                  {court.teams['0'].players['1']
+                    ? `${court.teams['0'].players['1'].firstName} ${court.teams['0'].players['1'].lastName}`
+                    : ''}
+                </Text>
+                <Text
+                  style={[
+                    theme.text.small,
+                    { color: theme.colors.listItemSubtitle },
+                  ]}>
+                  {'Team 2: '}
+                  {court.teams['1'].players['0']
+                    ? `${court.teams['1'].players['0'].firstName} ${court.teams['1'].players['0'].lastName}`
+                    : ''}
+                  {court.teams['1'].players['1']
+                    ? `${court.teams['1'].players['1'].firstName} ${court.teams['1'].players['1'].lastName}`
+                    : ''}
+                </Text>
+                <Text
+                  style={[
+                    theme.text.small,
+                    { color: theme.colors.listItemSubtitle },
+                  ]}>
+                  {sportEvent.schedule?.rounds?.[r].courts?.[c]
+                    ? `score keeper: ${sportEvent.schedule?.rounds?.[r].courts?.[c]?.scoreKeeper?.name}`
+                    : 'None'}
+                </Text>
+                {renderSetScores(r, c)}
+                <Text
+                  style={[
+                    theme.text.small,
+                    { color: theme.colors.listItemSubtitle },
+                  ]}>
+                  {`hours: ${match?.timer.elapsedTime.hours}`}
+                  {`minutes: ${match?.timer.elapsedTime.minutes}`}
+                </Text>
+              </View>
+            );
+          }),
         )}
       </ScrollView>
     </EmptyView>

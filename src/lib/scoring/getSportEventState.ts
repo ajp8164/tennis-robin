@@ -1,3 +1,5 @@
+import { mapToArray } from 'lib/utils';
+import { Match } from 'types/match';
 import { SportEvent, SportEventStatus } from 'types/sportEvent';
 
 import { getRoundState } from './index';
@@ -6,11 +8,19 @@ type SportEventStateResult = {
   status: SportEventStatus;
 };
 
-export const getSportEventState = (sportEvent: SportEvent) => {
+export const getSportEventState = (
+  sportEvent: SportEvent,
+  matches: Match[],
+) => {
   const allSportEventStatus = new Set<SportEventStatus>();
 
-  sportEvent.schedule?.rounds.forEach((round, r) => {
-    const roundState = getRoundState(sportEvent, round, r);
+  mapToArray(sportEvent.schedule?.rounds).forEach((round, r) => {
+    const roundState = getRoundState(
+      round,
+      matches.filter(m => m.roundNumber === r),
+      sportEvent.numberOfSetsPerMatch,
+      sportEvent.numberOfGamesPerSet,
+    );
 
     if (roundState.status === 'ended') {
       allSportEventStatus.add('ended');

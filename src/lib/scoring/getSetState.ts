@@ -1,25 +1,32 @@
+import { mapToArray } from 'lib/utils';
+import { Match } from 'types/match';
+
 import { getGameState } from './index';
 
 type SetStatus = 'team1-wins' | 'team2-wins' | 'in-progress' | 'not-started';
 
 type SetStateResult = {
   status: SetStatus;
-  gameScores: number[]; // [team1, team2]
+  gameWins: number[]; // [team1, team2]
 };
 
 export const getSetState = (
+  set: number,
   maxGamesPerSet: number,
-  gameTeamScores?: number[][][],
+  match?: Match,
 ): SetStateResult => {
-  // Must have scores for game and team otherwise the set has not yet started.
-  if (!gameTeamScores || !gameTeamScores[0] || !gameTeamScores[0][0]) {
+  // Must have points in the game otherwise the set has not yet started.
+  if (
+    match?.sets?.[`s${set}`]?.games?.['g0']?.teams?.['t0'].points.length ===
+    undefined
+  ) {
     return {
       status: 'not-started',
-      gameScores: [0, 0], // No game wins in the set for either team
+      gameWins: [0, 0], // No game wins in the set for either team
     };
   }
 
-  const gamesPlayed = gameTeamScores.length;
+  const gamesPlayed = mapToArray(match.sets[`s${set}`].games).length;
   let team1TeamWins = 0;
   let team2TeamWins = 0;
   let team1WinsSet = false;
@@ -27,7 +34,7 @@ export const getSetState = (
 
   // For each game in the set count up the number of wins for each team.
   for (let g = 0; g < gamesPlayed; g++) {
-    const gameState = getGameState(gameTeamScores[g]);
+    const gameState = getGameState(g, set, match);
 
     if (gameState.status === 'team1-wins') {
       team1TeamWins += 1;
@@ -71,6 +78,6 @@ export const getSetState = (
 
   return {
     status,
-    gameScores: [team1TeamWins, team2TeamWins],
+    gameWins: [team1TeamWins, team2TeamWins],
   } as SetStateResult;
 };

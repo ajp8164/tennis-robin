@@ -10,12 +10,19 @@ import {
 export const useCollection = <T extends FirebaseFirestoreTypes.DocumentData>(
   collectionPath: string,
   opts?: CollectionChangeListenerOptions,
+  deps?: React.DependencyList,
 ) => {
   const [documents, setDocuments] = useState<T[]>([]);
   const [loading, setLoading] = useState(true);
   const optsStr = JSON.stringify(opts);
 
   useEffect(() => {
+    let ready = true;
+    if (deps) {
+      ready = deps?.every((v): v is NonNullable<typeof v> => v != null);
+    }
+    if (!ready) return;
+
     // If the query options change we need to reload on the new query.
     setLoading(true);
 

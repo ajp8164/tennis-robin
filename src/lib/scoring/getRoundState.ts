@@ -1,5 +1,7 @@
-import { Player } from 'types/player';
-import { SportEvent } from 'types/sportEvent';
+import { flattenPlayers } from 'lib/player';
+import { mapToArray } from 'lib/utils';
+import { Match } from 'types/match';
+import { Round } from 'types/sportEvent';
 
 import { getMatchState } from './index';
 
@@ -10,22 +12,24 @@ type RoundStateResult = {
   matchCount: number;
 };
 export const getRoundState = (
-  sportEvent: SportEvent,
-  round: Player[][][],
-  roundIndex: number,
+  round: Round,
+  roundMatches: Match[],
+  numberOfSetsPerMatch: number,
+  numberOfGamesPerSet: number,
 ) => {
-  const matches = round.filter(court => {
-    return court.flat().every(p => p.firstName !== '(Bye)');
+  const courts = mapToArray(round.courts).filter(court => {
+    return flattenPlayers(court.teams).every(p => p.firstName !== '(Bye)');
   });
 
   const allRoundStatus = new Set<RoundStatus>();
 
-  matches.forEach((_, c) => {
+  courts.forEach((_court, c) => {
+    const match = roundMatches.filter(m => m.courtNumber === c)?.[0];
+
     const matchState = getMatchState(
-      sportEvent.numberOfSetsPerMatch,
-      sportEvent.numberOfGamesPerSet,
-      sportEvent.schedule?.scores[roundIndex]?.[c],
-      sportEvent.schedule?.matchDetails[roundIndex]?.[c],
+      numberOfSetsPerMatch,
+      numberOfGamesPerSet,
+      match,
     );
 
     if (matchState.status === 'ended' || matchState.status === 'abandoned') {
@@ -48,8 +52,9 @@ export const getRoundState = (
     }
   });
 
-  let roundStatus: RoundStatus;
+  let roundStatus: RoundStatus | undefined = undefined;
   if (allRoundStatus.size > 1) {
+    // Matches is multiple states indicates in-progress.
     roundStatus = 'in-progress';
   } else if (allRoundStatus.has('not-started')) {
     roundStatus = 'not-started';
@@ -61,6 +66,6 @@ export const getRoundState = (
 
   return {
     status: roundStatus,
-    matchCount: matches.length,
+    matchCount: courts.length,
   } as RoundStateResult;
 };

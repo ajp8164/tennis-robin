@@ -56,13 +56,8 @@ import { Formik, FormikProps } from 'formik';
 import { appIcons } from 'lib/appIcons';
 import { useUserProfile } from 'lib/auth';
 import { usePlayerStatusDecoration } from 'lib/player';
-import {
-  Scheduler,
-  decodeSportEvent,
-  encodeSportEvent,
-  schedulers,
-  useSportEventStore,
-} from 'lib/sportEvent';
+import { Scheduler, schedulers } from 'lib/sportEvent';
+import { useSportEventStore } from 'lib/sportEvent/useSportEventStore';
 import { useSelectedTeam } from 'lib/team';
 import { CircleMinus, EyeOff } from 'lucide-react-native';
 import { DateTime } from 'luxon';
@@ -71,12 +66,7 @@ import {
   SportEventsNavigatorParamList,
 } from 'types/navigation';
 import { Player } from 'types/player';
-import {
-  CourtSurface,
-  CourtSurfaces,
-  SportEvent,
-  SportEventEncoded,
-} from 'types/sportEvent';
+import { CourtSurface, CourtSurfaces, SportEvent } from 'types/sportEvent';
 import { Team } from 'types/team';
 import * as Yup from 'yup';
 
@@ -128,13 +118,8 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
 
   // *** Live sportEvent data ***
   //
-  const { doc: sportEventEncoded, loading: sportEventLoading } =
-    useDocument<SportEventEncoded>('SportEvents', sportEventId);
-
-  const sportEvent = useMemo(
-    () => decodeSportEvent(sportEventEncoded),
-    [sportEventEncoded],
-  );
+  const { doc: sportEvent, loading: sportEventLoading } =
+    useDocument<SportEvent>('SportEvents', sportEventId);
 
   const { docs: sportEventPlayers, loading: sportEventPlayersLoading } =
     useCollection<Player>('Players', {
@@ -424,43 +409,37 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
 
   const onSubmit = async (values: FormValues) => {
     if (sportEventId) {
-      updateDocument<SportEventEncoded>(
-        'SportEvents',
-        encodeSportEvent({
-          ...workingState.sportEvent,
-          name: values.name,
-          date: values.date,
-          location: values.location,
-          numberOfCourts: values.numberOfCourts,
-          numberOfSetsPerMatch: values.numberOfSetsPerMatch,
-          numberOfGamesPerSet: values.numberOfGamesPerSet,
-          courtSurface: values.courtSurface,
-          // Not updating owners here
-          players: values.players,
-          state: {
-            status: 'not-started',
-          },
-        }),
-      );
+      updateDocument<SportEvent>('SportEvents', {
+        ...workingState.sportEvent,
+        name: values.name,
+        date: values.date,
+        location: values.location,
+        numberOfCourts: values.numberOfCourts,
+        numberOfSetsPerMatch: values.numberOfSetsPerMatch,
+        numberOfGamesPerSet: values.numberOfGamesPerSet,
+        courtSurface: values.courtSurface,
+        // Not updating owners here
+        players: values.players,
+        state: {
+          status: 'not-started',
+        },
+      });
     } else {
-      const newSportEvent = await addDocument<SportEventEncoded>(
-        'SportEvents',
-        encodeSportEvent({
-          ...workingState.sportEvent,
-          name: values.name,
-          date: values.date,
-          location: values.location,
-          numberOfCourts: values.numberOfCourts,
-          numberOfSetsPerMatch: values.numberOfSetsPerMatch,
-          numberOfGamesPerSet: values.numberOfGamesPerSet,
-          courtSurface: values.courtSurface,
-          owners: userProfile ? [userProfile.id!] : [], // Should always be an id
-          players: values.players,
-          state: {
-            status: 'not-started',
-          },
-        }),
-      );
+      const newSportEvent = await addDocument<SportEvent>('SportEvents', {
+        ...workingState.sportEvent,
+        name: values.name,
+        date: values.date,
+        location: values.location,
+        numberOfCourts: values.numberOfCourts,
+        numberOfSetsPerMatch: values.numberOfSetsPerMatch,
+        numberOfGamesPerSet: values.numberOfGamesPerSet,
+        courtSurface: values.courtSurface,
+        owners: userProfile ? [userProfile.id!] : [], // Should always be an id
+        players: values.players,
+        state: {
+          status: 'not-started',
+        },
+      });
 
       // Associate the new sportEvent with my selected team.
       if (selectedTeam && newSportEvent.id) {
@@ -669,8 +648,8 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
 
   const renderPlayersSinglesSelect = () => {
     const rounds = workingState.sportEvent.schedule?.rounds;
-    const player1 = rounds?.[0]?.[0]?.[0]?.[0];
-    const player2 = rounds?.[0]?.[0]?.[1]?.[0];
+    const player1 = rounds?.['0'].courts['0'].teams['0'].players['0'];
+    const player2 = rounds?.['0'].courts['0'].teams['1'].players['0'];
     return (
       <>
         <Divider text={'PLAYERS'} />
@@ -698,10 +677,10 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
 
   const renderPlayersDoublesSelect = () => {
     const rounds = workingState.sportEvent.schedule?.rounds;
-    const player1 = rounds?.[0]?.[0]?.[0]?.[0];
-    const player2 = rounds?.[0]?.[0]?.[0]?.[1];
-    const player3 = rounds?.[0]?.[0]?.[1]?.[0];
-    const player4 = rounds?.[0]?.[0]?.[1]?.[1];
+    const player1 = rounds?.['0'].courts['0'].teams['0'].players['0'];
+    const player2 = rounds?.['0'].courts['0'].teams['0'].players['1'];
+    const player3 = rounds?.['0'].courts['0'].teams['1'].players['0'];
+    const player4 = rounds?.['0'].courts['0'].teams['1'].players['0'];
     return (
       <>
         <Divider text={'TEAM 1'} />

@@ -1,7 +1,13 @@
 import lodash from 'lodash';
 import { DateTime } from 'luxon';
 import { Player } from 'types/player';
-import { MatchDetails, SportEvent } from 'types/sportEvent';
+import {
+  Court,
+  Round,
+  Rounds,
+  ScoreKeeper,
+  SportEvent,
+} from 'types/sportEvent';
 import { create } from 'zustand';
 
 type SportEventStore = {
@@ -15,10 +21,14 @@ type SportEventStore = {
   initializePlayers: (players: Player[]) => void;
   initializeSportEvent: (sportEvent: SportEvent) => void;
   reset: () => void;
-  updateMatchDetails: (matchDetails: MatchDetails) => void;
+  updateScoreKeeper: (
+    scoreKeeper: ScoreKeeper,
+    round: Round,
+    court: Court,
+  ) => void;
   updatePlayers: (players: Player[]) => void;
   updatePlayerSwapPosition: (playerPosition?: PlayerSwapPosition) => void;
-  updateScheduleRounds: (rounds: Player[][][][]) => void;
+  updateScheduleRounds: (rounds: Rounds) => void;
   updateSportEvent: (sportEvent: SportEvent) => void;
 };
 
@@ -42,6 +52,7 @@ const defaultSportEvent: SportEvent = {
   courtSurface: 'Other',
   owners: [],
   players: [],
+  matches: [],
   state: { status: 'not-started' },
 };
 
@@ -80,33 +91,38 @@ export const useSportEventStore = create<SportEventStore>(set => ({
       sportEvent: lodash.cloneDeep(state.sportEventInitialValue),
     })),
 
-  updateMatchDetails: matchDetails =>
-    set(state => ({
-      sportEvent: {
-        ...state.sportEvent,
-        schedule: {
-          ...state.sportEvent.schedule!,
-          matchDetails,
-        },
-      },
-      version: state.version + 1,
-    })),
+  updateScoreKeeper: (scoreKeeper, round, court) =>
+    set(state => {
+      const updated = lodash.cloneDeep(state.sportEvent);
+      if (!updated.schedule) return state;
+      lodash.set(
+        updated.schedule.rounds,
+        `[${round.number}].courts[${court.number}].scoreKeeper`,
+        scoreKeeper,
+      );
+      return {
+        sportEvent: updated,
+        version: state.version + 1,
+      };
+    }),
 
   updatePlayers: players => set({ players }),
 
   updatePlayerSwapPosition: playerSwapPosition => set({ playerSwapPosition }),
 
-  updateScheduleRounds: rounds =>
-    set(state => ({
-      sportEvent: {
-        ...state.sportEvent,
-        schedule: {
-          ...state.sportEvent.schedule!,
-          rounds,
+  updateScheduleRounds: (rounds: Rounds) =>
+    set(state => {
+      return {
+        sportEvent: {
+          ...state.sportEvent,
+          schedule: {
+            ...state.sportEvent.schedule!,
+            rounds,
+          },
         },
-      },
-      version: state.version + 1,
-    })),
+        version: state.version + 1,
+      };
+    }),
 
   // Since version is listened to for knowing when changes occur do not bump version here.
   // Doing so creates an endless loop of updates to sport event.

@@ -147,6 +147,9 @@ export const getDocuments = async <
 
       for (const wiChunk of whereInChunks) {
         querySnapshot = await getDocsFn(firestoreQuery(q.query, wiChunk));
+        log.debug(
+          `firestore - getDocuments: ${collectionPath} (from cache = ${querySnapshot.metadata.fromCache})`,
+        );
 
         docCount += querySnapshot.docs.length;
         lastDocRead = querySnapshot.docs[querySnapshot.docs.length - 1];
@@ -176,6 +179,9 @@ export const getDocuments = async <
       q.query = firestoreQuery(q.query, whereNotArchived);
 
       querySnapshot = await getDocsFn(q.query);
+      log.debug(
+        `firestore - getDocuments: ${collectionPath} (from cache = ${querySnapshot.metadata.fromCache})`,
+      );
 
       docCount += querySnapshot.docs.length;
       lastDocRead = querySnapshot.docs[querySnapshot.docs.length - 1];

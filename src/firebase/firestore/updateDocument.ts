@@ -27,6 +27,8 @@ export const updateDocument = async <T>(path: string, doc: T) => {
 
   try {
     await updateDoc(docRef, updated);
+    log.debug(`firestore - updateDocument: ${path}`);
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (e: any) {
     if (e instanceof Error) {
