@@ -23,7 +23,7 @@ export const getMatchState = (
 ): MatchStateResult => {
   // Must have scores for sets, game, and team otherwise the set has not yet started.
   // Here we use the timer status to provide match status before any scores are entered.
-  if (!mapToArray(match?.sets?.['s0']?.games?.['g0'].teams?.['t0'])?.length) {
+  if (!mapToArray(match?.sets?.s0?.games?.g0.teams?.t0)?.length) {
     return {
       status:
         match?.timer?.status === 'running' || match?.timer?.status === 'paused'

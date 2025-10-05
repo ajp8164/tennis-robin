@@ -172,7 +172,7 @@ const MatchScoringScreen = ({ navigation, route }: Props) => {
     }
 
     const playerCount = flattenPlayers(
-      sportEvent.schedule!.rounds[r].courts[c].teams,
+      sportEvent.schedule!.rounds[`r${r}`].courts[`c${c}`].teams,
     ).length;
 
     const gameWinner = `Game Winner${playerCount !== 1 ? 's!' : '!'}`;
@@ -260,11 +260,11 @@ const MatchScoringScreen = ({ navigation, route }: Props) => {
   };
 
   const playerNames = (players: Players) => {
-    const player1 = players['0']
-      ? `${players['0'].lastName} ${players['0'].firstName.slice(0, 1)}.`
+    const player1 = players.p0
+      ? `${players.p0.lastName} ${players.p0.firstName.slice(0, 1)}.`
       : '';
-    const player2 = players[1]
-      ? ` / ${players['1'].lastName} ${players['1'].firstName.slice(0, 1)}.`
+    const player2 = players.p1
+      ? ` / ${players.p1.lastName} ${players.p1.firstName.slice(0, 1)}.`
       : '';
     return `${player1}${player2}`;
   };
@@ -506,49 +506,49 @@ const MatchScoringScreen = ({ navigation, route }: Props) => {
     if (!sportEvent || !match) return null;
     return (
       <>
-        {mapToArray(sportEvent.schedule?.rounds[r].courts[c].teams).map(
-          (_, teamIndex, arr) => {
-            // Top of the screen is team2, bottom is team1.
-            // Reverse the index so team2 set wins are on top.
-            const reverseTeamIndex = arr.length - 1 - teamIndex;
-            return (
-              <View key={`team-${reverseTeamIndex}`} style={s.teamContainer}>
-                <View
-                  style={[
-                    s.scoresContainer,
-                    teamIndex === team1Index ? s.team1Scores : s.team2Scores,
-                    { width: sets.length * setScoreBoxWidth * 1.05 },
-                  ]}>
-                  {sets.map((_set, setIndex) => {
-                    const setState = getSetState(
-                      setIndex,
-                      sportEvent.numberOfGamesPerSet,
-                      match,
-                    );
-                    return (
-                      <Text
-                        key={`set-${setIndex}`}
-                        style={[
-                          s.score,
-                          (reverseTeamIndex === team1Index &&
-                            setState.status === 'team1-wins') ||
-                          (reverseTeamIndex === team2Index &&
-                            setState.status === 'team2-wins')
-                            ? s.scoreWin
-                            : s.scoreLose,
-                          setState.status === 'in-progress'
-                            ? s.scoreInProgress
-                            : {},
-                        ]}>
-                        {setState.gameWins[reverseTeamIndex]}
-                      </Text>
-                    );
-                  })}
-                </View>
+        {mapToArray(
+          sportEvent.schedule?.rounds[`r${r}`].courts[`c${c}`].teams,
+        ).map((_, teamIndex, arr) => {
+          // Top of the screen is team2, bottom is team1.
+          // Reverse the index so team2 set wins are on top.
+          const reverseTeamIndex = arr.length - 1 - teamIndex;
+          return (
+            <View key={`team-${reverseTeamIndex}`} style={s.teamContainer}>
+              <View
+                style={[
+                  s.scoresContainer,
+                  teamIndex === team1Index ? s.team1Scores : s.team2Scores,
+                  { width: sets.length * setScoreBoxWidth * 1.05 },
+                ]}>
+                {sets.map((_set, setIndex) => {
+                  const setState = getSetState(
+                    setIndex,
+                    sportEvent.numberOfGamesPerSet,
+                    match,
+                  );
+                  return (
+                    <Text
+                      key={`set-${setIndex}`}
+                      style={[
+                        s.score,
+                        (reverseTeamIndex === team1Index &&
+                          setState.status === 'team1-wins') ||
+                        (reverseTeamIndex === team2Index &&
+                          setState.status === 'team2-wins')
+                          ? s.scoreWin
+                          : s.scoreLose,
+                        setState.status === 'in-progress'
+                          ? s.scoreInProgress
+                          : {},
+                      ]}>
+                      {setState.gameWins[reverseTeamIndex]}
+                    </Text>
+                  );
+                })}
               </View>
-            );
-          },
-        )}
+            </View>
+          );
+        })}
       </>
     );
   };
@@ -643,8 +643,9 @@ const MatchScoringScreen = ({ navigation, route }: Props) => {
               />
               <Text style={s.teamName}>
                 {playerNames(
-                  sportEvent.schedule!.rounds[r].courts[c].teams[team2Index]
-                    .players,
+                  sportEvent.schedule!.rounds[`r${r}`].courts[`c${c}`].teams[
+                    `t${team2Index}`
+                  ].players,
                 )}
               </Text>
               <Text style={s.gameScore}>
@@ -676,8 +677,9 @@ const MatchScoringScreen = ({ navigation, route }: Props) => {
               </Text>
               <Text style={s.teamName}>
                 {playerNames(
-                  sportEvent.schedule!.rounds[r].courts[c].teams[team1Index]
-                    .players,
+                  sportEvent.schedule!.rounds[`r${r}`].courts[`c${c}`].teams[
+                    `t${team1Index}`
+                  ].players,
                 )}
               </Text>
               <SvgXml

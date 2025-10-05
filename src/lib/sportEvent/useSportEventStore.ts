@@ -97,7 +97,7 @@ export const useSportEventStore = create<SportEventStore>(set => ({
       if (!updated.schedule) return state;
       lodash.set(
         updated.schedule.rounds,
-        `[${round.number}].courts[${court.number}].scoreKeeper`,
+        `r${round.number}.courts.c${court.number}.scoreKeeper`,
         scoreKeeper,
       );
       return {

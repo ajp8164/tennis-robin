@@ -85,7 +85,7 @@ export const uniquePartnerDoubles = (
       }
 
       if (subround.length > 0) {
-        scheduleRounds[`${roundNumber}`] = toRoundMap(subround);
+        scheduleRounds[`r${roundNumber}`] = toRoundMap(subround);
         roundNumber++;
       }
     }
@@ -142,7 +142,7 @@ const toRoundMap = (round: Player[][][]) => {
   round.forEach((court, c) => {
     court.forEach((team, t) => {
       team.forEach((player, p) => {
-        lodash.set(roundMap, `courts[${c}].teams[${t}].players[${p}]`, player);
+        lodash.set(roundMap, `courts.c${c}.teams.t${t}.players.p${p}`, player);
       });
     });
   });

@@ -7,20 +7,20 @@ export const simpleMatchDoubles = (
 ): Schedule | undefined => {
   // One round on one court. Each team has two players.
   const rounds: Rounds = {
-    '0': {
+    r0: {
       courts: {
-        '0': {
+        c0: {
           teams: {
-            '0': {
+            t0: {
               players: {
-                '0': players[0],
-                '1': players[1],
+                p0: players[0],
+                p1: players[1],
               },
             },
-            '1': {
+            t1: {
               players: {
-                '0': players[0],
-                '1': players[1],
+                p0: players[0],
+                p1: players[1],
               },
             },
           },

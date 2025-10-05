@@ -122,19 +122,23 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
     useDocument<SportEvent>('SportEvents', sportEventId);
 
   const { docs: sportEventPlayers, loading: sportEventPlayersLoading } =
-    useCollection<Player>('Players', {
-      where: [
-        {
-          fieldPath: documentId(),
-          opStr: 'in',
-          value: sportEvent?.players || [],
-        },
-      ],
-      orderBy: [
-        { fieldPath: 'lastName', directionStr: 'asc' },
-        { fieldPath: 'firstName', directionStr: 'asc' },
-      ],
-    });
+    useCollection<Player>(
+      'Players',
+      {
+        where: [
+          {
+            fieldPath: documentId(),
+            opStr: 'in',
+            value: sportEvent?.players || [],
+          },
+        ],
+        orderBy: [
+          { fieldPath: 'lastName', directionStr: 'asc' },
+          { fieldPath: 'firstName', directionStr: 'asc' },
+        ],
+      },
+      [sportEvent],
+    );
   //
   // ***
 
@@ -648,8 +652,8 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
 
   const renderPlayersSinglesSelect = () => {
     const rounds = workingState.sportEvent.schedule?.rounds;
-    const player1 = rounds?.['0'].courts['0'].teams['0'].players['0'];
-    const player2 = rounds?.['0'].courts['0'].teams['1'].players['0'];
+    const player1 = rounds?.r0.courts.c0.teams.t0.players.p0;
+    const player2 = rounds?.r0.courts.c0.teams.t0.players.p1;
     return (
       <>
         <Divider text={'PLAYERS'} />
@@ -677,10 +681,10 @@ const SportEventEditorScreen = ({ navigation, route }: Props) => {
 
   const renderPlayersDoublesSelect = () => {
     const rounds = workingState.sportEvent.schedule?.rounds;
-    const player1 = rounds?.['0'].courts['0'].teams['0'].players['0'];
-    const player2 = rounds?.['0'].courts['0'].teams['0'].players['1'];
-    const player3 = rounds?.['0'].courts['0'].teams['1'].players['0'];
-    const player4 = rounds?.['0'].courts['0'].teams['1'].players['0'];
+    const player1 = rounds?.r0.courts.c0.teams.t0.players.p0;
+    const player2 = rounds?.r0.courts.c0.teams.t0.players.p1;
+    const player3 = rounds?.r0.courts.c0.teams.t1.players.p0;
+    const player4 = rounds?.r0.courts.c0.teams.t1.players.p0;
     return (
       <>
         <Divider text={'TEAM 1'} />

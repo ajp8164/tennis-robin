@@ -129,8 +129,9 @@ const ScheduleRoundView = (props: Props) => {
     if (!playerSwapPosition) {
       // Set the first selected player.
       const player: Player =
-        schedule!.rounds[position.r].courts[position.c].teams[position.t]
-          .players[position.p];
+        schedule!.rounds[`r${position.r}`].courts[`c${position.c}`].teams[
+          `t${position.t}`
+        ].players[`p${position.p}`];
 
       // May not have players if no player assignment was made.
       if (!player) return;
@@ -138,8 +139,8 @@ const ScheduleRoundView = (props: Props) => {
       updatePlayerSwapPosition(position);
     } else {
       // Get path in rounds to each player.
-      const player1Path = `[${playerSwapPosition.r}].courts[${playerSwapPosition.c}].teams[${playerSwapPosition.t}].players[${playerSwapPosition.p}]`;
-      const player2Path = `[${position.r}].courts[${position.c}].teams[${position.t}].players[${position.p}]`;
+      const player1Path = `r${playerSwapPosition.r}.courts.c${playerSwapPosition.c}.teams.t${playerSwapPosition.t}.players.p${playerSwapPosition.p}`;
+      const player2Path = `r${position.r}.courts.c${position.c}.teams.t${position.t}.players.p${position.p}`;
 
       // Get each player at their round path.
       const player1: Player = lodash.get(
@@ -162,8 +163,8 @@ const ScheduleRoundView = (props: Props) => {
 
       // Check validity of the requested assignments.
       // No player may be present in a round more than once.
-      const player1Court = `rounds[${playerSwapPosition.r}].courts[${playerSwapPosition.c}]`;
-      const player2Court = `rounds[${position.r}].courts[${position.c}]`;
+      const player1Court = `rounds.r${playerSwapPosition.r}.courts.c${playerSwapPosition.c}`;
+      const player2Court = `rounds.r${position.r}.courts.c${position.c}`;
 
       const player1RoundPlayers: Player[] = flattenPlayers(
         lodash.get(schedule!, `${player1Court}.teams`)!,
@@ -253,8 +254,8 @@ const ScheduleRoundView = (props: Props) => {
                         : {},
                     ]}
                     onPress={() => setSwap({ r, c, t: 0, p: 0 })}>
-                    {court.teams['0'].players['0']?.firstName
-                      ? `${court.teams['0'].players['0']?.firstName} ${court.teams['0'].players['0']?.lastName}`
+                    {court.teams.t0.players.p0?.firstName
+                      ? `${court.teams.t0.players.p0?.firstName} ${court.teams.t0.players.p0?.lastName}`
                       : 'Player 1'}
                   </Text>
                   {scheduler?.typeOfMatch === 'Doubles' ? (
@@ -271,8 +272,8 @@ const ScheduleRoundView = (props: Props) => {
                           : {},
                       ]}
                       onPress={() => setSwap({ r, c, t: 0, p: 1 })}>
-                      {court.teams['0'].players['1']?.firstName
-                        ? `${court.teams['0'].players['1']?.firstName} ${court.teams['0'].players['1']?.lastName}`
+                      {court.teams.t0.players.p1?.firstName
+                        ? `${court.teams.t0.players.p1?.firstName} ${court.teams.t0.players.p1?.lastName}`
                         : 'Player 2'}
                     </Text>
                   ) : null}
@@ -292,8 +293,8 @@ const ScheduleRoundView = (props: Props) => {
                         : {},
                     ]}
                     onPress={() => setSwap({ r, c, t: 1, p: 0 })}>
-                    {court.teams['1'].players['0']
-                      ? `${court.teams['1'].players['0']?.firstName} ${court.teams['1'].players['0']?.lastName}`
+                    {court.teams.t1.players.p0
+                      ? `${court.teams.t1.players.p0?.firstName} ${court.teams.t1.players.p0?.lastName}`
                       : scheduler?.typeOfMatch === 'Singles'
                         ? 'Player 2'
                         : 'Player 3'}
@@ -312,8 +313,8 @@ const ScheduleRoundView = (props: Props) => {
                           : {},
                       ]}
                       onPress={() => setSwap({ r, c, t: 1, p: 1 })}>
-                      {court.teams['1'].players['1']
-                        ? `${court.teams['1'].players['1']?.firstName} ${court.teams['1'].players['1']?.lastName}`
+                      {court.teams.t1.players.p1
+                        ? `${court.teams.t1.players.p1?.firstName} ${court.teams.t1.players.p1?.lastName}`
                         : 'Player 4'}
                     </Text>
                   ) : null}

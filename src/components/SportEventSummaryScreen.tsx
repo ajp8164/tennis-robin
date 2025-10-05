@@ -58,52 +58,52 @@ const SportEventSummaryScreen = ({ route }: Props) => {
   const renderSetScores = (r: number, c: number) => {
     return (
       <>
-        {mapToArray(sportEvent?.schedule?.rounds[r].courts[c].teams).map(
-          (_, teamIndex, arr) => {
-            // Top of the screen is team2, bottom is team1.
-            // Reverse the index so team2 set wins are on top.
-            const reverseTeamIndex = arr.length - 1 - teamIndex;
-            const match = matches.find(
-              m => m.roundNumber === r && m.courtNumber === c,
-            );
-            return (
-              <View key={`team-${reverseTeamIndex}`} style={s.teamContainer}>
-                <View
-                  style={[
-                    s.scoresContainer,
-                    teamIndex === team1Index ? s.team1Scores : s.team2Scores,
-                    { width: sets.length * setScoreBoxWidth * 1.05 },
-                  ]}>
-                  {sets.map((_set, setIndex) => {
-                    const setState = getSetState(
-                      setIndex,
-                      sportEvent?.numberOfGamesPerSet || 0,
-                      match,
-                    );
-                    return (
-                      <Text
-                        key={`set-${setIndex}`}
-                        style={[
-                          s.score,
-                          (reverseTeamIndex === team1Index &&
-                            setState.status === 'team1-wins') ||
-                          (reverseTeamIndex === team2Index &&
-                            setState.status === 'team2-wins')
-                            ? s.scoreWin
-                            : s.scoreLose,
-                          setState.status === 'in-progress'
-                            ? s.scoreInProgress
-                            : {},
-                        ]}>
-                        {setState.gameWins[reverseTeamIndex]}
-                      </Text>
-                    );
-                  })}
-                </View>
+        {mapToArray(
+          sportEvent?.schedule?.rounds[`r${r}`].courts[`c${c}`].teams,
+        ).map((_, teamIndex, arr) => {
+          // Top of the screen is team2, bottom is team1.
+          // Reverse the index so team2 set wins are on top.
+          const reverseTeamIndex = arr.length - 1 - teamIndex;
+          const match = matches.find(
+            m => m.roundNumber === r && m.courtNumber === c,
+          );
+          return (
+            <View key={`team-${reverseTeamIndex}`} style={s.teamContainer}>
+              <View
+                style={[
+                  s.scoresContainer,
+                  teamIndex === team1Index ? s.team1Scores : s.team2Scores,
+                  { width: sets.length * setScoreBoxWidth * 1.05 },
+                ]}>
+                {sets.map((_set, setIndex) => {
+                  const setState = getSetState(
+                    setIndex,
+                    sportEvent?.numberOfGamesPerSet || 0,
+                    match,
+                  );
+                  return (
+                    <Text
+                      key={`set-${setIndex}`}
+                      style={[
+                        s.score,
+                        (reverseTeamIndex === team1Index &&
+                          setState.status === 'team1-wins') ||
+                        (reverseTeamIndex === team2Index &&
+                          setState.status === 'team2-wins')
+                          ? s.scoreWin
+                          : s.scoreLose,
+                        setState.status === 'in-progress'
+                          ? s.scoreInProgress
+                          : {},
+                      ]}>
+                      {setState.gameWins[reverseTeamIndex]}
+                    </Text>
+                  );
+                })}
               </View>
-            );
-          },
-        )}
+            </View>
+          );
+        })}
       </>
     );
   };
@@ -182,11 +182,11 @@ const SportEventSummaryScreen = ({ route }: Props) => {
                     { color: theme.colors.listItemSubtitle },
                   ]}>
                   {'Team 1: '}
-                  {court.teams['0'].players['0']
-                    ? `${court.teams['0'].players['0'].firstName} ${court.teams['0'].players['0'].lastName}`
+                  {court.teams.t0.players.p0
+                    ? `${court.teams.t0.players.p0.firstName} ${court.teams.t0.players.p0.lastName}`
                     : ''}
-                  {court.teams['0'].players['1']
-                    ? `${court.teams['0'].players['1'].firstName} ${court.teams['0'].players['1'].lastName}`
+                  {court.teams.t0.players.p1
+                    ? `${court.teams.t0.players.p1.firstName} ${court.teams.t0.players.p1.lastName}`
                     : ''}
                 </Text>
                 <Text
@@ -195,11 +195,11 @@ const SportEventSummaryScreen = ({ route }: Props) => {
                     { color: theme.colors.listItemSubtitle },
                   ]}>
                   {'Team 2: '}
-                  {court.teams['1'].players['0']
-                    ? `${court.teams['1'].players['0'].firstName} ${court.teams['1'].players['0'].lastName}`
+                  {court.teams.t1.players.p0
+                    ? `${court.teams.t1.players.p0.firstName} ${court.teams.t1.players.p0.lastName}`
                     : ''}
-                  {court.teams['1'].players['1']
-                    ? `${court.teams['1'].players['1'].firstName} ${court.teams['1'].players['1'].lastName}`
+                  {court.teams.t1.players.p1
+                    ? `${court.teams.t1.players.p1.firstName} ${court.teams.t1.players.p1.lastName}`
                     : ''}
                 </Text>
                 <Text
@@ -207,8 +207,8 @@ const SportEventSummaryScreen = ({ route }: Props) => {
                     theme.text.small,
                     { color: theme.colors.listItemSubtitle },
                   ]}>
-                  {sportEvent.schedule?.rounds?.[r].courts?.[c]
-                    ? `score keeper: ${sportEvent.schedule?.rounds?.[r].courts?.[c]?.scoreKeeper?.name}`
+                  {sportEvent.schedule?.rounds?.[`r${r}`].courts?.[`c${c}`]
+                    ? `score keeper: ${sportEvent.schedule?.rounds?.[`r${r}`].courts?.[`c${c}`]?.scoreKeeper?.name}`
                     : 'None'}
                 </Text>
                 {renderSetScores(r, c)}

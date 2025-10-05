@@ -17,8 +17,7 @@ export const getSetState = (
 ): SetStateResult => {
   // Must have points in the game otherwise the set has not yet started.
   if (
-    match?.sets?.[`s${set}`]?.games?.['g0']?.teams?.['t0'].points.length ===
-    undefined
+    match?.sets?.[`s${set}`]?.games?.g0?.teams?.t0.points.length === undefined
   ) {
     return {
       status: 'not-started',
