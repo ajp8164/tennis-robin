@@ -10,6 +10,7 @@ import SportEventScheduleScreen from 'components/SportEventScheduleScreen';
 import SportEventStartScreen from 'components/SportEventStartScreen';
 import SportEventSummaryScreen from 'components/SportEventSummaryScreen';
 import SportEventsScreen from 'components/SportEventsScreen';
+import SportEventEditorTopTabsNavigator from 'components/navigation/SportEventEditorTopTabsNavigator';
 import { SportEventsNavigatorParamList } from 'types/navigation';
 
 import NewSportEventNavigator from './NewSportEventNavigator';
@@ -41,6 +42,15 @@ const SportEventsNavigator = () => {
           headerLargeStyle: {
             backgroundColor: theme.colors.viewBackground,
           },
+        }}
+      />
+      <SportEventsStack.Screen
+        name="SportEventEditorTopTabs"
+        component={SportEventEditorTopTabsNavigator}
+        options={({ route }) => {
+          return {
+            title: route.params.title,
+          };
         }}
       />
       <SportEventsStack.Screen

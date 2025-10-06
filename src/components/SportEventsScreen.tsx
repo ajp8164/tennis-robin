@@ -20,6 +20,7 @@ import {
   useTheme,
 } from '@react-native-hello/ui';
 import { useHeaderHeight } from '@react-navigation/elements';
+import { CompositeScreenProps } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Button } from 'components/atoms/Button';
 import { EmptyView } from 'components/molecules/EmptyView';
@@ -29,7 +30,10 @@ import { useSelectedTeam } from 'lib/team';
 import { useConfirmAction } from 'lib/useConfirmAction';
 import { CircleMinus, Plus, Trash2 } from 'lucide-react-native';
 import { DateTime } from 'luxon';
-import { SportEventsNavigatorParamList } from 'types/navigation';
+import {
+  SportEventEditorTabNavigatorParamList,
+  SportEventsNavigatorParamList,
+} from 'types/navigation';
 import { SportEvent } from 'types/sportEvent';
 
 type Section = {
@@ -37,9 +41,9 @@ type Section = {
   data: SportEvent[];
 };
 
-export type Props = NativeStackScreenProps<
-  SportEventsNavigatorParamList,
-  'SportEvents'
+export type Props = CompositeScreenProps<
+  NativeStackScreenProps<SportEventsNavigatorParamList, 'SportEvents'>,
+  NativeStackScreenProps<SportEventEditorTabNavigatorParamList>
 >;
 
 const SportEventsScreen = ({ navigation }: Props) => {
@@ -168,9 +172,9 @@ const SportEventsScreen = ({ navigation }: Props) => {
         listEditor={listEditorRef.current}
         onPressRight={() => {
           sportEvent.state.status === 'not-started'
-            ? navigation.navigate('SportEventEditor', {
-                sportEventId: sportEvent.id || '',
-                screenTitle: sportEvent.name,
+            ? navigation.navigate('SportEventEditorTopTabs', {
+                screen: 'ScheduleTab',
+                title: sportEvent.name,
               })
             : navigation.navigate('SportEventSummary', {
                 sportEventId: sportEvent.id || '',

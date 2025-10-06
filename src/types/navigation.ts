@@ -78,6 +78,11 @@ export type SetupNavigatorParamList = {
   UserProfileEditor: undefined;
 };
 
+export type SportEventEditorTabNavigatorParamList = {
+  ScheduleTab: undefined;
+  PlayerAvailabilityTab: undefined;
+};
+
 export type SportEventsNavigatorParamList = {
   EnumPicker: EnumPickerInterface;
   MatchScoring: {
@@ -97,6 +102,9 @@ export type SportEventsNavigatorParamList = {
   SportEventEditor: {
     sportEventId?: string;
     screenTitle?: string;
+  };
+  SportEventEditorTopTabs: NavigatorScreenParams<SportEventEditorTabNavigatorParamList> & {
+    title?: string;
   };
   SportEventSchedule: undefined;
   SportEventSummary: {
